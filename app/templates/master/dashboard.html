@@ -112,7 +112,7 @@
         <div class="modal-body">
           <p class="mb-3 text-muted small" id="ativarNome"></p>
           <label class="form-label fw-semibold">Por quantos dias?</label>
-          <input type="number" name="dias" id="ativarDias" class="form-control" value="30" min="1" required>
+          <input type="text" inputmode="numeric" pattern="[0-9]+" name="dias" id="ativarDias" class="form-control" value="30" required>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success fw-semibold">Reativar</button>
