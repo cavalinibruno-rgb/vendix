@@ -32,5 +32,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        from app.seed import seed_master
+        seed_master()
 
     return app
