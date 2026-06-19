@@ -21,16 +21,18 @@
       <div class="card-header">Adicionar Produto</div>
       <div class="card-body">
         <!-- Filtros -->
-        <div class="row g-2 mb-2">
-          <div class="col-6">
-            <select id="filtroCategoria" class="form-select form-select-sm" onchange="buscarProdutos(document.getElementById('produtoSearch').value)">
-              <option value="">Todas as categorias</option>
-            </select>
+        <div class="mb-2">
+          <div class="d-flex gap-1 flex-wrap align-items-center mb-1">
+            <span class="text-muted fw-semibold" style="font-size:.75rem;min-width:64px;">Categoria:</span>
+            <span class="badge bg-warning text-dark categoria-badge"
+                  data-id="" onclick="setCategoria(this)" style="cursor:pointer;">Todas</span>
+            <span id="badgesCategorias"></span>
           </div>
-          <div class="col-6">
-            <select id="filtroMarca" class="form-select form-select-sm" onchange="buscarProdutos(document.getElementById('produtoSearch').value)">
-              <option value="">Todas as marcas</option>
-            </select>
+          <div class="d-flex gap-1 flex-wrap align-items-center">
+            <span class="text-muted fw-semibold" style="font-size:.75rem;min-width:64px;">Marca:</span>
+            <span class="badge bg-warning text-dark marca-badge"
+                  data-id="" onclick="setMarca(this)" style="cursor:pointer;">Todas</span>
+            <span id="badgesMarcas"></span>
           </div>
         </div>
         <div class="input-group mb-2">
@@ -232,16 +234,34 @@ let modo = 'retirada';
 let pgto = null;
 let bairros = [];
 let origem = 'loja';
+let filtroCategoria = '';
+let filtroMarca = '';
 
 // ── Inicialização ────────────────────────────────────
 fetch('/clientes/bairros/api').then(r => r.json()).then(d => { bairros = d; preencherBairros(); }).catch(()=>{});
 fetch('/produtos/api/categorias').then(r => r.json()).then(lista => {
-  const sel = document.getElementById('filtroCategoria');
-  lista.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+  const wrap = document.getElementById('badgesCategorias');
+  lista.forEach(c => {
+    const s = document.createElement('span');
+    s.className = 'badge bg-light text-dark categoria-badge';
+    s.style.cursor = 'pointer';
+    s.dataset.id = c.id;
+    s.textContent = c.name;
+    s.onclick = () => setCategoria(s);
+    wrap.appendChild(s);
+  });
 }).catch(()=>{});
 fetch('/produtos/api/marcas').then(r => r.json()).then(lista => {
-  const sel = document.getElementById('filtroMarca');
-  lista.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; sel.appendChild(o); });
+  const wrap = document.getElementById('badgesMarcas');
+  lista.forEach(b => {
+    const s = document.createElement('span');
+    s.className = 'badge bg-light text-dark marca-badge';
+    s.style.cursor = 'pointer';
+    s.dataset.id = b.id;
+    s.textContent = b.name;
+    s.onclick = () => setMarca(s);
+    wrap.appendChild(s);
+  });
 }).catch(()=>{});
 
 function preencherBairros() {
@@ -286,12 +306,26 @@ document.getElementById('produtoSearch').addEventListener('input', function() {
   prodTimer = setTimeout(() => buscarProdutos(q), 250);
 });
 
+function setCategoria(el) {
+  filtroCategoria = el.dataset.id;
+  document.querySelectorAll('.categoria-badge').forEach(b => b.className = 'badge bg-light text-dark categoria-badge');
+  el.className = 'badge bg-warning text-dark categoria-badge';
+  el.style.cursor = 'pointer';
+  buscarProdutos(document.getElementById('produtoSearch').value);
+}
+
+function setMarca(el) {
+  filtroMarca = el.dataset.id;
+  document.querySelectorAll('.marca-badge').forEach(b => b.className = 'badge bg-light text-dark marca-badge');
+  el.className = 'badge bg-warning text-dark marca-badge';
+  el.style.cursor = 'pointer';
+  buscarProdutos(document.getElementById('produtoSearch').value);
+}
+
 function buscarProdutos(q) {
-  const cat   = document.getElementById('filtroCategoria').value;
-  const marca = document.getElementById('filtroMarca').value;
   let url = `/produtos/api/buscar?q=${encodeURIComponent(q)}`;
-  if (cat)   url += `&tipo=${cat}`;
-  if (marca) url += `&marca=${marca}`;
+  if (filtroCategoria) url += `&tipo=${filtroCategoria}`;
+  if (filtroMarca)     url += `&marca=${filtroMarca}`;
   fetch(url)
     .then(r => r.json()).then(lista => {
       const el = document.getElementById('produtoResultados');
