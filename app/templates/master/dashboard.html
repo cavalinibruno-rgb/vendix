@@ -112,7 +112,9 @@
         <div class="modal-body">
           <p class="mb-3 text-muted small" id="ativarNome"></p>
           <label class="form-label fw-semibold">Por quantos dias?</label>
-          <input type="text" inputmode="numeric" pattern="[0-9]+" name="dias" id="ativarDias" class="form-control" value="30" required>
+          <input type="text" name="dias" id="ativarDias" class="form-control form-control-lg text-center"
+                 value="30" required autocomplete="off"
+                 onfocus="this.select()" onclick="this.select()">
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success fw-semibold">Reativar</button>
@@ -130,7 +132,13 @@ function abrirAtivar(id, nome) {
   document.getElementById('ativarForm').action = `/master/tenant/${id}/ativar`;
   document.getElementById('ativarNome').textContent = nome;
   document.getElementById('ativarDias').value = 30;
-  new bootstrap.Modal(document.getElementById('ativarModal')).show();
+  const modal = new bootstrap.Modal(document.getElementById('ativarModal'));
+  document.getElementById('ativarModal').addEventListener('shown.bs.modal', function() {
+    const input = document.getElementById('ativarDias');
+    input.focus();
+    input.select();
+  }, { once: true });
+  modal.show();
 }
 </script>
 {% endblock %}
