@@ -14,6 +14,7 @@ def _run_migrations(db):
     migrations = [
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS source VARCHAR(16) DEFAULT 'loja'",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS app_name VARCHAR(64)",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS brand_id INTEGER REFERENCES brands(id)",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

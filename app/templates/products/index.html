@@ -17,19 +17,32 @@
   </div>
 </div>
 
-<!-- Filtro por tipo -->
+<!-- Filtros -->
 <div class="card mb-3">
   <div class="card-body py-2">
-    <div class="d-flex gap-2 flex-wrap align-items-center">
-      <span class="text-muted small fw-semibold">Filtrar:</span>
-      <a href="{{ url_for('products.index') }}"
+    <div class="d-flex gap-2 flex-wrap align-items-center mb-1">
+      <span class="text-muted small fw-semibold" style="min-width:70px;">Categoria:</span>
+      <a href="{{ url_for('products.index', marca=marca_id) }}"
          class="badge {% if not tipo_id %}bg-warning text-dark{% else %}bg-light text-dark{% endif %} text-decoration-none fs-6">
-        Todos
+        Todas
       </a>
       {% for t in types %}
-      <a href="{{ url_for('products.index', tipo=t.id) }}"
+      <a href="{{ url_for('products.index', tipo=t.id, marca=marca_id) }}"
          class="badge {% if tipo_id == t.id %}bg-warning text-dark{% else %}bg-light text-dark{% endif %} text-decoration-none fs-6">
         {{ t.name }}
+      </a>
+      {% endfor %}
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <span class="text-muted small fw-semibold" style="min-width:70px;">Marca:</span>
+      <a href="{{ url_for('products.index', tipo=tipo_id) }}"
+         class="badge {% if not marca_id %}bg-warning text-dark{% else %}bg-light text-dark{% endif %} text-decoration-none fs-6">
+        Todas
+      </a>
+      {% for b in brands %}
+      <a href="{{ url_for('products.index', tipo=tipo_id, marca=b.id) }}"
+         class="badge {% if marca_id == b.id %}bg-warning text-dark{% else %}bg-light text-dark{% endif %} text-decoration-none fs-6">
+        {{ b.name }}
       </a>
       {% endfor %}
     </div>
@@ -45,6 +58,7 @@
           <th>#</th>
           <th>Nome</th>
           <th>Categoria</th>
+          <th>Marca</th>
           <th>Preço Venda</th>
           <th>Preço Custo</th>
           <th>Estoque</th>
@@ -57,6 +71,7 @@
           <td class="text-muted small">{{ p.id }}</td>
           <td class="fw-semibold">{{ p.name }}</td>
           <td><span class="badge bg-secondary-subtle text-secondary">{{ p.type.name if p.type else '—' }}</span></td>
+          <td><span class="badge bg-primary-subtle text-primary">{{ p.brand.name if p.brand else '—' }}</span></td>
           <td class="text-success fw-semibold">R$ {{ '%.2f' | format(p.sale_price) }}</td>
           <td class="text-muted small">R$ {{ '%.2f' | format(p.cost_price) }}</td>
           <td>

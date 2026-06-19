@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from app.models.product import Product, ProductType
+from app.models.product import Product, ProductType, Brand
 
 products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 
@@ -11,34 +11,42 @@ def tenant_id():
 @products_bp.route('/')
 @login_required
 def index():
-    types = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
-    tipo_id = request.args.get('tipo', type=int)
+    types  = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    tipo_id  = request.args.get('tipo', type=int)
+    marca_id = request.args.get('marca', type=int)
     query = Product.query.filter_by(tenant_id=tenant_id())
     if tipo_id:
         query = query.filter_by(type_id=tipo_id)
+    if marca_id:
+        query = query.filter_by(brand_id=marca_id)
     products = query.order_by(Product.name).all()
-    return render_template('products/index.html', products=products, types=types, tipo_id=tipo_id)
+    return render_template('products/index.html', products=products, types=types, brands=brands,
+                           tipo_id=tipo_id, marca_id=marca_id)
 
 @products_bp.route('/novo', methods=['GET', 'POST'])
 @login_required
 def novo():
-    types = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    types  = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
     if request.method == 'POST':
-        name       = request.form.get('name', '').strip()
-        type_id    = request.form.get('type_id') or None
-        sale_price = float(request.form.get('sale_price', 0) or 0)
-        cost_price = float(request.form.get('cost_price', 0) or 0)
-        stock      = int(request.form.get('stock_quantity', 0) or 0)
-        min_stock  = int(request.form.get('min_stock', 0) or 0)
-        description= request.form.get('description', '').strip()
+        name        = request.form.get('name', '').strip()
+        type_id     = request.form.get('type_id') or None
+        brand_id    = request.form.get('brand_id') or None
+        sale_price  = float(request.form.get('sale_price', 0) or 0)
+        cost_price  = float(request.form.get('cost_price', 0) or 0)
+        stock       = int(request.form.get('stock_quantity', 0) or 0)
+        min_stock   = int(request.form.get('min_stock', 0) or 0)
+        description = request.form.get('description', '').strip()
 
         if not name:
             flash('Nome do produto é obrigatório.', 'danger')
-            return render_template('products/form.html', types=types)
+            return render_template('products/form.html', types=types, brands=brands)
 
         product = Product(
             tenant_id=tenant_id(),
             type_id=type_id,
+            brand_id=brand_id,
             name=name,
             description=description,
             sale_price=sale_price,
@@ -51,16 +59,18 @@ def novo():
         flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
 
-    return render_template('products/form.html', types=types, product=None)
+    return render_template('products/form.html', types=types, brands=brands, product=None)
 
 @products_bp.route('/<int:product_id>/editar', methods=['GET', 'POST'])
 @login_required
 def editar(product_id):
     product = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
     types   = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    brands  = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
     if request.method == 'POST':
         product.name           = request.form.get('name', '').strip()
         product.type_id        = request.form.get('type_id') or None
+        product.brand_id       = request.form.get('brand_id') or None
         product.sale_price     = float(request.form.get('sale_price', 0) or 0)
         product.cost_price     = float(request.form.get('cost_price', 0) or 0)
         product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
@@ -69,7 +79,7 @@ def editar(product_id):
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
         return redirect(url_for('products.index'))
-    return render_template('products/form.html', types=types, product=product)
+    return render_template('products/form.html', types=types, brands=brands, product=product)
 
 @products_bp.route('/<int:product_id>/excluir', methods=['POST'])
 @login_required
@@ -95,7 +105,7 @@ def tipo_novo():
         t = ProductType(tenant_id=tenant_id(), name=name)
         db.session.add(t)
         db.session.commit()
-        flash(f'Tipo "{name}" criado!', 'success')
+        flash(f'Categoria "{name}" criada!', 'success')
     return redirect(url_for('products.tipos'))
 
 @products_bp.route('/tipos/<int:tipo_id>/excluir', methods=['POST'])
@@ -104,8 +114,35 @@ def tipo_excluir(tipo_id):
     t = ProductType.query.filter_by(id=tipo_id, tenant_id=tenant_id()).first_or_404()
     db.session.delete(t)
     db.session.commit()
-    flash('Tipo removido.', 'success')
+    flash('Categoria removida.', 'success')
     return redirect(url_for('products.tipos'))
+
+# ── Marcas ────────────────────────────────────────────
+@products_bp.route('/marcas')
+@login_required
+def marcas():
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    return render_template('products/marcas.html', brands=brands)
+
+@products_bp.route('/marcas/nova', methods=['POST'])
+@login_required
+def marca_nova():
+    name = request.form.get('name', '').strip()
+    if name:
+        b = Brand(tenant_id=tenant_id(), name=name)
+        db.session.add(b)
+        db.session.commit()
+        flash(f'Marca "{name}" criada!', 'success')
+    return redirect(url_for('products.marcas'))
+
+@products_bp.route('/marcas/<int:brand_id>/excluir', methods=['POST'])
+@login_required
+def marca_excluir(brand_id):
+    b = Brand.query.filter_by(id=brand_id, tenant_id=tenant_id()).first_or_404()
+    db.session.delete(b)
+    db.session.commit()
+    flash('Marca removida.', 'success')
+    return redirect(url_for('products.marcas'))
 
 # ── API busca produtos ────────────────────────────────
 @products_bp.route('/api/buscar')

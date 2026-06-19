@@ -71,6 +71,9 @@
       <a href="{{ url_for('products.tipos') }}" class="nav-link {% if request.endpoint == 'products.tipos' %}active{% endif %}">
         <i class="bi bi-tags"></i> Categorias
       </a>
+      <a href="{{ url_for('products.marcas') }}" class="nav-link {% if request.endpoint == 'products.marcas' %}active{% endif %}">
+        <i class="bi bi-bookmark-star"></i> Marcas
+      </a>
       <a href="{{ url_for('sales.nova') }}" class="nav-link {% if 'sales' in request.endpoint %}active{% endif %}">
         <i class="bi bi-cart-plus"></i> Nova Venda
       </a>
