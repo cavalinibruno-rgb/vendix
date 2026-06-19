@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-speedometer2 me-2 text-warning"></i>Dashboard</h1>
+  <p>Bem-vindo ao Vendix, {{ tenant.store_name }}!</p>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card p-4 text-center">
+      <i class="bi bi-cart3 fs-1 text-warning mb-2"></i>
+      <div class="fw-bold fs-5">Vendas</div>
+      <div class="text-muted small">Em breve</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-4 text-center">
+      <i class="bi bi-box-seam fs-1 text-primary mb-2"></i>
+      <div class="fw-bold fs-5">Estoque</div>
+      <div class="text-muted small">Em breve</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-4 text-center">
+      <i class="bi bi-cash-register fs-1 text-success mb-2"></i>
+      <div class="fw-bold fs-5">Caixa</div>
+      <div class="text-muted small">Em breve</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

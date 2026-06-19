@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Painel Master — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-grid me-2 text-warning"></i>Painel Master</h1>
+    <p>Gerencie todas as lojas do Vendix</p>
+  </div>
+  <a href="{{ url_for('master.tenant_novo') }}" class="btn btn-warning fw-semibold">
+    <i class="bi bi-plus-circle me-2"></i>Nova Loja
+  </a>
+</div>
+
+<!-- Resumo -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fw-bold fs-3 text-warning">{{ tenants|length }}</div>
+      <div class="text-muted small">Total de Lojas</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fw-bold fs-3 text-success">{{ tenants|selectattr('status','eq','active')|list|length }}</div>
+      <div class="text-muted small">Ativas</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fw-bold fs-3 text-danger">{{ tenants|selectattr('status','eq','suspended')|list|length }}</div>
+      <div class="text-muted small">Suspensas</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 text-center">
+      <div class="fw-bold fs-3 text-primary">—</div>
+      <div class="text-muted small">Receita/mês</div>
+    </div>
+  </div>
+</div>
+
+<!-- Lista de lojas -->
+<div class="card">
+  <div class="card-header"><i class="bi bi-shop me-2 text-warning"></i>Lojas Cadastradas</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Loja</th>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th>Vencimento</th>
+          <th>Criada em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tenants %}
+        <tr>
+          <td class="text-muted small">{{ t.id }}</td>
+          <td class="fw-semibold">{{ t.store_name }}</td>
+          <td class="text-muted small">{{ t.email }}</td>
+          <td>
+            {% if t.status == 'active' and t.is_active %}
+              <span class="badge bg-success">Ativa</span>
+            {% elif t.status == 'active' and not t.is_active %}
+              <span class="badge bg-warning text-dark">Vencida</span>
+            {% else %}
+              <span class="badge bg-danger">Suspensa</span>
+            {% endif %}
+          </td>
+          <td class="small">
+            {% if t.expires_at %}{{ t.expires_at.strftime('%d/%m/%Y') }}{% else %}—{% endif %}
+          </td>
+          <td class="small text-muted">{{ t.created_at.strftime('%d/%m/%Y') }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              {% if t.status == 'active' %}
+              <a href="{{ url_for('master.tenant_suspender', tenant_id=t.id) }}"
+                 class="btn btn-sm btn-outline-danger"
+                 onclick="return confirm('Suspender {{ t.store_name }}?')">
+                <i class="bi bi-pause-circle"></i>
+              </a>
+              {% else %}
+              <a href="{{ url_for('master.tenant_ativar', tenant_id=t.id) }}"
+                 class="btn btn-sm btn-outline-success">
+                <i class="bi bi-play-circle"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma loja cadastrada ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
