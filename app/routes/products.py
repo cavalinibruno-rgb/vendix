@@ -148,17 +148,33 @@ def marca_excluir(brand_id):
 @products_bp.route('/api/buscar')
 @login_required
 def api_buscar():
-    q       = request.args.get('q', '')
-    tipo_id = request.args.get('tipo', type=int)
-    query   = Product.query.filter_by(tenant_id=tenant_id(), active=True)
+    q        = request.args.get('q', '')
+    tipo_id  = request.args.get('tipo', type=int)
+    marca_id = request.args.get('marca', type=int)
+    query    = Product.query.filter_by(tenant_id=tenant_id(), active=True)
     if q:
         query = query.filter(Product.name.ilike(f'%{q}%'))
     if tipo_id:
         query = query.filter_by(type_id=tipo_id)
+    if marca_id:
+        query = query.filter_by(brand_id=marca_id)
     products = query.limit(20).all()
     return jsonify([{
         'id': p.id, 'name': p.name,
         'sale_price': p.sale_price,
         'stock_quantity': p.stock_quantity,
-        'type': p.type.name if p.type else ''
+        'type': p.type.name if p.type else '',
+        'brand': p.brand.name if p.brand else ''
     } for p in products])
+
+@products_bp.route('/api/categorias')
+@login_required
+def api_categorias():
+    types = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    return jsonify([{'id': t.id, 'name': t.name} for t in types])
+
+@products_bp.route('/api/marcas')
+@login_required
+def api_marcas():
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    return jsonify([{'id': b.id, 'name': b.name} for b in brands])

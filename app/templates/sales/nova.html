@@ -20,6 +20,19 @@
     <div class="card mb-3">
       <div class="card-header">Adicionar Produto</div>
       <div class="card-body">
+        <!-- Filtros -->
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <select id="filtroCategoria" class="form-select form-select-sm" onchange="buscarProdutos(document.getElementById('produtoSearch').value)">
+              <option value="">Todas as categorias</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <select id="filtroMarca" class="form-select form-select-sm" onchange="buscarProdutos(document.getElementById('produtoSearch').value)">
+              <option value="">Todas as marcas</option>
+            </select>
+          </div>
+        </div>
         <div class="input-group mb-2">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input type="text" id="produtoSearch" class="form-control" placeholder="Digite o nome do produto…" autocomplete="off">
@@ -34,7 +47,7 @@
               <div class="text-muted small">R$ <span id="prodPreco"></span></div>
             </div>
             <div style="width:80px;">
-              <input type="number" id="prodQtd" class="form-control form-control-sm text-center" value="1" min="0.01" step="0.01">
+              <input type="number" id="prodQtd" class="form-control form-control-sm text-center" value="1" min="1" step="1">
             </div>
             <button class="btn btn-warning btn-sm fw-semibold" onclick="adicionarItem()">
               <i class="bi bi-plus-lg"></i> Add
@@ -208,6 +221,14 @@ let origem = 'loja';
 
 // ── Inicialização ────────────────────────────────────
 fetch('/clientes/bairros/api').then(r => r.json()).then(d => { bairros = d; preencherBairros(); }).catch(()=>{});
+fetch('/produtos/api/categorias').then(r => r.json()).then(lista => {
+  const sel = document.getElementById('filtroCategoria');
+  lista.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+}).catch(()=>{});
+fetch('/produtos/api/marcas').then(r => r.json()).then(lista => {
+  const sel = document.getElementById('filtroMarca');
+  lista.forEach(b => { const o = document.createElement('option'); o.value = b.id; o.textContent = b.name; sel.appendChild(o); });
+}).catch(()=>{});
 
 function preencherBairros() {
   const sel = document.getElementById('bairroSelect');
@@ -252,7 +273,12 @@ document.getElementById('produtoSearch').addEventListener('input', function() {
 });
 
 function buscarProdutos(q) {
-  fetch(`/produtos/api/buscar?q=${encodeURIComponent(q)}`)
+  const cat   = document.getElementById('filtroCategoria').value;
+  const marca = document.getElementById('filtroMarca').value;
+  let url = `/produtos/api/buscar?q=${encodeURIComponent(q)}`;
+  if (cat)   url += `&tipo=${cat}`;
+  if (marca) url += `&marca=${marca}`;
+  fetch(url)
     .then(r => r.json()).then(lista => {
       const el = document.getElementById('produtoResultados');
       el.innerHTML = '';
@@ -342,7 +368,7 @@ function limparCliente() {
 // ── Carrinho ─────────────────────────────────────────
 function adicionarItem() {
   if (!produtoAtual) return;
-  const qtd = parseFloat(document.getElementById('prodQtd').value) || 1;
+  const qtd = parseInt(document.getElementById('prodQtd').value) || 1;
   const existente = carrinho.find(i => i.product_id === produtoAtual.id);
   if (existente) {
     existente.quantity += qtd;
@@ -370,7 +396,7 @@ function removerItem(idx) {
 }
 
 function alterarQtd(idx, val) {
-  const qtd = parseFloat(val);
+  const qtd = parseInt(val);
   if (qtd <= 0 || isNaN(qtd)) { removerItem(idx); return; }
   carrinho[idx].quantity = qtd;
   carrinho[idx].total = carrinho[idx].unit_price * qtd;
@@ -419,7 +445,7 @@ function renderCarrinho() {
       </td>
       <td style="width:80px;">
         <input type="number" class="form-control form-control-sm text-center p-1"
-               value="${item.quantity}" min="0.01" step="0.01"
+               value="${item.quantity}" min="1" step="1"
                onchange="alterarQtd(${idx}, this.value)">
       </td>
       <td class="text-end pe-2 fw-semibold small">R$ ${fmtNum(item.total)}</td>
