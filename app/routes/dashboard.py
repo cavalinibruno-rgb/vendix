@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from app.models.tenant import Tenant
+from app.models.sale import Sale
+from app.models.cash import CashRegister
+from datetime import datetime, date
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -23,4 +26,35 @@ def require_active_tenant(f):
 @require_active_tenant
 def index():
     tenant = Tenant.query.get(current_user.tenant_id)
-    return render_template('dashboard/index.html', tenant=tenant)
+    tid = current_user.tenant_id
+
+    hoje_inicio = datetime.combine(date.today(), datetime.min.time())
+
+    vendas_hoje = Sale.query.filter(
+        Sale.tenant_id == tid,
+        Sale.status == 'confirmed',
+        Sale.created_at >= hoje_inicio,
+    ).all()
+
+    total_dinheiro = sum(v.total for v in vendas_hoje if v.payment_method == 'dinheiro')
+    total_cartao   = sum(v.total for v in vendas_hoje if v.payment_method == 'cartao')
+    total_pix      = sum(v.total for v in vendas_hoje if v.payment_method == 'pix')
+    total_conta    = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
+    total_geral    = sum(v.total for v in vendas_hoje)
+
+    caixa = CashRegister.query.filter_by(tenant_id=tid, status='open').first()
+
+    ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
+                               .order_by(Sale.created_at.desc()).limit(10).all()
+
+    return render_template('dashboard/index.html',
+        tenant=tenant,
+        qtd_vendas=len(vendas_hoje),
+        total_dinheiro=total_dinheiro,
+        total_cartao=total_cartao,
+        total_pix=total_pix,
+        total_conta=total_conta,
+        total_geral=total_geral,
+        caixa=caixa,
+        ultimas_vendas=ultimas_vendas,
+    )
