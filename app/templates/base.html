@@ -60,6 +60,9 @@
       <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
         <i class="bi bi-speedometer2"></i> Dashboard
       </a>
+      <a href="{{ url_for('products.index') }}" class="nav-link {% if 'products' in request.endpoint %}active{% endif %}">
+        <i class="bi bi-box-seam"></i> Produtos
+      </a>
     {% endif %}
   </nav>
   <div style="position:absolute;bottom:0;width:100%;padding:16px 24px;border-top:1px solid #3d3d5e;">

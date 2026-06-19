@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if product else 'Novo' }} Produto — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-box-seam me-2 text-warning"></i>{{ 'Editar' if product else 'Novo' }} Produto</h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-box-seam me-2 text-warning"></i>Dados do Produto</div>
+      <div class="card-body p-4">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome do Produto *</label>
+            <input type="text" name="name" class="form-control"
+                   value="{{ product.name if product else '' }}" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tipo</label>
+            <select name="type_id" class="form-select">
+              <option value="">— Sem tipo —</option>
+              {% for t in types %}
+              <option value="{{ t.id }}" {% if product and product.type_id == t.id %}selected{% endif %}>
+                {{ t.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Preço de Venda (R$)</label>
+              <input type="number" name="sale_price" class="form-control"
+                     value="{{ '%.2f' | format(product.sale_price) if product else '0.00' }}"
+                     min="0" step="0.01">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Preço de Custo (R$)</label>
+              <input type="number" name="cost_price" class="form-control"
+                     value="{{ '%.2f' | format(product.cost_price) if product else '0.00' }}"
+                     min="0" step="0.01">
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Estoque Atual</label>
+              <input type="number" name="stock_quantity" class="form-control"
+                     value="{{ product.stock_quantity if product else '0' }}" min="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Estoque Mínimo</label>
+              <input type="number" name="min_stock" class="form-control"
+                     value="{{ product.min_stock if product else '0' }}" min="0">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Descrição</label>
+            <textarea name="description" class="form-control" rows="2"
+                      placeholder="Descrição opcional...">{{ product.description if product else '' }}</textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            <button type="submit" class="btn btn-warning fw-semibold flex-grow-1">
+              <i class="bi bi-check-circle me-2"></i>{{ 'Salvar Alterações' if product else 'Cadastrar Produto' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
