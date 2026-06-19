@@ -160,6 +160,20 @@
             </button>
           </div>
         </div>
+        <!-- Campo troco (dinheiro) -->
+        <div id="campoTroco" style="display:none;" class="mt-2">
+          <label class="form-label fw-semibold small mb-1">Valor recebido (R$)</label>
+          <input type="text" id="valorRecebido" class="form-control" inputmode="decimal"
+                 placeholder="0,00" oninput="calcTroco()">
+          <div id="trocoResultado" class="mt-2" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center p-2 rounded"
+                 id="trocoBox">
+              <span id="trocoLabel"></span>
+              <strong id="trocoValor"></strong>
+            </div>
+          </div>
+        </div>
+
         <!-- Botões para venda de APP -->
         <div id="pgtoApp" style="display:none; flex-direction:column; gap:.5rem;">
           <button class="btn btn-outline-secondary pgto-btn w-100" data-pgto="pelo_app" onclick="setPgto(this)">
@@ -489,6 +503,41 @@ function setPgto(btn) {
   document.querySelectorAll('.pgto-btn').forEach(b => {
     b.className = b === btn ? 'btn btn-warning pgto-btn' : 'btn btn-outline-secondary pgto-btn';
   });
+  const isDinheiro = pgto === 'dinheiro' || pgto === 'entrega_dinheiro';
+  document.getElementById('campoTroco').style.display = isDinheiro ? '' : 'none';
+  if (isDinheiro) {
+    document.getElementById('valorRecebido').value = '';
+    document.getElementById('trocoResultado').style.display = 'none';
+  }
+}
+
+function calcTroco() {
+  const total    = carrinho.reduce((s, i) => s + i.total, 0)
+                 + (modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0);
+  const recebido = parseFloat(document.getElementById('valorRecebido').value.replace(',', '.')) || 0;
+  const troco    = recebido - total;
+  const box      = document.getElementById('trocoBox');
+  const res      = document.getElementById('trocoResultado');
+
+  if (recebido <= 0) { res.style.display = 'none'; return; }
+  res.style.display = '';
+
+  if (troco < 0) {
+    box.className = 'd-flex justify-content-between align-items-center p-2 rounded bg-danger bg-opacity-10 border border-danger';
+    document.getElementById('trocoLabel').textContent = 'Valor insuficiente';
+    document.getElementById('trocoValor').textContent = '- R$ ' + Math.abs(troco).toFixed(2).replace('.', ',');
+    document.getElementById('trocoValor').className = 'text-danger';
+  } else if (troco === 0) {
+    box.className = 'd-flex justify-content-between align-items-center p-2 rounded bg-success bg-opacity-10 border border-success';
+    document.getElementById('trocoLabel').textContent = 'Valor exato';
+    document.getElementById('trocoValor').textContent = 'Sem troco';
+    document.getElementById('trocoValor').className = 'text-success';
+  } else {
+    box.className = 'd-flex justify-content-between align-items-center p-2 rounded bg-success bg-opacity-10 border border-success';
+    document.getElementById('trocoLabel').textContent = 'Troco';
+    document.getElementById('trocoValor').textContent = 'R$ ' + troco.toFixed(2).replace('.', ',');
+    document.getElementById('trocoValor').className = 'text-success fw-bold';
+  }
 }
 
 // ── Finalizar ─────────────────────────────────────────
@@ -498,6 +547,14 @@ function finalizarVenda() {
   if (pgto === 'conta' && !clienteAtual) { alert('Para lançar na Conta, selecione um cliente.'); return; }
   if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
     alert('Informe o nome do app (iFood, Anotaí, etc.)'); return;
+  }
+  if (pgto === 'dinheiro' || pgto === 'entrega_dinheiro') {
+    const recebido = parseFloat(document.getElementById('valorRecebido').value.replace(',', '.')) || 0;
+    const total    = carrinho.reduce((s, i) => s + i.total, 0)
+                   + (modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0);
+    if (recebido < total) {
+      alert('Valor recebido menor que o total. Informe o valor correto.'); return;
+    }
   }
 
   const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
