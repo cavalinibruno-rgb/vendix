@@ -80,6 +80,9 @@
       <a href="{{ url_for('stock.index') }}" class="nav-link {% if 'stock' in request.endpoint %}active{% endif %}">
         <i class="bi bi-box-seam"></i> Estoque
       </a>
+      <a href="{{ url_for('account.index') }}" class="nav-link {% if 'account' in request.endpoint %}active{% endif %}">
+        <i class="bi bi-person-lines-fill"></i> Fiado
+      </a>
       <a href="{{ url_for('customers.index') }}" class="nav-link {% if 'customers' in request.endpoint %}active{% endif %}">
         <i class="bi bi-people"></i> Clientes
       </a>
