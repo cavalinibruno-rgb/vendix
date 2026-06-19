@@ -18,9 +18,9 @@
                    value="{{ product.name if product else '' }}" required autofocus>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">Tipo</label>
+            <label class="form-label fw-semibold">Categoria</label>
             <select name="type_id" class="form-select">
-              <option value="">— Sem tipo —</option>
+              <option value="">— Sem categoria —</option>
               {% for t in types %}
               <option value="{{ t.id }}" {% if product and product.type_id == t.id %}selected{% endif %}>
                 {{ t.name }}
