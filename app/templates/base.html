@@ -83,6 +83,9 @@
       <a href="{{ url_for('account.index') }}" class="nav-link {% if 'account' in request.endpoint %}active{% endif %}">
         <i class="bi bi-person-lines-fill"></i> Fiado
       </a>
+      <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in request.endpoint %}active{% endif %}">
+        <i class="bi bi-phone"></i> Apps
+      </a>
       <a href="{{ url_for('customers.index') }}" class="nav-link {% if 'customers' in request.endpoint %}active{% endif %}">
         <i class="bi bi-people"></i> Clientes
       </a>

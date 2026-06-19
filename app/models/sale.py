@@ -14,6 +14,8 @@ class Sale(db.Model):
     payment_method  = db.Column(db.String(16), nullable=False)  # dinheiro | cartao | pix | conta
     notes           = db.Column(db.Text)
     status          = db.Column(db.String(16), default='confirmed')  # confirmed | cancelled
+    source          = db.Column(db.String(16), default='loja')       # loja | app
+    app_name        = db.Column(db.String(64))                        # iFood, Anotaí, etc.
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
 
     items    = db.relationship('SaleItem', backref='sale', lazy=True, cascade='all, delete-orphan')

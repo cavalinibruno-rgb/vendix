@@ -33,6 +33,7 @@ def index():
     vendas_hoje = Sale.query.filter(
         Sale.tenant_id == tid,
         Sale.status == 'confirmed',
+        Sale.source == 'loja',
         Sale.created_at >= hoje_inicio,
     ).all()
 

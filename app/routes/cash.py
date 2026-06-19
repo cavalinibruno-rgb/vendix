@@ -49,6 +49,7 @@ def fechar(caixa_id):
     vendas = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
+        Sale.source == 'loja',
         Sale.created_at >= caixa.opened_at,
     ).all()
 

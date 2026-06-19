@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Vendas Apps – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-phone me-2"></i>Vendas Apps</h1>
+  <p class="text-muted">Pedidos recebidos por aplicativos de delivery. Não entram no caixa físico.</p>
+</div>
+
+<!-- Totais por app -->
+{% if por_app %}
+<div class="row g-3 mb-4">
+  {% for nome, dados in por_app.items() %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="fw-bold mb-1">{{ nome }}</div>
+      <div class="fs-4 fw-bold text-primary">R$ {{ '%.2f'|format(dados.total) }}</div>
+      <div class="text-muted small">{{ dados.qtd }} pedido(s)</div>
+    </div>
+  </div>
+  {% endfor %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3 bg-light">
+      <div class="text-muted small mb-1">Total geral</div>
+      <div class="fs-4 fw-bold">R$ {{ '%.2f'|format(total_geral) }}</div>
+      <div class="text-muted small">{{ vendas|length }} pedido(s)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Lista de vendas -->
+<div class="card">
+  <div class="card-header fw-semibold">Histórico de Pedidos</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Data/Hora</th>
+          <th>App</th>
+          <th>Pagamento</th>
+          <th>Itens</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vendas %}
+        <tr>
+          <td class="text-muted small">{{ v.id }}</td>
+          <td class="small text-nowrap">{{ v.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td><span class="badge bg-primary">{{ v.app_name or '—' }}</span></td>
+          <td>
+            {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
+            {% elif v.payment_method == 'cartao' %}<span class="badge bg-secondary">Cartão</span>
+            {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
+            {% else %}<span class="badge bg-warning text-dark">{{ v.payment_method }}</span>{% endif %}
+          </td>
+          <td class="small text-muted">
+            {% for item in v.items %}
+              {{ item.product_name }} ({{ item.quantity|int }}x){% if not loop.last %}, {% endif %}
+            {% endfor %}
+          </td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="alert alert-secondary">
+  <i class="bi bi-info-circle me-2"></i>
+  Nenhum pedido de app registrado ainda. Ao finalizar uma venda, selecione <strong>App</strong> como origem.
+</div>
+{% endif %}
+{% endblock %}

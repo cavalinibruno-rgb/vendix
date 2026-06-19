@@ -27,6 +27,8 @@ def confirmar():
     delivery_fee   = float(data.get('delivery_fee', 0))
     payment_method = data.get('payment_method', 'dinheiro')
     notes          = data.get('notes', '')
+    source         = data.get('source', 'loja')
+    app_name       = data.get('app_name', '') if source == 'app' else None
     items          = data.get('items', [])
 
     subtotal = sum(float(i['unit_price']) * float(i['quantity']) for i in items)
@@ -41,6 +43,8 @@ def confirmar():
         total          = total,
         payment_method = payment_method,
         notes          = notes,
+        source         = source,
+        app_name       = app_name,
     )
     db.session.add(sale)
     db.session.flush()

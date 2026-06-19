@@ -39,6 +39,7 @@ def create_app():
     from app.routes.cash import cash_bp
     from app.routes.stock import stock_bp
     from app.routes.account import account_bp
+    from app.routes.apps import apps_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -49,6 +50,7 @@ def create_app():
     app.register_blueprint(cash_bp)
     app.register_blueprint(stock_bp)
     app.register_blueprint(account_bp)
+    app.register_blueprint(apps_bp)
 
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")

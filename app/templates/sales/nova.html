@@ -149,6 +149,24 @@
       </div>
     </div>
 
+    <!-- Origem da venda -->
+    <div class="card mb-3">
+      <div class="card-header">Origem do Pedido</div>
+      <div class="card-body">
+        <div class="btn-group w-100">
+          <button type="button" id="btnLoja" class="btn btn-warning active" onclick="setOrigem('loja')">
+            <i class="bi bi-shop me-1"></i> Loja
+          </button>
+          <button type="button" id="btnApp" class="btn btn-outline-secondary" onclick="setOrigem('app')">
+            <i class="bi bi-phone me-1"></i> App
+          </button>
+        </div>
+        <div id="campoApp" style="display:none;" class="mt-2">
+          <input type="text" id="appNome" class="form-control" placeholder="Nome do app (ex: iFood, Anotaí…)">
+        </div>
+      </div>
+    </div>
+
     <button class="btn btn-warning w-100 fw-bold py-3 fs-5" onclick="finalizarVenda()">
       <i class="bi bi-check-circle me-2"></i>Finalizar Venda
     </button>
@@ -166,6 +184,7 @@ let clienteAtual = null;
 let modo = 'retirada';
 let pgto = null;
 let bairros = [];
+let origem = 'loja';
 
 // ── Inicialização ────────────────────────────────────
 fetch('/clientes/bairros/api').then(r => r.json()).then(d => { bairros = d; preencherBairros(); }).catch(()=>{});
@@ -392,6 +411,14 @@ function calcTotais() {
 
 function renderResumo() { calcTotais(); }
 
+// ── Origem ────────────────────────────────────────────
+function setOrigem(o) {
+  origem = o;
+  document.getElementById('btnLoja').className = o === 'loja' ? 'btn btn-warning active' : 'btn btn-outline-secondary';
+  document.getElementById('btnApp').className  = o === 'app'  ? 'btn btn-warning active' : 'btn btn-outline-secondary';
+  document.getElementById('campoApp').style.display = o === 'app' ? '' : 'none';
+}
+
 // ── Pagamento ─────────────────────────────────────────
 function setPgto(btn) {
   pgto = btn.dataset.pgto;
@@ -405,6 +432,9 @@ function finalizarVenda() {
   if (!carrinho.length) { alert('Adicione pelo menos um produto.'); return; }
   if (!pgto) { alert('Selecione a forma de pagamento.'); return; }
   if (pgto === 'conta' && !clienteAtual) { alert('Para lançar na Conta, selecione um cliente.'); return; }
+  if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
+    alert('Informe o nome do app (iFood, Anotaí, etc.)'); return;
+  }
 
   const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
   const payload = {
@@ -413,6 +443,8 @@ function finalizarVenda() {
     delivery_fee:   taxa,
     payment_method: pgto,
     notes:          document.getElementById('obsVenda').value,
+    source:         origem,
+    app_name:       origem === 'app' ? document.getElementById('appNome').value.trim() : null,
     items:          carrinho,
   };
 
