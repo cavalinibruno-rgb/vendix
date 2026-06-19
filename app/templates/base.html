@@ -62,41 +62,54 @@
         <i class="bi bi-plus-circle"></i> Nova Loja
       </a>
     {% elif current_user.is_authenticated %}
-      <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+      {% set ep = request.endpoint %}
+
+      <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if ep == 'dashboard.index' %}active{% endif %}">
         <i class="bi bi-speedometer2"></i> Dashboard
       </a>
-      <a href="{{ url_for('products.index') }}" class="nav-link {% if 'products' in request.endpoint %}active{% endif %}">
-        <i class="bi bi-box-seam"></i> Produtos
-      </a>
-      <a href="{{ url_for('products.tipos') }}" class="nav-link {% if request.endpoint == 'products.tipos' %}active{% endif %}">
-        <i class="bi bi-tags"></i> Categorias
-      </a>
-      <a href="{{ url_for('products.marcas') }}" class="nav-link {% if request.endpoint == 'products.marcas' %}active{% endif %}">
-        <i class="bi bi-bookmark-star"></i> Marcas
-      </a>
-      <a href="{{ url_for('sales.nova') }}" class="nav-link {% if 'sales' in request.endpoint %}active{% endif %}">
-        <i class="bi bi-cart-plus"></i> Nova Venda
-      </a>
-      <a href="{{ url_for('sales.index') }}" class="nav-link {% if request.endpoint == 'sales.index' %}active{% endif %}">
-        <i class="bi bi-receipt"></i> Vendas
-      </a>
-      <a href="{{ url_for('cash.index') }}" class="nav-link {% if 'cash' in request.endpoint %}active{% endif %}">
+
+      <a href="{{ url_for('cash.index') }}" class="nav-link {% if 'cash' in ep %}active{% endif %}">
         <i class="bi bi-cash-stack"></i> Caixa
       </a>
-      <a href="{{ url_for('stock.index') }}" class="nav-link {% if 'stock' in request.endpoint %}active{% endif %}">
-        <i class="bi bi-box-seam"></i> Estoque
+
+      <!-- Operações -->
+      <div style="padding:10px 24px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;color:#5a6478;text-transform:uppercase;">
+        Operações
+      </div>
+      <a href="{{ url_for('sales.nova') }}" class="nav-link {% if ep == 'sales.nova' %}active{% endif %}">
+        <i class="bi bi-cart-plus"></i> Nova Venda
       </a>
-      <a href="{{ url_for('account.index') }}" class="nav-link {% if 'account' in request.endpoint %}active{% endif %}">
+      <a href="{{ url_for('sales.index') }}" class="nav-link {% if ep == 'sales.index' %}active{% endif %}">
+        <i class="bi bi-receipt"></i> Vendas
+      </a>
+      <a href="{{ url_for('stock.index') }}" class="nav-link {% if 'stock' in ep %}active{% endif %}">
+        <i class="bi bi-boxes"></i> Estoque
+      </a>
+      <a href="{{ url_for('account.index') }}" class="nav-link {% if 'account' in ep %}active{% endif %}">
         <i class="bi bi-person-lines-fill"></i> Fiado
       </a>
-      <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in request.endpoint %}active{% endif %}">
+      <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in ep %}active{% endif %}">
         <i class="bi bi-phone"></i> Apps
       </a>
-      <a href="{{ url_for('customers.index') }}" class="nav-link {% if 'customers' in request.endpoint %}active{% endif %}">
+
+      <!-- Cadastro -->
+      <div style="padding:10px 24px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;color:#5a6478;text-transform:uppercase;">
+        Cadastro
+      </div>
+      <a href="{{ url_for('customers.index') }}" class="nav-link {% if ep == 'customers.index' or ep == 'customers.novo' or ep == 'customers.editar' %}active{% endif %}">
         <i class="bi bi-people"></i> Clientes
       </a>
-      <a href="{{ url_for('customers.bairros') }}" class="nav-link {% if request.endpoint == 'customers.bairros' %}active{% endif %}">
+      <a href="{{ url_for('customers.bairros') }}" class="nav-link {% if ep == 'customers.bairros' %}active{% endif %}">
         <i class="bi bi-geo-alt"></i> Bairros
+      </a>
+      <a href="{{ url_for('products.index') }}" class="nav-link {% if ep == 'products.index' or ep == 'products.novo' or ep == 'products.editar' %}active{% endif %}">
+        <i class="bi bi-box-seam"></i> Produtos
+      </a>
+      <a href="{{ url_for('products.tipos') }}" class="nav-link {% if ep == 'products.tipos' %}active{% endif %}">
+        <i class="bi bi-tags"></i> Categorias
+      </a>
+      <a href="{{ url_for('products.marcas') }}" class="nav-link {% if ep == 'products.marcas' %}active{% endif %}">
+        <i class="bi bi-bookmark-star"></i> Marcas
       </a>
     {% endif %}
   </nav>
