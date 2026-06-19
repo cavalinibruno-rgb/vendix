@@ -9,6 +9,20 @@ load_dotenv()
 db = SQLAlchemy()
 login_manager = LoginManager()
 
+def _run_migrations(db):
+    """Adiciona colunas novas em tabelas existentes sem quebrar dados."""
+    migrations = [
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS source VARCHAR(16) DEFAULT 'loja'",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS app_name VARCHAR(64)",
+    ]
+    with db.engine.connect() as conn:
+        for sql in migrations:
+            try:
+                conn.execute(db.text(sql))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
@@ -56,6 +70,7 @@ def create_app():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
         db.create_all()
+        _run_migrations(db)
         from app.seed import seed_master
         seed_master()
 
