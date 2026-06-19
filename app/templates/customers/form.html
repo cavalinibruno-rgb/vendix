@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Editar' if customer else 'Novo' }} Cliente – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-person{{ '-gear' if customer else '-plus' }} me-2"></i>{{ 'Editar Cliente' if customer else 'Novo Cliente' }}</h1>
+</div>
+
+<div class="card" style="max-width:600px;">
+  <div class="card-body p-4">
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+        <input type="text" name="name" class="form-control" value="{{ customer.name if customer else '' }}" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Telefone</label>
+        <input type="text" name="phone" class="form-control" value="{{ customer.phone if customer else '' }}" placeholder="(00) 00000-0000">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Bairro</label>
+        <select name="neighborhood_id" class="form-select" id="neighborhoodSel" onchange="applyFee(this)">
+          <option value="">— Sem bairro —</option>
+          {% for n in neighborhoods %}
+          <option value="{{ n.id }}" data-fee="{{ n.delivery_fee }}"
+            {% if customer and customer.neighborhood_id == n.id %}selected{% endif %}>
+            {{ n.name }} (R$ {{ '%.2f'|format(n.delivery_fee) }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Endereço</label>
+        <input type="text" name="address" class="form-control" value="{{ customer.address if customer else '' }}" placeholder="Rua, número…">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Observações</label>
+        <textarea name="notes" class="form-control" rows="2">{{ customer.notes if customer else '' }}</textarea>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-warning fw-semibold">
+          <i class="bi bi-check-lg me-1"></i> Salvar
+        </button>
+        <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function applyFee(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  // only informativo — backend salva a taxa
+}
+</script>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Bairros – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1><i class="bi bi-geo-alt me-2"></i>Bairros</h1>
+    <p>Cadastre bairros e taxas de entrega</p>
+  </div>
+  <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Clientes
+  </a>
+</div>
+
+<div class="row g-4">
+  <!-- Formulário novo bairro -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">Adicionar Bairro</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('customers.bairro_novo') }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome</label>
+            <input type="text" name="name" class="form-control" required placeholder="Ex: Centro">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Taxa de Entrega (R$)</label>
+            <input type="number" name="delivery_fee" class="form-control" step="0.01" min="0" value="0.00">
+          </div>
+          <button class="btn btn-warning w-100 fw-semibold">
+            <i class="bi bi-plus-lg me-1"></i> Adicionar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de bairros -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">Bairros cadastrados ({{ neighborhoods|length }})</div>
+      <div class="card-body p-0">
+        {% if neighborhoods %}
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Nome</th>
+              <th>Taxa de Entrega</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for n in neighborhoods %}
+            <tr>
+              <td class="fw-semibold">{{ n.name }}</td>
+              <td>R$ {{ '%.2f'|format(n.delivery_fee) }}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary me-1"
+                  onclick="openEdit({{ n.id }}, '{{ n.name }}', {{ n.delivery_fee }})">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form method="post" action="{{ url_for('customers.bairro_excluir', bairro_id=n.id) }}" class="d-inline"
+                      onsubmit="return confirm('Remover {{ n.name }}?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-geo-alt" style="font-size:2.5rem;"></i>
+          <p class="mt-2">Nenhum bairro cadastrado ainda.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal editar bairro -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" id="editForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Bairro</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome</label>
+            <input type="text" name="name" id="editName" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Taxa de Entrega (R$)</label>
+            <input type="number" name="delivery_fee" id="editFee" class="form-control" step="0.01" min="0">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-warning fw-semibold">Salvar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEdit(id, name, fee) {
+  document.getElementById('editForm').action = `/clientes/bairros/${id}/editar`;
+  document.getElementById('editName').value = name;
+  document.getElementById('editFee').value = fee.toFixed(2);
+  new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+</script>
+{% endblock %}
