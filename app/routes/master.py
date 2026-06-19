@@ -76,13 +76,14 @@ def tenant_suspender(tenant_id):
     flash(f'Loja "{tenant.store_name}" suspensa.', 'warning')
     return redirect(url_for('master.dashboard'))
 
-@master_bp.route('/tenant/<int:tenant_id>/ativar')
+@master_bp.route('/tenant/<int:tenant_id>/ativar', methods=['POST'])
 @login_required
 @master_required
 def tenant_ativar(tenant_id):
     tenant = Tenant.query.get_or_404(tenant_id)
+    dias = int(request.form.get('dias', 30))
     tenant.status = 'active'
-    tenant.expires_at = datetime.utcnow() + timedelta(days=30)
+    tenant.expires_at = datetime.utcnow() + timedelta(days=dias)
     db.session.commit()
-    flash(f'Loja "{tenant.store_name}" reativada por 30 dias.', 'success')
+    flash(f'Loja "{tenant.store_name}" reativada por {dias} dias.', 'success')
     return redirect(url_for('master.dashboard'))

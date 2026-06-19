@@ -84,10 +84,10 @@
                 <i class="bi bi-pause-circle"></i>
               </a>
               {% else %}
-              <a href="{{ url_for('master.tenant_ativar', tenant_id=t.id) }}"
-                 class="btn btn-sm btn-outline-success">
+              <button class="btn btn-sm btn-outline-success"
+                onclick="abrirAtivar({{ t.id }}, '{{ t.store_name }}')">
                 <i class="bi bi-play-circle"></i>
-              </a>
+              </button>
               {% endif %}
             </div>
           </td>
@@ -99,4 +99,38 @@
     </table>
   </div>
 </div>
+
+<!-- Modal Reativar -->
+<div class="modal fade" id="ativarModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" id="ativarForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Reativar Loja</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3 text-muted small" id="ativarNome"></p>
+          <label class="form-label fw-semibold">Por quantos dias?</label>
+          <input type="number" name="dias" id="ativarDias" class="form-control" value="30" min="1" required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success fw-semibold">Reativar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function abrirAtivar(id, nome) {
+  document.getElementById('ativarForm').action = `/master/tenant/${id}/ativar`;
+  document.getElementById('ativarNome').textContent = nome;
+  document.getElementById('ativarDias').value = 30;
+  new bootstrap.Modal(document.getElementById('ativarModal')).show();
+}
+</script>
 {% endblock %}
