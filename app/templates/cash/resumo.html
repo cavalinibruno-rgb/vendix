@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Resumo do Caixa – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center gap-3">
+  <a href="{{ url_for('cash.index') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <h1 class="mb-0"><i class="bi bi-receipt me-2"></i>Resumo do Caixa #{{ caixa.id }}</h1>
+</div>
+
+<div class="row g-4">
+  <!-- Info do caixa -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Informações</div>
+      <div class="card-body">
+        <dl class="mb-0">
+          <dt class="text-muted small">Aberto em</dt>
+          <dd>{{ caixa.opened_at.strftime('%d/%m/%Y às %H:%M') }}</dd>
+          <dt class="text-muted small">Fechado em</dt>
+          <dd>{{ caixa.closed_at.strftime('%d/%m/%Y às %H:%M') if caixa.closed_at else '—' }}</dd>
+          <dt class="text-muted small">Troco inicial</dt>
+          <dd>R$ {{ '%.2f'|format(caixa.opening_amount) }}</dd>
+          {% if caixa.notes %}
+          <dt class="text-muted small">Observações</dt>
+          <dd>{{ caixa.notes }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <!-- Totais por forma de pagamento -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Vendas por Pagamento</div>
+      <div class="card-body">
+        <table class="table mb-0">
+          <tbody>
+            <tr>
+              <td><i class="bi bi-cash me-2 text-success"></i>Dinheiro</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_dinheiro) }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-credit-card me-2 text-primary"></i>Cartão</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_cartao) }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-qr-code me-2 text-info"></i>Pix</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_pix) }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-person-lines-fill me-2 text-warning"></i>Conta</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_conta) }}</td>
+            </tr>
+            <tr class="table-dark">
+              <td><strong>Total Geral</strong></td>
+              <td class="text-end fw-bold">R$ {{ '%.2f'|format(total_geral) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conferência -->
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Conferência do Caixa</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Troco inicial</span>
+          <span>R$ {{ '%.2f'|format(caixa.opening_amount) }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">+ Dinheiro recebido</span>
+          <span>R$ {{ '%.2f'|format(total_dinheiro) }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-3 border-top pt-2">
+          <strong>Esperado</strong>
+          <strong>R$ {{ '%.2f'|format(esperado_caixa) }}</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Valor contado</span>
+          <span>R$ {{ '%.2f'|format(caixa.closing_amount or 0) }}</span>
+        </div>
+        <div class="alert {{ 'alert-success' if diferenca >= 0 else 'alert-danger' }} d-flex justify-content-between mb-0">
+          <strong>Diferença</strong>
+          <strong>{{ '+' if diferenca >= 0 else '' }}R$ {{ '%.2f'|format(diferenca) }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lista de vendas -->
+{% if vendas %}
+<div class="card mt-4">
+  <div class="card-header">Vendas do Período ({{ vendas|length }})</div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Horário</th>
+          <th>Cliente</th>
+          <th>Pagamento</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vendas %}
+        <tr>
+          <td class="text-muted small">{{ v.id }}</td>
+          <td class="small">{{ v.created_at.strftime('%H:%M') }}</td>
+          <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
+          <td>
+            {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
+            {% elif v.payment_method == 'cartao' %}<span class="badge bg-primary">Cartão</span>
+            {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
+            {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
+          </td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

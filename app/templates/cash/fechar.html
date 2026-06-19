@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Fechar Caixa – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center gap-3">
+  <a href="{{ url_for('cash.index') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <h1 class="mb-0"><i class="bi bi-lock me-2"></i>Fechar Caixa</h1>
+</div>
+
+<div class="row g-4">
+  <!-- Resumo de vendas -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Vendas do Período</div>
+      <div class="card-body">
+        <table class="table mb-0">
+          <tbody>
+            <tr>
+              <td><i class="bi bi-cash me-2 text-success"></i>Dinheiro</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_dinheiro) }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-credit-card me-2 text-primary"></i>Cartão</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_cartao) }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-qr-code me-2 text-info"></i>Pix</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_pix) }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-person-lines-fill me-2 text-warning"></i>Conta (fiado)</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_conta) }}</td>
+            </tr>
+            <tr class="table-dark">
+              <td><strong>Total Geral</strong></td>
+              <td class="text-end fw-bold">R$ {{ '%.2f'|format(total_geral) }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-muted">Troco inicial</span>
+          <span>R$ {{ '%.2f'|format(caixa.opening_amount) }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+          <span class="text-muted">+ Dinheiro recebido</span>
+          <span>R$ {{ '%.2f'|format(total_dinheiro) }}</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
+          <strong>Esperado no caixa</strong>
+          <strong class="text-success fs-5">R$ {{ '%.2f'|format(esperado_caixa) }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulário de fechamento -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Conferência e Fechamento</div>
+      <div class="card-body">
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Valor contado no caixa (R$)</label>
+            <input type="text" name="closing_amount" id="closing_amount"
+                   class="form-control form-control-lg"
+                   value="0.00"
+                   onfocus="if(this.value=='0.00')this.value=''"
+                   onblur="calcDif()">
+            <div class="form-text">Conte o dinheiro físico no caixa e informe o total.</div>
+          </div>
+
+          <div id="diferenca-box" class="alert d-none mb-3">
+            <div class="d-flex justify-content-between">
+              <span>Diferença</span>
+              <strong id="diferenca-valor"></strong>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Observações (opcional)</label>
+            <textarea name="notes" class="form-control" rows="3"
+                      placeholder="Troco usado, retiradas, etc."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-danger w-100 fw-semibold py-2">
+            <i class="bi bi-lock-fill me-2"></i>Confirmar Fechamento
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lista de vendas do período -->
+{% if vendas %}
+<div class="card mt-4">
+  <div class="card-header">Vendas do período ({{ vendas|length }})</div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Horário</th>
+          <th>Cliente</th>
+          <th>Pagamento</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vendas %}
+        <tr>
+          <td class="text-muted small">{{ v.id }}</td>
+          <td class="small">{{ v.created_at.strftime('%H:%M') }}</td>
+          <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
+          <td>
+            {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
+            {% elif v.payment_method == 'cartao' %}<span class="badge bg-primary">Cartão</span>
+            {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
+            {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
+          </td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<script>
+const esperado = {{ esperado_caixa }};
+function calcDif() {
+  const contado = parseFloat(document.getElementById('closing_amount').value.replace(',', '.')) || 0;
+  const dif = contado - esperado;
+  const box = document.getElementById('diferenca-box');
+  const val = document.getElementById('diferenca-valor');
+  box.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-secondary');
+  if (dif > 0) {
+    box.classList.add('alert-success');
+    val.textContent = '+R$ ' + dif.toFixed(2).replace('.', ',');
+  } else if (dif < 0) {
+    box.classList.add('alert-danger');
+    val.textContent = '-R$ ' + Math.abs(dif).toFixed(2).replace('.', ',');
+  } else {
+    box.classList.add('alert-secondary');
+    val.textContent = 'R$ 0,00';
+  }
+}
+document.getElementById('closing_amount').addEventListener('input', calcDif);
+</script>
+{% endblock %}
