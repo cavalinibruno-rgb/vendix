@@ -35,6 +35,10 @@ def create_app():
     app.register_blueprint(sales_bp)
 
     with app.app_context():
+        import os
+        uri = os.environ.get('DATABASE_URL', 'NAO_DEFINIDA')
+        app.logger.warning(f"[DB] DATABASE_URL env = {uri[:40]}...")
+        app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
         db.create_all()
         from app.seed import seed_master
         seed_master()
