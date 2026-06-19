@@ -50,9 +50,10 @@
           <td class="small text-nowrap">{{ v.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
           <td><span class="badge bg-primary">{{ v.app_name or '—' }}</span></td>
           <td>
-            {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
-            {% elif v.payment_method == 'cartao' %}<span class="badge bg-secondary">Cartão</span>
-            {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
+            {% if v.payment_method == 'pelo_app' %}<span class="badge bg-primary">Pelo app</span>
+            {% elif v.payment_method == 'entrega_dinheiro' %}<span class="badge bg-success">Entrega – Dinheiro</span>
+            {% elif v.payment_method == 'entrega_cartao' %}<span class="badge bg-secondary">Entrega – Cartão</span>
+            {% elif v.payment_method == 'entrega_pix' %}<span class="badge bg-info text-dark">Entrega – Pix</span>
             {% else %}<span class="badge bg-warning text-dark">{{ v.payment_method }}</span>{% endif %}
           </td>
           <td class="small text-muted">

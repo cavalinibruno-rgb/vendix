@@ -30,16 +30,22 @@ def index():
 
     hoje_inicio = datetime.combine(date.today(), datetime.min.time())
 
-    vendas_hoje = Sale.query.filter(
+    todas_hoje = Sale.query.filter(
         Sale.tenant_id == tid,
         Sale.status == 'confirmed',
-        Sale.source == 'loja',
         Sale.created_at >= hoje_inicio,
     ).all()
 
-    total_dinheiro = sum(v.total for v in vendas_hoje if v.payment_method == 'dinheiro')
-    total_cartao   = sum(v.total for v in vendas_hoje if v.payment_method == 'cartao')
-    total_pix      = sum(v.total for v in vendas_hoje if v.payment_method == 'pix')
+    def entra_no_caixa(v):
+        if v.source == 'loja' or v.source is None:
+            return True
+        return v.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
+
+    vendas_hoje = [v for v in todas_hoje if entra_no_caixa(v)]
+
+    total_dinheiro = sum(v.total for v in vendas_hoje if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
+    total_cartao   = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao', 'entrega_cartao'))
+    total_pix      = sum(v.total for v in vendas_hoje if v.payment_method in ('pix', 'entrega_pix'))
     total_conta    = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
     total_geral    = sum(v.total for v in vendas_hoje)
 

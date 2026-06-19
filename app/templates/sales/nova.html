@@ -128,7 +128,8 @@
     <div class="card mb-3">
       <div class="card-header">Forma de Pagamento</div>
       <div class="card-body">
-        <div class="d-grid gap-2">
+        <!-- Botões para venda de LOJA -->
+        <div id="pgtoLoja" class="d-grid gap-2">
           <div class="btn-group w-100">
             <button class="btn btn-outline-secondary pgto-btn" data-pgto="dinheiro" onclick="setPgto(this)">
               <i class="bi bi-cash me-1"></i>Dinheiro
@@ -143,6 +144,25 @@
             </button>
             <button class="btn btn-outline-secondary pgto-btn" data-pgto="conta" onclick="setPgto(this)">
               <i class="bi bi-person-lines-fill me-1"></i>Conta
+            </button>
+          </div>
+        </div>
+        <!-- Botões para venda de APP -->
+        <div id="pgtoApp" class="d-grid gap-2" style="display:none !important;">
+          <button class="btn btn-outline-secondary pgto-btn w-100" data-pgto="pelo_app" onclick="setPgto(this)">
+            <i class="bi bi-phone me-1"></i>Pelo app
+          </button>
+          <div class="btn-group w-100">
+            <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_dinheiro" onclick="setPgto(this)">
+              <i class="bi bi-cash me-1"></i>Na entrega – Dinheiro
+            </button>
+          </div>
+          <div class="btn-group w-100">
+            <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_cartao" onclick="setPgto(this)">
+              <i class="bi bi-credit-card me-1"></i>Na entrega – Cartão
+            </button>
+            <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_pix" onclick="setPgto(this)">
+              <i class="bi bi-qr-code me-1"></i>Na entrega – Pix
             </button>
           </div>
         </div>
@@ -414,9 +434,13 @@ function renderResumo() { calcTotais(); }
 // ── Origem ────────────────────────────────────────────
 function setOrigem(o) {
   origem = o;
+  pgto = null;
+  document.querySelectorAll('.pgto-btn').forEach(b => b.className = b.className.replace('btn-warning', 'btn-outline-secondary').replace(' active',''));
   document.getElementById('btnLoja').className = o === 'loja' ? 'btn btn-warning active' : 'btn btn-outline-secondary';
   document.getElementById('btnApp').className  = o === 'app'  ? 'btn btn-warning active' : 'btn btn-outline-secondary';
-  document.getElementById('campoApp').style.display = o === 'app' ? '' : 'none';
+  document.getElementById('campoApp').style.display  = o === 'app'  ? '' : 'none';
+  document.getElementById('pgtoLoja').style.display  = o === 'loja' ? '' : 'none';
+  document.getElementById('pgtoApp').style.display   = o === 'app'  ? '' : 'none';
 }
 
 // ── Pagamento ─────────────────────────────────────────

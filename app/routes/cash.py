@@ -14,6 +14,12 @@ def tid():
 def caixa_aberto():
     return CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
 
+def _entra_no_caixa(venda):
+    """Vendas de loja sempre entram. Vendas de app só entram se pagas na entrega."""
+    if venda.source == 'loja' or venda.source is None:
+        return True
+    return venda.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
+
 @cash_bp.route('/')
 @login_required
 def index():
@@ -45,17 +51,18 @@ def abrir():
 def fechar(caixa_id):
     caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid(), status='open').first_or_404()
 
-    # Vendas do período
-    vendas = Sale.query.filter(
+    # Vendas do período — loja + app com pagamento na entrega (entram no caixa físico)
+    todas_vendas = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
-        Sale.source == 'loja',
         Sale.created_at >= caixa.opened_at,
     ).all()
 
-    total_dinheiro = sum(v.total for v in vendas if v.payment_method == 'dinheiro')
-    total_cartao   = sum(v.total for v in vendas if v.payment_method == 'cartao')
-    total_pix      = sum(v.total for v in vendas if v.payment_method == 'pix')
+    vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
+
+    total_dinheiro = sum(v.total for v in vendas if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
+    total_cartao   = sum(v.total for v in vendas if v.payment_method in ('cartao', 'entrega_cartao'))
+    total_pix      = sum(v.total for v in vendas if v.payment_method in ('pix', 'entrega_pix'))
     total_conta    = sum(v.total for v in vendas if v.payment_method == 'conta')
     total_geral    = sum(v.total for v in vendas)
     esperado_caixa = caixa.opening_amount + total_dinheiro
@@ -84,16 +91,18 @@ def fechar(caixa_id):
 def resumo(caixa_id):
     caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid()).first_or_404()
 
-    vendas = Sale.query.filter(
+    todas_vendas = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
         Sale.created_at >= caixa.opened_at,
         Sale.created_at <= (caixa.closed_at or datetime.utcnow()),
     ).all()
 
-    total_dinheiro = sum(v.total for v in vendas if v.payment_method == 'dinheiro')
-    total_cartao   = sum(v.total for v in vendas if v.payment_method == 'cartao')
-    total_pix      = sum(v.total for v in vendas if v.payment_method == 'pix')
+    vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
+
+    total_dinheiro = sum(v.total for v in vendas if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
+    total_cartao   = sum(v.total for v in vendas if v.payment_method in ('cartao', 'entrega_cartao'))
+    total_pix      = sum(v.total for v in vendas if v.payment_method in ('pix', 'entrega_pix'))
     total_conta    = sum(v.total for v in vendas if v.payment_method == 'conta')
     total_geral    = sum(v.total for v in vendas)
     esperado_caixa = caixa.opening_amount + total_dinheiro
