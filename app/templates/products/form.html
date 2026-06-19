@@ -11,7 +11,7 @@
     <div class="card">
       <div class="card-header"><i class="bi bi-box-seam me-2 text-warning"></i>Dados do Produto</div>
       <div class="card-body p-4">
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
           <div class="mb-3">
             <label class="form-label fw-semibold">Nome do Produto *</label>
             <input type="text" name="name" class="form-control"
@@ -64,6 +64,19 @@
               <input type="number" name="min_stock" class="form-control"
                      value="{{ product.min_stock if product else '0' }}" min="0">
             </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Foto do Produto</label>
+            {% if product and product.image_data %}
+            <div class="mb-2">
+              <img src="{{ url_for('products.imagem', product_id=product.id) }}"
+                   alt="{{ product.name }}" class="rounded"
+                   style="max-height:140px;max-width:100%;object-fit:contain;border:1px solid #e5e7eb;padding:4px;">
+              <div class="text-muted small mt-1">Envie uma nova foto para substituir.</div>
+            </div>
+            {% endif %}
+            <input type="file" name="imagem" class="form-control" accept="image/*">
+            <div class="form-text">JPG, PNG ou WebP. Recomendado: fundo branco, quadrada.</div>
           </div>
           <div class="mb-4">
             <label class="form-label fw-semibold">Descrição</label>

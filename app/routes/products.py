@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_required, current_user
 from app import db
 from app.models.product import Product, ProductType, Brand
@@ -55,6 +55,11 @@ def novo():
             min_stock=min_stock,
         )
         db.session.add(product)
+        db.session.flush()
+        foto = request.files.get('imagem')
+        if foto and foto.filename:
+            product.image_data = foto.read()
+            product.image_mime = foto.mimetype
         db.session.commit()
         flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
@@ -76,6 +81,10 @@ def editar(product_id):
         product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
         product.min_stock      = int(request.form.get('min_stock', 0) or 0)
         product.description    = request.form.get('description', '').strip()
+        foto = request.files.get('imagem')
+        if foto and foto.filename:
+            product.image_data = foto.read()
+            product.image_mime = foto.mimetype
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
         return redirect(url_for('products.index'))
@@ -166,6 +175,13 @@ def api_buscar():
         'type': p.type.name if p.type else '',
         'brand': p.brand.name if p.brand else ''
     } for p in products])
+
+@products_bp.route('/<int:product_id>/imagem')
+def imagem(product_id):
+    product = Product.query.filter_by(id=product_id).first_or_404()
+    if not product.image_data:
+        return '', 404
+    return Response(product.image_data, mimetype=product.image_mime or 'image/jpeg')
 
 @products_bp.route('/api/categorias')
 @login_required

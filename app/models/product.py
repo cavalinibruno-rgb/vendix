@@ -36,4 +36,6 @@ class Product(db.Model):
     min_stock      = db.Column(db.Integer, default=0)
     active         = db.Column(db.Boolean, default=True)
     image_path     = db.Column(db.String(256))
+    image_data     = db.Column(db.LargeBinary)
+    image_mime     = db.Column(db.String(32))
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
