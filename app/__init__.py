@@ -33,6 +33,8 @@ def create_app():
     app.register_blueprint(customers_bp)
 
     with app.app_context():
+        uri = app.config['SQLALCHEMY_DATABASE_URI']
+        app.logger.warning(f"[DB] Usando: {uri[:30]}...")
         db.create_all()
         from app.seed import seed_master
         seed_master()
