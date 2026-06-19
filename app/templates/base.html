@@ -68,6 +68,12 @@
       <a href="{{ url_for('products.index') }}" class="nav-link {% if 'products' in request.endpoint %}active{% endif %}">
         <i class="bi bi-box-seam"></i> Produtos
       </a>
+      <a href="{{ url_for('sales.nova') }}" class="nav-link {% if 'sales' in request.endpoint %}active{% endif %}">
+        <i class="bi bi-cart-plus"></i> Nova Venda
+      </a>
+      <a href="{{ url_for('sales.index') }}" class="nav-link {% if request.endpoint == 'sales.index' %}active{% endif %}">
+        <i class="bi bi-receipt"></i> Vendas
+      </a>
       <a href="{{ url_for('customers.index') }}" class="nav-link {% if 'customers' in request.endpoint %}active{% endif %}">
         <i class="bi bi-people"></i> Clientes
       </a>

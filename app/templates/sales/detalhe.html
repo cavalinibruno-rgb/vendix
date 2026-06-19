@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Venda #{{ sale.id }} – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1><i class="bi bi-receipt me-2"></i>Venda #{{ sale.id }}</h1>
+    <p class="text-muted">{{ sale.created_at.strftime('%d/%m/%Y às %H:%M') }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('sales.nova') }}" class="btn btn-warning fw-semibold">
+      <i class="bi bi-plus-lg me-1"></i> Nova Venda
+    </a>
+    <a href="{{ url_for('sales.index') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header">Itens</div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Produto</th>
+              <th class="text-center">Qtd</th>
+              <th class="text-end">Unit.</th>
+              <th class="text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in sale.items %}
+            <tr>
+              <td>{{ item.product_name }}</td>
+              <td class="text-center">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</td>
+              <td class="text-end">R$ {{ '%.2f'|format(item.unit_price) }}</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(item.total) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="3" class="text-end">Subtotal</td>
+              <td class="text-end">R$ {{ '%.2f'|format(sale.subtotal) }}</td>
+            </tr>
+            {% if sale.delivery_mode == 'entrega' %}
+            <tr>
+              <td colspan="3" class="text-end text-muted">Taxa de entrega</td>
+              <td class="text-end text-muted">R$ {{ '%.2f'|format(sale.delivery_fee) }}</td>
+            </tr>
+            {% endif %}
+            <tr class="fw-bold">
+              <td colspan="3" class="text-end">Total</td>
+              <td class="text-end text-warning fs-5">R$ {{ '%.2f'|format(sale.total) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card mb-3">
+      <div class="card-header">Informações</div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5 text-muted">Cliente</dt>
+          <dd class="col-7">{{ sale.customer.name if sale.customer else '—' }}</dd>
+
+          <dt class="col-5 text-muted">Pagamento</dt>
+          <dd class="col-7">{{ sale.payment_method|capitalize }}</dd>
+
+          <dt class="col-5 text-muted">Entrega</dt>
+          <dd class="col-7">{{ 'Entrega' if sale.delivery_mode == 'entrega' else 'Retirada' }}</dd>
+
+          {% if sale.notes %}
+          <dt class="col-5 text-muted">Obs.</dt>
+          <dd class="col-7">{{ sale.notes }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    {% if sale.status == 'confirmed' %}
+    <form method="post" action="{{ url_for('sales.cancelar', sale_id=sale.id) }}"
+          onsubmit="return confirm('Cancelar esta venda?')">
+      <button class="btn btn-outline-danger w-100">
+        <i class="bi bi-x-circle me-1"></i> Cancelar Venda
+      </button>
+    </form>
+    {% else %}
+    <div class="alert alert-danger text-center mb-0">Venda cancelada</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

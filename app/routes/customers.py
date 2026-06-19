@@ -123,6 +123,13 @@ def bairro_excluir(bairro_id):
     flash('Bairro removido.', 'success')
     return redirect(url_for('customers.bairros'))
 
+# ── API bairros ───────────────────────────────────────
+@customers_bp.route('/bairros/api')
+@login_required
+def api_bairros():
+    neighborhoods = Neighborhood.query.filter_by(tenant_id=tid()).order_by(Neighborhood.name).all()
+    return jsonify([{'id': n.id, 'name': n.name, 'delivery_fee': n.delivery_fee} for n in neighborhoods])
+
 # ── API busca clientes ────────────────────────────────
 @customers_bp.route('/api/buscar')
 @login_required
