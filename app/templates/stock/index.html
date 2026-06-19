@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Estoque – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <h1><i class="bi bi-box-seam me-2"></i>Estoque</h1>
+  <a href="{{ url_for('products.novo') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i> Novo Produto
+  </a>
+</div>
+
+{% if baixo %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+  <div>
+    <strong>{{ baixo|length }} produto(s) com estoque baixo ou zerado:</strong>
+    {{ baixo|map(attribute='name')|join(', ') }}
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Produto</th>
+          <th class="text-center">Estoque atual</th>
+          <th class="text-center">Alerta abaixo de</th>
+          <th class="text-center">Status</th>
+          <th class="text-center">Ajustar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produtos %}
+        {% set baixo_flag = p.stock_quantity <= p.min_stock %}
+        <tr class="{{ 'table-warning' if baixo_flag else '' }}">
+          <td>
+            <div class="fw-semibold">{{ p.name }}</div>
+            {% if p.type %}<div class="text-muted small">{{ p.type.name }}</div>{% endif %}
+          </td>
+          <td class="text-center fs-5 fw-bold {{ 'text-danger' if p.stock_quantity == 0 else ('text-warning' if baixo_flag else 'text-success') }}">
+            {{ p.stock_quantity }}
+          </td>
+          <td class="text-center text-muted">{{ p.min_stock }}</td>
+          <td class="text-center">
+            {% if p.stock_quantity == 0 %}
+              <span class="badge bg-danger">Zerado</span>
+            {% elif baixo_flag %}
+              <span class="badge bg-warning text-dark">Baixo</span>
+            {% else %}
+              <span class="badge bg-success">OK</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-secondary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalAjuste"
+                    data-id="{{ p.id }}"
+                    data-nome="{{ p.name }}"
+                    data-qtd="{{ p.stock_quantity }}">
+              <i class="bi bi-pencil"></i>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Nenhum produto cadastrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal ajuste -->
+<div class="modal fade" id="modalAjuste" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Ajustar Estoque</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="formAjuste">
+        <div class="modal-body">
+          <p class="fw-semibold mb-3" id="modalNome"></p>
+          <p class="text-muted small mb-3">Estoque atual: <strong id="modalQtd"></strong></p>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Operação</label>
+            <select name="operacao" class="form-select">
+              <option value="adicionar">Adicionar (entrada)</option>
+              <option value="subtrair">Subtrair (saída manual)</option>
+              <option value="definir">Definir valor exato</option>
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-semibold">Quantidade</label>
+            <input type="text" name="valor" class="form-control" value="0"
+                   inputmode="numeric" pattern="[0-9]+">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('modalAjuste').addEventListener('show.bs.modal', function(e) {
+  const btn = e.relatedTarget;
+  document.getElementById('modalNome').textContent = btn.dataset.nome;
+  document.getElementById('modalQtd').textContent  = btn.dataset.qtd;
+  document.getElementById('formAjuste').action = '/estoque/' + btn.dataset.id + '/ajustar';
+});
+</script>
+{% endblock %}

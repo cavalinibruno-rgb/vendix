@@ -46,15 +46,23 @@ def confirmar():
     db.session.flush()
 
     for i in items:
+        qty = float(i['quantity'])
         item = SaleItem(
             sale_id      = sale.id,
             product_id   = i.get('product_id') or None,
             product_name = i['name'],
             unit_price   = float(i['unit_price']),
-            quantity     = float(i['quantity']),
-            total        = float(i['unit_price']) * float(i['quantity']),
+            quantity     = qty,
+            total        = float(i['unit_price']) * qty,
         )
         db.session.add(item)
+
+        # desconta estoque
+        pid = i.get('product_id')
+        if pid:
+            prod = Product.query.filter_by(id=pid, tenant_id=tid()).first()
+            if prod:
+                prod.stock_quantity = max(0, prod.stock_quantity - int(qty))
 
     db.session.commit()
     return jsonify({'sale_id': sale.id})
