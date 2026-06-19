@@ -378,6 +378,14 @@ function alterarQtd(idx, val) {
   renderResumo();
 }
 
+function alterarPreco(idx, val) {
+  const preco = parseFloat(val.replace(',', '.')) || 0;
+  carrinho[idx].unit_price = preco;
+  carrinho[idx].total = preco * carrinho[idx].quantity;
+  calcTotais();
+  renderResumo();
+}
+
 function limparCarrinho() {
   carrinho = [];
   renderCarrinho();
@@ -398,10 +406,16 @@ function renderCarrinho() {
   tabela.style.display = '';
   carrinho.forEach((item, idx) => {
     const tr = document.createElement('tr');
+    const precoCell = origem === 'app'
+      ? `<input type="text" class="form-control form-control-sm text-center p-1" inputmode="decimal"
+               value="${fmtNum(item.unit_price)}" style="width:70px;"
+               onchange="alterarPreco(${idx}, this.value)">`
+      : `<span class="text-muted" style="font-size:.75rem;">R$ ${fmtNum(item.unit_price)}</span>`;
+
     tr.innerHTML = `
       <td class="ps-3" style="max-width:120px;">
         <div class="fw-semibold small">${item.name}</div>
-        <div class="text-muted" style="font-size:.75rem;">R$ ${fmtNum(item.unit_price)}</div>
+        <div>${precoCell}</div>
       </td>
       <td style="width:80px;">
         <input type="number" class="form-control form-control-sm text-center p-1"
