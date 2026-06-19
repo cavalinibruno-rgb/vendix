@@ -12,7 +12,16 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
-    db_url = os.environ.get('VENDIX_DB_URL') or os.environ.get('DATABASE_URL', 'sqlite:///vendix_dev.db')
+    db_url = (
+        os.environ.get('VENDIX_DB_URL') or
+        os.environ.get('DATABASE_PUBLIC_URL') or
+        os.environ.get('DATABASE_URL') or
+        os.environ.get('POSTGRES_URL') or
+        'sqlite:///vendix_dev.db'
+    )
+    # SQLAlchemy 2.x não aceita postgres://, converte para postgresql://
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -36,6 +45,7 @@ def create_app():
     app.register_blueprint(sales_bp)
 
     with app.app_context():
+        app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
         db.create_all()
         from app.seed import seed_master
