@@ -8,7 +8,6 @@
 </div>
 
 <!-- Totais por app -->
-{% if por_app %}
 <div class="row g-3 mb-4">
   {% for nome, dados in por_app.items() %}
   <div class="col-6 col-md-3">
@@ -73,16 +72,16 @@
           </td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
         </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-3">
+            <i class="bi bi-inbox me-1"></i>
+            Nenhum pedido encontrado{% if filtro_data %} para {{ filtro_data|replace('-','/')|reverse|list|join }}{% endif %}.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
-
-{% else %}
-<div class="alert alert-secondary">
-  <i class="bi bi-info-circle me-2"></i>
-  Nenhum pedido de app registrado ainda. Ao finalizar uma venda, selecione <strong>App</strong> como origem.
-</div>
-{% endif %}
 {% endblock %}
