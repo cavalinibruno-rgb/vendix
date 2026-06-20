@@ -7,21 +7,6 @@
   <p class="text-muted">Pedidos recebidos por aplicativos de delivery. Não entram no caixa físico.</p>
 </div>
 
-<!-- Filtro -->
-<div class="card mb-4">
-  <div class="card-body py-2">
-    <form method="get" class="d-flex align-items-center gap-2">
-      <label class="text-muted small fw-semibold mb-0">Filtrar por:</label>
-      <input type="date" name="data" value="{{ filtro_data }}"
-             class="form-control form-control-sm" style="width:auto;">
-      <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search me-1"></i>Filtrar</button>
-      {% if filtro_data %}
-      <a href="{{ url_for('apps.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i> Limpar</a>
-      {% endif %}
-    </form>
-  </div>
-</div>
-
 <!-- Totais por app -->
 {% if por_app %}
 <div class="row g-3 mb-4">
@@ -45,7 +30,17 @@
 
 <!-- Lista de vendas -->
 <div class="card">
-  <div class="card-header fw-semibold">Histórico de Pedidos</div>
+  <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+    <span>Histórico de Pedidos</span>
+    <form method="get" class="d-flex align-items-center gap-2 mb-0">
+      <input type="date" name="data" value="{{ filtro_data }}"
+             class="form-control form-control-sm" style="width:auto;">
+      <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search"></i></button>
+      {% if filtro_data %}
+      <a href="{{ url_for('apps.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+      {% endif %}
+    </form>
+  </div>
   <div class="card-body p-0">
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
