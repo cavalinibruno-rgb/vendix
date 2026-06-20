@@ -40,3 +40,6 @@ class Product(db.Model):
     image_mime     = db.Column(db.String(32))
     thumbnail_data = db.Column(db.LargeBinary)
     created_at     = db.Column(db.DateTime, default=datetime.now)
+
+    combo_items = db.relationship('ComboItem', foreign_keys='ComboItem.combo_id',
+                                  backref='combo_product', cascade='all, delete-orphan', lazy=True)

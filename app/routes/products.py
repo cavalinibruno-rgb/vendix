@@ -3,8 +3,10 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from PIL import Image
 import io
+import json
 from app import db
 from app.models.product import Product, ProductType, Brand
+from app.models.combo import ComboItem
 
 products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 
@@ -67,6 +69,15 @@ def novo():
             flash('Nome do produto é obrigatório.', 'danger')
             return render_template('products/form.html', types=types, brands=brands)
 
+        combo_json = request.form.get('combo_components', '[]')
+        try:
+            combo_components = json.loads(combo_json)
+        except Exception:
+            combo_components = []
+        is_combo = len(combo_components) > 0
+        if is_combo:
+            stock = 0
+
         product = Product(
             tenant_id=tenant_id(),
             type_id=type_id,
@@ -84,6 +95,13 @@ def novo():
         if foto and foto.filename:
             product.image_data, product.image_mime = _comprimir_imagem(foto)
             product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
+
+        for comp in combo_components:
+            ci = ComboItem(combo_id=product.id,
+                           component_id=int(comp['product_id']),
+                           quantity=float(comp['quantity']))
+            db.session.add(ci)
+
         db.session.commit()
         flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
@@ -109,10 +127,32 @@ def editar(product_id):
         if foto and foto.filename:
             product.image_data, product.image_mime = _comprimir_imagem(foto)
             product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
+
+        combo_json = request.form.get('combo_components', '[]')
+        try:
+            combo_components = json.loads(combo_json)
+        except Exception:
+            combo_components = []
+        ComboItem.query.filter_by(combo_id=product.id).delete()
+        for comp in combo_components:
+            ci = ComboItem(combo_id=product.id,
+                           component_id=int(comp['product_id']),
+                           quantity=float(comp['quantity']))
+            db.session.add(ci)
+        if combo_components:
+            product.stock_quantity = 0
+
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
         return redirect(url_for('products.index'))
-    return render_template('products/form.html', types=types, brands=brands, product=product)
+
+    existing_components = [
+        {'product_id': ci.component_id, 'name': ci.component.name,
+         'quantity': ci.quantity, 'cost_price': ci.component.cost_price or 0}
+        for ci in product.combo_items
+    ]
+    return render_template('products/form.html', types=types, brands=brands, product=product,
+                           existing_components=existing_components)
 
 @products_bp.route('/<int:product_id>/excluir', methods=['POST'])
 @login_required
@@ -200,9 +240,14 @@ def api_buscar():
     tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
     marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
 
+    cost_map = {p.id: p.cost_price for p in Product.query.filter(
+        Product.id.in_([r.id for r in rows]), Product.tenant_id == tenant_id()
+    ).with_entities(Product.id, Product.cost_price).all()}
+
     return jsonify([{
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
+        'cost_price': cost_map.get(r.id, 0) or 0,
         'stock_quantity': r.stock_quantity,
         'has_image': bool(r.has_image),
         'type': tipos.get(r.type_id, ''),

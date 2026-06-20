@@ -6,6 +6,7 @@ from app.models.product import Product
 from app.models.customer import Customer
 from app.models.cash import CashRegister
 from app.models.stock import StockMovement
+from app.models.combo import ComboItem
 from app.auth_utils import autenticar_operador
 
 sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
@@ -88,23 +89,37 @@ def confirmar():
             if not prod:
                 prod = Product.query.filter_by(id=pid, tenant_id=tid()).first()
             if prod:
-                deducao = min(int(qty), prod.stock_quantity)
-                prod.stock_quantity = max(0, prod.stock_quantity - int(qty))
-                if source == 'app' and app_name:
-                    mot = f'Venda App #{sale.id} ({app_name})'
+                mot = f'Venda App #{sale.id} ({app_name})' if source == 'app' and app_name else f'Venda #{sale.id}'
+                combo_items = ComboItem.query.filter_by(combo_id=pid).all()
+                if combo_items:
+                    # Combo: deduz estoque dos componentes
+                    for ci in combo_items:
+                        comp = Product.query.filter_by(id=ci.component_id, tenant_id=tid()).first()
+                        if comp:
+                            total_deduct = int(ci.quantity * qty)
+                            comp.stock_quantity = max(0, comp.stock_quantity - total_deduct)
+                            db.session.add(StockMovement(
+                                tenant_id    = tid(),
+                                product_id   = comp.id,
+                                product_name = comp.name,
+                                type         = 'saida',
+                                quantity     = total_deduct,
+                                motive       = f'Combo "{prod.name}" — {mot}',
+                                user_id      = current_user.id,
+                                user_name    = current_user.display_name or current_user.username,
+                            ))
                 else:
-                    mot = f'Venda #{sale.id}'
-                mov = StockMovement(
-                    tenant_id    = tid(),
-                    product_id   = prod.id,
-                    product_name = prod.name,
-                    type         = 'saida',
-                    quantity     = int(qty),
-                    motive       = mot,
-                    user_id      = current_user.id,
-                    user_name    = current_user.display_name or current_user.username,
-                )
-                db.session.add(mov)
+                    prod.stock_quantity = max(0, prod.stock_quantity - int(qty))
+                    db.session.add(StockMovement(
+                        tenant_id    = tid(),
+                        product_id   = prod.id,
+                        product_name = prod.name,
+                        type         = 'saida',
+                        quantity     = int(qty),
+                        motive       = mot,
+                        user_id      = current_user.id,
+                        user_name    = current_user.display_name or current_user.username,
+                    ))
 
     db.session.commit()
     return jsonify({'sale_id': sale.id})
@@ -184,9 +199,26 @@ def cancelar(sale_id):
     for item in sale.items:
         if item.product_id:
             prod = Product.query.filter_by(id=item.product_id, tenant_id=tid()).first()
-            if prod:
+            combo_items = ComboItem.query.filter_by(combo_id=item.product_id).all()
+            if combo_items:
+                for ci in combo_items:
+                    comp = Product.query.filter_by(id=ci.component_id, tenant_id=tid()).first()
+                    if comp:
+                        total = int(ci.quantity * item.quantity)
+                        comp.stock_quantity += total
+                        db.session.add(StockMovement(
+                            tenant_id    = tid(),
+                            product_id   = comp.id,
+                            product_name = comp.name,
+                            type         = 'entrada',
+                            quantity     = total,
+                            motive       = f'Cancelamento combo "{prod.name if prod else ""}" Venda #{sale.id}',
+                            user_id      = current_user.id,
+                            user_name    = current_user.display_name or current_user.username,
+                        ))
+            elif prod:
                 prod.stock_quantity += int(item.quantity)
-                mov = StockMovement(
+                db.session.add(StockMovement(
                     tenant_id    = tid(),
                     product_id   = prod.id,
                     product_name = prod.name,
@@ -195,8 +227,7 @@ def cancelar(sale_id):
                     motive       = f'Cancelamento Venda #{sale.id} — {motivo}',
                     user_id      = current_user.id,
                     user_name    = current_user.display_name or current_user.username,
-                )
-                db.session.add(mov)
+                ))
 
     db.session.commit()
     flash('Venda cancelada.', 'warning')

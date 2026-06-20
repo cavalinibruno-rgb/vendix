@@ -71,6 +71,12 @@ def _run_migrations(db):
         )""",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price FLOAT DEFAULT 0",
         "ALTER TABLE sale_items ADD COLUMN IF NOT EXISTS cost_price FLOAT DEFAULT 0",
+        """CREATE TABLE IF NOT EXISTS combo_items (
+            id SERIAL PRIMARY KEY,
+            combo_id INTEGER REFERENCES products(id) NOT NULL,
+            component_id INTEGER REFERENCES products(id) NOT NULL,
+            quantity FLOAT NOT NULL DEFAULT 1
+        )""",
         """CREATE TABLE IF NOT EXISTS employees (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
@@ -163,6 +169,7 @@ def create_app():
         app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
         from app.models.cash_withdrawal import CashWithdrawal  # noqa: F401
         from app.models.expense import Expense  # noqa: F401
+        from app.models.combo import ComboItem  # noqa: F401
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master
