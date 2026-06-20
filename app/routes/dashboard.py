@@ -4,7 +4,7 @@ from app.models.tenant import Tenant
 from app.models.sale import Sale
 from app.models.cash import CashRegister
 from app.models.user import User
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -50,6 +50,22 @@ def index():
     total_conta    = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
     total_geral    = sum(v.total for v in vendas_hoje)
 
+    # Ticket médio do dia
+    ticket_dia = (total_geral / len(vendas_hoje)) if vendas_hoje else 0
+
+    # Ticket médio mensal (mês atual)
+    mes_inicio = datetime.combine(date.today().replace(day=1), datetime.min.time())
+    vendas_mes = Sale.query.filter(
+        Sale.tenant_id == tid,
+        Sale.status == 'confirmed',
+        Sale.created_at >= mes_inicio,
+    ).all()
+    ticket_mensal = (sum(v.total for v in vendas_mes) / len(vendas_mes)) if vendas_mes else 0
+
+    # Ticket médio geral (todos os tempos)
+    todas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed').all()
+    ticket_geral = (sum(v.total for v in todas_vendas) / len(todas_vendas)) if todas_vendas else 0
+
     caixa = CashRegister.query.filter_by(tenant_id=tid, status='open').first()
 
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
@@ -79,6 +95,9 @@ def index():
         modo_restrito=modo_restrito,
         desbloqueado=desbloqueado,
         senha_erro=senha_erro,
+        ticket_dia=ticket_dia,
+        ticket_mensal=ticket_mensal,
+        ticket_geral=ticket_geral,
     )
 
 @dashboard_bp.route('/dashboard/desbloquear', methods=['POST'])
