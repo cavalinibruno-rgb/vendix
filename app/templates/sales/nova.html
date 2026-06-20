@@ -76,6 +76,9 @@
         <div id="clienteSelecionado" class="text-success small" style="display:none;">
           <i class="bi bi-check-circle me-1"></i><span id="clienteNome"></span>
         </div>
+        <div id="clienteEndereco" class="text-muted small mt-1" style="display:none;">
+          <i class="bi bi-geo-alt me-1"></i><span id="clienteEnderecoTexto"></span>
+        </div>
 
         <!-- Campos entrega -->
         <div id="camposEntrega" style="display:none;" class="mt-2">
@@ -266,8 +269,18 @@ function setModo(m) {
   document.getElementById('linhaEntrega').style.display  = m === 'entrega' ? 'flex' : 'none';
   if (m === 'retirada') {
     document.getElementById('taxaEntrega').value = '0.00';
-  } else if (clienteAtual && clienteAtual.delivery_fee > 0) {
-    document.getElementById('taxaEntrega').value = fmtNum(clienteAtual.delivery_fee);
+    document.getElementById('clienteEndereco').style.display = 'none';
+  } else if (clienteAtual) {
+    if (clienteAtual.delivery_fee > 0) {
+      document.getElementById('taxaEntrega').value = fmtNum(clienteAtual.delivery_fee);
+    }
+    const endDiv = document.getElementById('clienteEndereco');
+    if (clienteAtual.address) {
+      document.getElementById('clienteEnderecoTexto').textContent = clienteAtual.address;
+      endDiv.style.display = '';
+    } else {
+      endDiv.style.display = 'none';
+    }
   }
   calcTotais();
 }
@@ -359,6 +372,16 @@ function selecionarCliente(c) {
   document.getElementById('clienteResultados').style.display = 'none';
   document.getElementById('clienteSearch').value = c.name;
 
+  // Endereço
+  const endDiv  = document.getElementById('clienteEndereco');
+  const endSpan = document.getElementById('clienteEnderecoTexto');
+  if (modo === 'entrega' && c.address) {
+    endSpan.textContent = c.address;
+    endDiv.style.display = '';
+  } else {
+    endDiv.style.display = 'none';
+  }
+
   // Preenche bairro se o cliente tiver
   if (c.neighborhood_id) {
     const sel = document.getElementById('bairroSelect');
@@ -378,6 +401,7 @@ function limparCliente() {
   document.getElementById('clienteResultados').style.display = 'none';
   document.getElementById('taxaEntrega').value = '0.00';
   document.getElementById('bairroSelect').value = '';
+  document.getElementById('clienteEndereco').style.display = 'none';
   calcTotais();
 }
 
