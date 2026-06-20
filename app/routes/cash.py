@@ -219,6 +219,12 @@ def resumo(caixa_id):
 
     op = json.loads(caixa.closing_data) if caixa.closing_data else {k: 0 for k in sis}
 
+    retiradas       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
+    total_retiradas = sum(r.amount for r in retiradas)
+
+    # Desconta retiradas do dinheiro esperado pelo sistema (saem do caixa físico)
+    sis['loja_dinheiro'] = max(0, sis['loja_dinheiro'] - total_retiradas)
+
     conferencia = []
     for key, label, icon, color in [
         ('loja_dinheiro', 'Loja — Dinheiro', 'bi-cash',             'text-success'),
@@ -238,8 +244,6 @@ def resumo(caixa_id):
     total_sistema  = sum(sis.values())
     total_operador = sum(op.values())
     diff_total      = total_operador - total_sistema
-    retiradas       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
-    total_retiradas = sum(r.amount for r in retiradas)
 
     vendas = vendas_loja + vendas_app
 
