@@ -49,14 +49,13 @@
     .sidebar.collapsed .nav-link:hover, .sidebar.collapsed .nav-link.active { border-left: none; border-right-color: #c9a84c; }
     .sidebar.collapsed .nav-label { display: none; }
     .sidebar.collapsed .nav-link { position: relative; }
-    .sidebar .sidebar-footer { white-space: nowrap; }
+    .sidebar { display: flex; flex-direction: column; }
+    .sidebar nav { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .sidebar nav::-webkit-scrollbar { width: 4px; }
+    .sidebar nav::-webkit-scrollbar-thumb { background: #3d3d5e; border-radius: 2px; }
+    .sidebar .sidebar-footer { position: static !important; width: 100% !important; bottom: auto !important; white-space: nowrap; border-top: 1px solid #3d3d5e; padding: 16px 24px; flex-shrink: 0; }
     .sidebar.collapsed .sidebar-footer .footer-name { display: none; }
     .sidebar.collapsed .sidebar-footer .nav-link { padding: 6px 0; justify-content: center; }
-
-    /* Correção para navegador: evita sobreposição do footer no menu */
-    .sidebar.browser-mode { display: flex; flex-direction: column; }
-    .sidebar.browser-mode nav { flex: 1; overflow-y: auto; overflow-x: hidden; }
-    .sidebar.browser-mode .sidebar-footer { position: static; border-top: 1px solid #3d3d5e; padding: 16px 24px; flex-shrink: 0; }
 
     .main-content { margin-left: 240px; padding: 28px 32px; min-height: 100vh; transition: margin-left .2s ease; }
     .main-content.collapsed { margin-left: 60px; }
