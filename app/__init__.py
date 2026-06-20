@@ -49,6 +49,15 @@ def _run_migrations(db):
         "ALTER TABLE cash_registers ADD COLUMN IF NOT EXISTS operator_name VARCHAR(128)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cashier_name VARCHAR(128)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP",
+        """CREATE TABLE IF NOT EXISTS cash_withdrawals (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            cash_register_id INTEGER REFERENCES cash_registers(id) NOT NULL,
+            amount FLOAT NOT NULL,
+            motivo VARCHAR(256) NOT NULL,
+            operator_name VARCHAR(128) NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
         "ALTER TABLE employees ADD COLUMN IF NOT EXISTS username VARCHAR(64)",
         "ALTER TABLE employees ADD COLUMN IF NOT EXISTS password_hash VARCHAR(256)",
         """CREATE TABLE IF NOT EXISTS employees (
@@ -139,6 +148,7 @@ def create_app():
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
+        from app.models.cash_withdrawal import CashWithdrawal  # noqa: F401 — needed for db.create_all()
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master

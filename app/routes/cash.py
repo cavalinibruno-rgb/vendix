@@ -3,6 +3,7 @@ import json
 from flask_login import login_required, current_user
 from app import db
 from app.models.cash import CashRegister
+from app.models.cash_withdrawal import CashWithdrawal
 from app.models.sale import Sale
 from app.models.vale import Employee
 from app.auth_utils import autenticar_operador
@@ -32,7 +33,13 @@ def index():
     caixa = caixa_aberto()
     historico = CashRegister.query.filter_by(tenant_id=tid(), status='closed')\
                                   .order_by(CashRegister.closed_at.desc()).limit(30).all()
-    return render_template('cash/index.html', caixa=caixa, historico=historico)
+    retiradas = []
+    total_retiradas = 0.0
+    if caixa:
+        retiradas = CashWithdrawal.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
+        total_retiradas = sum(r.amount for r in retiradas)
+    return render_template('cash/index.html', caixa=caixa, historico=historico,
+                           retiradas=retiradas, total_retiradas=total_retiradas)
 
 @cash_bp.route('/abrir', methods=['POST'])
 @login_required
@@ -72,6 +79,48 @@ def abrir():
     flash(f'Caixa aberto por {operator_name}. Troco inicial: R$ {valor:.2f}', 'success')
     return redirect(url_for('cash.index'))
 
+@cash_bp.route('/retirada', methods=['POST'])
+@login_required
+def retirada():
+    caixa = caixa_aberto()
+    if not caixa:
+        flash('Nenhum caixa aberto.', 'warning')
+        return redirect(url_for('cash.index'))
+
+    def fval(name):
+        v = request.form.get(name, '0').replace(',', '.').strip() or '0'
+        try: return float(v)
+        except ValueError: return 0.0
+
+    valor       = fval('amount')
+    motivo      = request.form.get('motivo', '').strip()
+    op_username = request.form.get('op_username', '').strip()
+    op_password = request.form.get('op_password', '').strip()
+
+    if valor <= 0:
+        flash('Informe um valor válido.', 'danger')
+        return redirect(url_for('cash.index'))
+    if not motivo:
+        flash('Informe o motivo da retirada.', 'danger')
+        return redirect(url_for('cash.index'))
+
+    nome_resp, ok = autenticar_operador(tid(), op_username, op_password)
+    if not ok:
+        flash('Usuário ou senha incorretos.', 'danger')
+        return redirect(url_for('cash.index'))
+
+    w = CashWithdrawal(
+        tenant_id        = tid(),
+        cash_register_id = caixa.id,
+        amount           = valor,
+        motivo           = motivo,
+        operator_name    = nome_resp,
+    )
+    db.session.add(w)
+    db.session.commit()
+    flash(f'Retirada de R$ {valor:.2f} registrada por {nome_resp}.', 'success')
+    return redirect(url_for('cash.index'))
+
 @cash_bp.route('/<int:caixa_id>/fechar', methods=['GET', 'POST'])
 @login_required
 def fechar(caixa_id):
@@ -91,7 +140,9 @@ def fechar(caixa_id):
     total_pix      = sum(v.total for v in vendas if v.payment_method in ('pix', 'entrega_pix'))
     total_conta    = sum(v.total for v in vendas if v.payment_method == 'conta')
     total_geral    = sum(v.total for v in vendas)
-    esperado_caixa = caixa.opening_amount + total_dinheiro
+    retiradas      = CashWithdrawal.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
+    total_retiradas = sum(r.amount for r in retiradas)
+    esperado_caixa = caixa.opening_amount + total_dinheiro - total_retiradas
 
     # Bloqueia fechamento se há entregas em rota (despachadas mas não concluídas)
     em_rota = Sale.query.filter(
@@ -135,6 +186,7 @@ def fechar(caixa_id):
         total_dinheiro=total_dinheiro, total_cartao=total_cartao,
         total_pix=total_pix, total_conta=total_conta,
         total_geral=total_geral, esperado_caixa=esperado_caixa,
+        retiradas=retiradas, total_retiradas=total_retiradas,
         em_rota=em_rota,
     )
 
@@ -185,7 +237,9 @@ def resumo(caixa_id):
 
     total_sistema  = sum(sis.values())
     total_operador = sum(op.values())
-    diff_total     = total_operador - total_sistema
+    diff_total      = total_operador - total_sistema
+    retiradas       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
+    total_retiradas = sum(r.amount for r in retiradas)
 
     vendas = vendas_loja + vendas_app
 
@@ -195,4 +249,6 @@ def resumo(caixa_id):
         total_sistema=total_sistema,
         total_operador=total_operador,
         diff_total=diff_total,
+        retiradas=retiradas,
+        total_retiradas=total_retiradas,
     )
