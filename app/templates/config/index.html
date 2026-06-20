@@ -145,6 +145,34 @@
     </div>
   </div>
 </div>
+<!-- Card: Alterar Senha -->
+<div class="row g-4 mb-4" id="seguranca">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-lock me-2 text-warning"></i>Segurança — Alterar Senha</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('config.alterar_senha') }}" style="max-width:400px;">
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Senha atual</label>
+            <input type="password" name="senha_atual" class="form-control" required placeholder="Digite sua senha atual">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Nova senha</label>
+            <input type="password" name="nova_senha" class="form-control" required placeholder="Mínimo 4 caracteres">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Confirmar nova senha</label>
+            <input type="password" name="confirmar_senha" class="form-control" required placeholder="Repita a nova senha">
+          </div>
+          <button type="submit" class="btn btn-warning fw-semibold">
+            <i class="bi bi-floppy me-1"></i>Alterar Senha
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}

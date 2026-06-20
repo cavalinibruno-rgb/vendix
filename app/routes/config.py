@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
+from werkzeug.security import generate_password_hash
 
 config_bp = Blueprint('config', __name__, url_prefix='/configuracoes')
 
@@ -63,4 +64,28 @@ def dashboard_operador():
     tenant.save_settings(cfg)
     db.session.commit()
     flash('Configuração salva.', 'success')
+    return redirect(url_for('config.index'))
+
+@config_bp.route('/alterar-senha', methods=['POST'])
+@login_required
+def alterar_senha():
+    senha_atual  = request.form.get('senha_atual', '')
+    nova_senha   = request.form.get('nova_senha', '')
+    confirmar    = request.form.get('confirmar_senha', '')
+
+    if not current_user.check_password(senha_atual):
+        flash('Senha atual incorreta.', 'danger')
+        return redirect(url_for('config.index') + '#seguranca')
+
+    if len(nova_senha) < 4:
+        flash('A nova senha deve ter pelo menos 4 caracteres.', 'danger')
+        return redirect(url_for('config.index') + '#seguranca')
+
+    if nova_senha != confirmar:
+        flash('As senhas não coincidem.', 'danger')
+        return redirect(url_for('config.index') + '#seguranca')
+
+    current_user.password_hash = generate_password_hash(nova_senha)
+    db.session.commit()
+    flash('Senha alterada com sucesso!', 'success')
     return redirect(url_for('config.index'))
