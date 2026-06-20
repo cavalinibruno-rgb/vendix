@@ -166,8 +166,7 @@ function concluir(saleId) {
     .then(r => r.json())
     .then(d => {
       if (!d.ok) return;
-      const row = document.getElementById('row-rota-' + saleId);
-      if (row) row.remove();
+      location.reload();
     })
     .catch(() => alert('Erro ao concluir entrega.'));
 }
