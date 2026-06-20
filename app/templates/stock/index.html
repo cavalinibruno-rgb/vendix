@@ -195,8 +195,13 @@
             <input type="number" name="quantidade" class="form-control" min="1" value="1" required>
           </div>
           <div class="mb-0">
-            <label class="form-label fw-semibold">Motivo (opcional)</label>
-            <input type="text" name="motivo" class="form-control" placeholder="Ex: Compra fornecedor, Reposição...">
+            <label class="form-label fw-semibold">Motivo *</label>
+            <select name="motivo" class="form-select" required>
+              <option value="">— Selecione —</option>
+              <option value="Compra de fornecedor">Compra de fornecedor</option>
+              <option value="Devolução de cliente">Devolução de cliente</option>
+              <option value="Correção de estoque">Correção de estoque</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -240,8 +245,12 @@
             <input type="number" name="valor" class="form-control" min="0" value="1" required>
           </div>
           <div class="mb-0">
-            <label class="form-label fw-semibold">Motivo (opcional)</label>
-            <input type="text" name="motivo" class="form-control" placeholder="Ex: Quebra, Perda, Correção...">
+            <label class="form-label fw-semibold">Motivo *</label>
+            <select name="motivo" class="form-select" required>
+              <option value="">— Selecione —</option>
+              <option value="Perda">Perda</option>
+              <option value="Correção de estoque">Correção de estoque</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">

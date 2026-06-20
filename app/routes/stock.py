@@ -70,12 +70,16 @@ def index():
 @stock_bp.route('/entrada', methods=['POST'])
 @login_required
 def entrada():
+    MOTIVOS_ENTRADA = {'Compra de fornecedor', 'Devolução de cliente', 'Correção de estoque'}
     product_id = request.form.get('product_id', type=int)
     quantidade = int(request.form.get('quantidade', 0) or 0)
-    motivo     = request.form.get('motivo', '').strip() or 'Entrada de estoque'
+    motivo     = request.form.get('motivo', '').strip()
 
     if not product_id or quantidade <= 0:
         flash('Produto e quantidade são obrigatórios.', 'danger')
+        return redirect(url_for('stock.index'))
+    if motivo not in MOTIVOS_ENTRADA:
+        flash('Selecione um motivo válido.', 'danger')
         return redirect(url_for('stock.index'))
 
     produto = Product.query.filter_by(id=product_id, tenant_id=tid()).first_or_404()
@@ -88,26 +92,29 @@ def entrada():
 @stock_bp.route('/<int:product_id>/ajustar', methods=['POST'])
 @login_required
 def ajustar(product_id):
+    MOTIVOS_AJUSTE = {'Perda', 'Correção de estoque'}
     produto    = Product.query.filter_by(id=product_id, tenant_id=tid()).first_or_404()
     operacao   = request.form.get('operacao')
     valor      = int(request.form.get('valor', 0) or 0)
     motivo_txt = request.form.get('motivo', '').strip()
 
+    if motivo_txt not in MOTIVOS_AJUSTE:
+        flash('Selecione um motivo válido.', 'danger')
+        return redirect(url_for('stock.index'))
+
     antes = produto.stock_quantity
+    motivo = motivo_txt
     if operacao == 'adicionar':
         produto.stock_quantity += valor
-        tipo   = 'entrada'
-        motivo = motivo_txt or 'Ajuste manual (adição)'
+        tipo = 'entrada'
     elif operacao == 'subtrair':
         produto.stock_quantity = max(0, produto.stock_quantity - valor)
-        tipo   = 'saida'
-        motivo = motivo_txt or 'Ajuste manual (subtração)'
+        tipo = 'saida'
     elif operacao == 'definir':
         diff = valor - antes
         produto.stock_quantity = max(0, valor)
-        tipo   = 'entrada' if diff >= 0 else 'saida'
-        valor  = abs(diff) if diff != 0 else 0
-        motivo = motivo_txt or f'Ajuste manual (definido para {produto.stock_quantity})'
+        tipo  = 'entrada' if diff >= 0 else 'saida'
+        valor = abs(diff) if diff != 0 else 0
 
     if valor != 0:
         registrar_movimento(tid(), produto, tipo, valor, motivo, current_user)
