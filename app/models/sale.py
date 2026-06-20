@@ -16,9 +16,12 @@ class Sale(db.Model):
     status          = db.Column(db.String(16), default='confirmed')  # confirmed | cancelled
     source          = db.Column(db.String(16), default='loja')       # loja | app
     app_name        = db.Column(db.String(64))                        # iFood, Anotaí, etc.
-    amount_paid     = db.Column(db.Float, nullable=True)              # valor recebido (dinheiro)
-    change_amount   = db.Column(db.Float, nullable=True)              # troco
-    created_at      = db.Column(db.DateTime, default=datetime.now)
+    amount_paid      = db.Column(db.Float, nullable=True)
+    change_amount    = db.Column(db.Float, nullable=True)
+    cancelled_at     = db.Column(db.DateTime, nullable=True)
+    cancelled_by_id  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    cancelled_by_name= db.Column(db.String(64), nullable=True)
+    created_at       = db.Column(db.DateTime, default=datetime.now)
 
     items    = db.relationship('SaleItem', backref='sale', lazy=True, cascade='all, delete-orphan')
     customer = db.relationship('Customer', backref='sales', lazy=True)

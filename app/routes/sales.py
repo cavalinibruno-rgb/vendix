@@ -117,8 +117,39 @@ def detalhe(sale_id):
 @sales_bp.route('/<int:sale_id>/cancelar', methods=['POST'])
 @login_required
 def cancelar(sale_id):
+    from datetime import datetime
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
     sale.status = 'cancelled'
+    sale.cancelled_at = datetime.now()
+    sale.cancelled_by_id = current_user.id
+    sale.cancelled_by_name = current_user.display_name or current_user.username
     db.session.commit()
     flash('Venda cancelada.', 'warning')
     return redirect(url_for('sales.index'))
+
+@sales_bp.route('/cancelamentos')
+@login_required
+def cancelamentos():
+    from datetime import date
+    filtro_de  = request.args.get('de', '')
+    filtro_ate = request.args.get('ate', '')
+
+    query = Sale.query.filter_by(tenant_id=tid(), status='cancelled')
+
+    if filtro_de:
+        try:
+            query = query.filter(Sale.cancelled_at >= filtro_de)
+        except Exception:
+            pass
+    if filtro_ate:
+        try:
+            query = query.filter(db.func.date(Sale.cancelled_at) <= filtro_ate)
+        except Exception:
+            pass
+
+    vendas = query.order_by(Sale.cancelled_at.desc()).all()
+    total_cancelado = sum(v.total for v in vendas)
+
+    return render_template('sales/cancelamentos.html',
+        vendas=vendas, total_cancelado=total_cancelado,
+        filtro_de=filtro_de, filtro_ate=filtro_ate)
