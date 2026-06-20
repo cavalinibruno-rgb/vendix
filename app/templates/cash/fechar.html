@@ -93,44 +93,6 @@
   </div>
 </form>
 
-<!-- Lista de vendas do período -->
-{% if vendas %}
-<div class="card mt-4">
-  <div class="card-header">Vendas do período ({{ vendas|length }})</div>
-  <div class="card-body p-0">
-    <table class="table table-sm table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>#</th>
-          <th>Horário</th>
-          <th>Origem</th>
-          <th>Cliente</th>
-          <th>Pagamento</th>
-          <th class="text-end">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for v in vendas %}
-        <tr>
-          <td class="text-muted small">{{ v.id }}</td>
-          <td class="small">{{ v.created_at.strftime('%H:%M') }}</td>
-          <td class="small">{{ 'App' if v.source == 'app' else 'Loja' }}</td>
-          <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
-          <td>
-            {% set pm = v.payment_method %}
-            {% if pm in ('dinheiro','entrega_dinheiro') %}<span class="badge bg-success">Dinheiro</span>
-            {% elif pm in ('cartao','entrega_cartao') %}<span class="badge bg-primary">Cartão</span>
-            {% elif pm in ('pix','entrega_pix') %}<span class="badge bg-info text-dark">Pix</span>
-            {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
-          </td>
-          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-{% endif %}
 
 <script>
 function parseBR(v) { return parseFloat((v||'0').replace(',','.')) || 0; }
