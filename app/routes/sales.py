@@ -6,6 +6,7 @@ from app.models.product import Product
 from app.models.customer import Customer
 from app.models.cash import CashRegister
 from app.models.stock import StockMovement
+from app.auth_utils import autenticar_operador
 
 sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
 
@@ -123,14 +124,20 @@ def detalhe(sale_id):
 def cancelar(sale_id):
     from datetime import datetime
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
-    motivo = request.form.get('cancel_reason', '').strip()
+    motivo      = request.form.get('cancel_reason', '').strip()
+    op_username = request.form.get('op_username', '').strip()
+    op_password = request.form.get('op_password', '').strip()
     if not motivo:
         flash('Informe o motivo do cancelamento.', 'danger')
+        return redirect(url_for('sales.detalhe', sale_id=sale_id))
+    nome_resp, ok = autenticar_operador(tid(), op_username, op_password)
+    if not ok:
+        flash('Usuário ou senha incorretos.', 'danger')
         return redirect(url_for('sales.detalhe', sale_id=sale_id))
     sale.status = 'cancelled'
     sale.cancelled_at = datetime.now()
     sale.cancelled_by_id = current_user.id
-    sale.cancelled_by_name = current_user.display_name or current_user.username
+    sale.cancelled_by_name = nome_resp
     sale.cancel_reason = motivo
 
     # Devolve estoque e registra movimentação

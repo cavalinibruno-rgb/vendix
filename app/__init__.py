@@ -49,6 +49,8 @@ def _run_migrations(db):
         "ALTER TABLE cash_registers ADD COLUMN IF NOT EXISTS operator_name VARCHAR(128)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cashier_name VARCHAR(128)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP",
+        "ALTER TABLE employees ADD COLUMN IF NOT EXISTS username VARCHAR(64)",
+        "ALTER TABLE employees ADD COLUMN IF NOT EXISTS password_hash VARCHAR(256)",
         """CREATE TABLE IF NOT EXISTS employees (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

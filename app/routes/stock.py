@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash
+from app.auth_utils import autenticar_operador, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models.product import Product, ProductType
@@ -71,9 +72,11 @@ def index():
 @login_required
 def entrada():
     MOTIVOS_ENTRADA = {'Compra de fornecedor', 'Devolução de cliente', 'Correção de estoque'}
-    product_id = request.form.get('product_id', type=int)
-    quantidade = int(request.form.get('quantidade', 0) or 0)
-    motivo     = request.form.get('motivo', '').strip()
+    product_id   = request.form.get('product_id', type=int)
+    quantidade   = int(request.form.get('quantidade', 0) or 0)
+    motivo       = request.form.get('motivo', '').strip()
+    op_username  = request.form.get('op_username', '').strip()
+    op_password  = request.form.get('op_password', '').strip()
 
     if not product_id or quantidade <= 0:
         flash('Produto e quantidade são obrigatórios.', 'danger')
@@ -81,25 +84,46 @@ def entrada():
     if motivo not in MOTIVOS_ENTRADA:
         flash('Selecione um motivo válido.', 'danger')
         return redirect(url_for('stock.index'))
+    nome_resp, ok = autenticar_operador(tid(), op_username, op_password)
+    if not ok:
+        flash('Usuário ou senha incorretos.', 'danger')
+        return redirect(url_for('stock.index'))
 
     produto = Product.query.filter_by(id=product_id, tenant_id=tid()).first_or_404()
     produto.stock_quantity += quantidade
-    registrar_movimento(tid(), produto, 'entrada', quantidade, motivo, current_user)
+
+    from app.models.stock import StockMovement
+    db.session.add(StockMovement(
+        tenant_id    = tid(),
+        product_id   = produto.id,
+        product_name = produto.name,
+        type         = 'entrada',
+        quantity     = quantidade,
+        motive       = motivo,
+        user_id      = current_user.id,
+        user_name    = nome_resp,
+    ))
     db.session.commit()
-    flash(f'Entrada de {quantidade} unidades de "{produto.name}" registrada.', 'success')
+    flash(f'Entrada de {quantidade} unidades de "{produto.name}" registrada por {nome_resp}.', 'success')
     return redirect(url_for('stock.index'))
 
 @stock_bp.route('/<int:product_id>/ajustar', methods=['POST'])
 @login_required
 def ajustar(product_id):
     MOTIVOS_AJUSTE = {'Perda', 'Correção de estoque'}
-    produto    = Product.query.filter_by(id=product_id, tenant_id=tid()).first_or_404()
-    operacao   = request.form.get('operacao')
-    valor      = int(request.form.get('valor', 0) or 0)
-    motivo_txt = request.form.get('motivo', '').strip()
+    produto      = Product.query.filter_by(id=product_id, tenant_id=tid()).first_or_404()
+    operacao     = request.form.get('operacao')
+    valor        = int(request.form.get('valor', 0) or 0)
+    motivo_txt   = request.form.get('motivo', '').strip()
+    op_username  = request.form.get('op_username', '').strip()
+    op_password  = request.form.get('op_password', '').strip()
 
     if motivo_txt not in MOTIVOS_AJUSTE:
         flash('Selecione um motivo válido.', 'danger')
+        return redirect(url_for('stock.index'))
+    nome_resp, ok = autenticar_operador(tid(), op_username, op_password)
+    if not ok:
+        flash('Usuário ou senha incorretos.', 'danger')
         return redirect(url_for('stock.index'))
 
     antes = produto.stock_quantity
@@ -117,7 +141,17 @@ def ajustar(product_id):
         valor = abs(diff) if diff != 0 else 0
 
     if valor != 0:
-        registrar_movimento(tid(), produto, tipo, valor, motivo, current_user)
+        from app.models.stock import StockMovement
+        db.session.add(StockMovement(
+            tenant_id    = tid(),
+            product_id   = produto.id,
+            product_name = produto.name,
+            type         = tipo,
+            quantity     = valor,
+            motive       = motivo,
+            user_id      = current_user.id,
+            user_name    = nome_resp,
+        ))
     db.session.commit()
-    flash(f'Estoque de "{produto.name}" atualizado para {produto.stock_quantity} unidades.', 'success')
+    flash(f'Estoque de "{produto.name}" atualizado por {nome_resp}.', 'success')
     return redirect(url_for('stock.index'))

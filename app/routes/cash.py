@@ -5,6 +5,7 @@ from app import db
 from app.models.cash import CashRegister
 from app.models.sale import Sale
 from app.models.vale import Employee
+from app.auth_utils import autenticar_operador
 from datetime import datetime
 from sqlalchemy import func
 
@@ -31,8 +32,7 @@ def index():
     caixa = caixa_aberto()
     historico = CashRegister.query.filter_by(tenant_id=tid(), status='closed')\
                                   .order_by(CashRegister.closed_at.desc()).limit(30).all()
-    operadores = Employee.query.filter_by(tenant_id=tid(), role='caixa').order_by(Employee.name).all()
-    return render_template('cash/index.html', caixa=caixa, historico=historico, operadores=operadores)
+    return render_template('cash/index.html', caixa=caixa, historico=historico)
 
 @cash_bp.route('/abrir', methods=['POST'])
 @login_required
@@ -44,21 +44,20 @@ def abrir():
     modo  = request.form.get('modo', 'lojista')
     valor = float((request.form.get('opening_amount', '0') or '0').replace(',', '.'))
 
+    username = request.form.get('op_username', '').strip()
+    senha    = request.form.get('op_password', '').strip()
+    nome, ok = autenticar_operador(tid(), username, senha)
+    if not ok:
+        flash('Usuário ou senha incorretos.', 'danger')
+        return redirect(url_for('cash.index'))
+
     if modo == 'funcionario':
-        emp_id = request.form.get('employee_id', type=int)
-        emp = Employee.query.filter_by(id=emp_id, tenant_id=tid(), role='caixa').first()
-        if not emp:
-            flash('Operador de caixa não encontrado.', 'danger')
-            return redirect(url_for('cash.index'))
-        operator_name        = emp.name
-        operator_employee_id = emp.id
+        emp = Employee.query.filter_by(tenant_id=tid(), username=username, role='caixa').first()
+        operator_employee_id = emp.id if emp else None
     else:
-        senha = request.form.get('password', '')
-        if not current_user.check_password(senha):
-            flash('Senha incorreta.', 'danger')
-            return redirect(url_for('cash.index'))
-        operator_name        = current_user.display_name or current_user.username
         operator_employee_id = None
+
+    operator_name = nome
 
     caixa = CashRegister(
         tenant_id            = tid(),

@@ -54,6 +54,26 @@ def funcionario_novo():
         flash(f'Funcionário "{name}" cadastrado!', 'success')
     return redirect(url_for('vale.index'))
 
+@vale_bp.route('/funcionario/<int:emp_id>/credenciais', methods=['POST'])
+@login_required
+def funcionario_credenciais(emp_id):
+    e = Employee.query.filter_by(id=emp_id, tenant_id=tid(), role='caixa').first_or_404()
+    username = request.form.get('username', '').strip()
+    senha    = request.form.get('senha', '').strip()
+    if not username or not senha:
+        flash('Informe usuário e senha.', 'danger')
+        return redirect(url_for('vale.index'))
+    # Garante username único no tenant
+    conflict = Employee.query.filter_by(tenant_id=tid(), username=username).filter(Employee.id != emp_id).first()
+    if conflict:
+        flash(f'O usuário "{username}" já está em uso por outro funcionário.', 'danger')
+        return redirect(url_for('vale.index'))
+    e.username = username
+    e.set_password(senha)
+    db.session.commit()
+    flash(f'Credenciais de "{e.name}" salvas.', 'success')
+    return redirect(url_for('vale.index'))
+
 @vale_bp.route('/funcionario/<int:emp_id>/excluir', methods=['POST'])
 @login_required
 def funcionario_excluir(emp_id):

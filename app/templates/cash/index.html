@@ -27,55 +27,18 @@
   <div class="card-header fw-semibold">Abrir Caixa</div>
   <div class="card-body">
 
-    <!-- Tabs: Funcionário / Lojista -->
-    <ul class="nav nav-pills mb-4" id="tabModo">
-      {% if operadores %}
-      <li class="nav-item">
-        <button class="nav-link active" onclick="setModo('funcionario')">
-          <i class="bi bi-person-badge me-1"></i>Operador de Caixa
-        </button>
-      </li>
-      {% endif %}
-      <li class="nav-item">
-        <button class="nav-link {% if not operadores %}active{% endif %}" onclick="setModo('lojista')">
-          <i class="bi bi-shield-lock me-1"></i>Lojista
-        </button>
-      </li>
-    </ul>
-
-    <!-- Form Funcionário -->
-    {% if operadores %}
-    <form method="post" action="{{ url_for('cash.abrir') }}" id="formFuncionario">
+    <form method="post" action="{{ url_for('cash.abrir') }}">
       <input type="hidden" name="modo" value="funcionario">
       <div class="mb-3">
-        <label class="form-label fw-semibold">Operador</label>
-        <select name="employee_id" class="form-select form-select-lg" required>
-          <option value="">Selecione o operador...</option>
-          {% for op in operadores %}
-          <option value="{{ op.id }}">{{ op.name }}</option>
-          {% endfor %}
-        </select>
+        <label class="form-label fw-semibold">Usuário</label>
+        <input type="text" name="op_username" class="form-control form-control-lg"
+               placeholder="Digite seu usuário" required autocomplete="username">
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Troco inicial (R$)</label>
-        <input type="text" name="opening_amount" class="form-control form-control-lg"
-               value="0.00" onfocus="if(this.value=='0.00')this.value=''"
-               onblur="if(this.value==='')this.value='0.00'">
-      </div>
-      <button class="btn btn-success w-100 fw-semibold py-2">
-        <i class="bi bi-unlock me-2"></i>Abrir Caixa
-      </button>
-    </form>
-    {% endif %}
-
-    <!-- Form Lojista -->
-    <form method="post" action="{{ url_for('cash.abrir') }}" id="formLojista" {% if operadores %}style="display:none"{% endif %}>
-      <input type="hidden" name="modo" value="lojista">
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Sua senha</label>
-        <input type="password" name="password" class="form-control form-control-lg"
-               placeholder="Digite sua senha para confirmar" required autocomplete="current-password">
-        <div class="form-text">Confirme sua senha para abrir o caixa como lojista.</div>
+        <label class="form-label fw-semibold">Senha</label>
+        <input type="password" name="op_password" class="form-control form-control-lg"
+               placeholder="Digite sua senha" required autocomplete="current-password">
+        <div class="form-text">Operador de caixa ou lojista podem abrir o caixa.</div>
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Troco inicial (R$)</label>

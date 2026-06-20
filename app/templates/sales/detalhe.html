@@ -119,9 +119,19 @@
         </div>
         <div class="modal-body">
           <p class="text-muted small mb-3">Esta ação não pode ser desfeita. Informe o motivo abaixo.</p>
-          <label class="form-label fw-semibold">Motivo do cancelamento <span class="text-danger">*</span></label>
-          <textarea name="cancel_reason" id="cancelReason" class="form-control" rows="3"
-                    placeholder="Ex: Pedido duplicado, cliente desistiu, erro no lançamento…" required></textarea>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Motivo do cancelamento <span class="text-danger">*</span></label>
+            <textarea name="cancel_reason" id="cancelReason" class="form-control" rows="3"
+                      placeholder="Ex: Pedido duplicado, cliente desistiu, erro no lançamento…" required></textarea>
+          </div>
+          <hr class="my-2">
+          <p class="small text-muted fw-semibold mb-2"><i class="bi bi-lock me-1"></i>Autorização do responsável</p>
+          <div class="mb-2">
+            <input type="text" name="op_username" class="form-control" placeholder="Usuário" required autocomplete="off">
+          </div>
+          <div class="mb-0">
+            <input type="password" name="op_password" class="form-control" placeholder="Senha" required>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-danger fw-semibold">Sim, cancelar</button>

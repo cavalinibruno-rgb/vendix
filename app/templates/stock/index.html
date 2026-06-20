@@ -194,7 +194,7 @@
             <label class="form-label fw-semibold">Quantidade *</label>
             <input type="number" name="quantidade" class="form-control" min="1" value="1" required>
           </div>
-          <div class="mb-0">
+          <div class="mb-3">
             <label class="form-label fw-semibold">Motivo *</label>
             <select name="motivo" class="form-select" required>
               <option value="">— Selecione —</option>
@@ -202,6 +202,14 @@
               <option value="Devolução de cliente">Devolução de cliente</option>
               <option value="Correção de estoque">Correção de estoque</option>
             </select>
+          </div>
+          <hr class="my-2">
+          <p class="small text-muted fw-semibold mb-2"><i class="bi bi-lock me-1"></i>Autorização do responsável</p>
+          <div class="mb-2">
+            <input type="text" name="op_username" class="form-control" placeholder="Usuário" required autocomplete="off">
+          </div>
+          <div class="mb-0">
+            <input type="password" name="op_password" class="form-control" placeholder="Senha" required>
           </div>
         </div>
         <div class="modal-footer">
@@ -244,13 +252,21 @@
             <label class="form-label fw-semibold">Quantidade *</label>
             <input type="number" name="valor" class="form-control" min="0" value="1" required>
           </div>
-          <div class="mb-0">
+          <div class="mb-3">
             <label class="form-label fw-semibold">Motivo *</label>
             <select name="motivo" class="form-select" required>
               <option value="">— Selecione —</option>
               <option value="Perda">Perda</option>
               <option value="Correção de estoque">Correção de estoque</option>
             </select>
+          </div>
+          <hr class="my-2">
+          <p class="small text-muted fw-semibold mb-2"><i class="bi bi-lock me-1"></i>Autorização do responsável</p>
+          <div class="mb-2">
+            <input type="text" name="op_username" class="form-control" placeholder="Usuário" required autocomplete="off">
+          </div>
+          <div class="mb-0">
+            <input type="password" name="op_password" class="form-control" placeholder="Senha" required>
           </div>
         </div>
         <div class="modal-footer">
