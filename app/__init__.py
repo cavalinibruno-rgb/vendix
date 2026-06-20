@@ -20,6 +20,18 @@ def _run_migrations(db):
     """Adiciona colunas novas em tabelas existentes sem quebrar dados."""
     migrations = [
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS thumbnail_data BYTEA",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS settings TEXT DEFAULT '{}'",
+        """CREATE TABLE IF NOT EXISTS motoboys (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            name VARCHAR(128) NOT NULL,
+            phone VARCHAR(32),
+            active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS dispatched_at TIMESTAMP",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS motoboy_id INTEGER REFERENCES motoboys(id)",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS motoboy_name VARCHAR(128)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS source VARCHAR(16) DEFAULT 'loja'",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS app_name VARCHAR(64)",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS brand_id INTEGER REFERENCES brands(id)",
@@ -100,6 +112,8 @@ def create_app():
     from app.routes.account import account_bp
     from app.routes.apps import apps_bp
     from app.routes.vale import vale_bp
+    from app.routes.despacho import despacho_bp
+    from app.routes.config import config_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -112,6 +126,8 @@ def create_app():
     app.register_blueprint(account_bp)
     app.register_blueprint(apps_bp)
     app.register_blueprint(vale_bp)
+    app.register_blueprint(despacho_bp)
+    app.register_blueprint(config_bp)
 
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")

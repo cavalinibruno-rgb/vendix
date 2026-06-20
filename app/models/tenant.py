@@ -12,6 +12,7 @@ class Tenant(db.Model):
     plan          = db.Column(db.String(32), default='mensal')
     status        = db.Column(db.String(16), default='active')  # active | suspended | cancelled
     expires_at    = db.Column(db.DateTime, nullable=True)
+    settings      = db.Column(db.Text, default='{}')  # JSON de configurações
     created_at    = db.Column(db.DateTime, default=datetime.now)
 
     users = db.relationship('User', backref='tenant', lazy=True)
@@ -23,6 +24,17 @@ class Tenant(db.Model):
         if self.expires_at and self.expires_at < datetime.now():
             return False
         return True
+
+    def get_settings(self):
+        import json
+        try:
+            return json.loads(self.settings or '{}')
+        except Exception:
+            return {}
+
+    def save_settings(self, data):
+        import json
+        self.settings = json.dumps(data)
 
     def __repr__(self):
         return f'<Tenant {self.slug}>'

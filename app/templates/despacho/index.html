@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Despacho — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-motorcycle me-2 text-warning"></i>Despacho</h1>
+    <p class="text-muted">Entregas pendentes de despacho</p>
+  </div>
+  {% if cfg.get('whatsapp_notify') %}
+  <span class="badge bg-success"><i class="bi bi-whatsapp me-1"></i>WhatsApp ativo</span>
+  {% endif %}
+</div>
+
+<!-- Pendentes -->
+<div class="card mb-4">
+  <div class="card-header fw-semibold d-flex align-items-center gap-2">
+    <span>Aguardando Despacho</span>
+    {% if pendentes %}
+    <span class="badge bg-danger">{{ pendentes|length }}</span>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Horário</th>
+          <th>Cliente</th>
+          <th>Endereço</th>
+          <th class="text-end">Total</th>
+          <th style="width:220px;">Motoboy</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in pendentes %}
+        <tr id="row-{{ v.id }}">
+          <td class="text-muted small">#{{ v.id }}</td>
+          <td class="small text-nowrap">{{ v.created_at.strftime('%H:%M') }}</td>
+          <td class="fw-semibold">{{ v.customer.name if v.customer else '—' }}</td>
+          <td class="small text-muted">{{ v.notes or '—' }}</td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+          <td>
+            <select class="form-select form-select-sm" id="motoboy-{{ v.id }}">
+              <option value="">— Selecionar —</option>
+              {% for m in motoboys %}
+              <option value="{{ m.id }}">{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td>
+            <button class="btn btn-success btn-sm fw-semibold"
+                    onclick="despachar({{ v.id }})">
+              <i class="bi bi-send me-1"></i>Despachar
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">
+            <i class="bi bi-check-circle me-1 text-success"></i>Nenhuma entrega pendente.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Despachados recentes -->
+<div class="card">
+  <div class="card-header fw-semibold">Últimas Entregas Despachadas</div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Despachado às</th>
+          <th>Cliente</th>
+          <th>Motoboy</th>
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in despachados %}
+        <tr>
+          <td class="text-muted small">#{{ v.id }}</td>
+          <td class="small text-nowrap">{{ v.dispatched_at.strftime('%d/%m %H:%M') }}</td>
+          <td>{{ v.customer.name if v.customer else '—' }}</td>
+          <td><span class="badge bg-secondary">{{ v.motoboy_name or '—' }}</span></td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma entrega despachada ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const waNotify = {{ 'true' if cfg.get('whatsapp_notify') else 'false' }};
+
+function despachar(saleId) {
+  const motoboyId = document.getElementById('motoboy-' + saleId).value;
+  const body = new URLSearchParams({ motoboy_id: motoboyId });
+
+  fetch(`/despacho/${saleId}/despachar`, { method: 'POST', body })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) return;
+      // Remove linha da tabela
+      const row = document.getElementById('row-' + saleId);
+      if (row) row.remove();
+      // Abre WhatsApp se habilitado e houver URL
+      if (d.wa_url) {
+        window.open(d.wa_url, '_blank');
+      }
+    })
+    .catch(() => alert('Erro ao despachar.'));
+}
+</script>
+{% endblock %}

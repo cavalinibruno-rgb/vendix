@@ -18,6 +18,9 @@ class Sale(db.Model):
     app_name        = db.Column(db.String(64))                        # iFood, Anotaí, etc.
     amount_paid      = db.Column(db.Float, nullable=True)
     change_amount    = db.Column(db.Float, nullable=True)
+    dispatched_at     = db.Column(db.DateTime, nullable=True)
+    motoboy_id        = db.Column(db.Integer, db.ForeignKey('motoboys.id'), nullable=True)
+    motoboy_name      = db.Column(db.String(128), nullable=True)
     cancelled_at      = db.Column(db.DateTime, nullable=True)
     cancelled_by_id   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     cancelled_by_name = db.Column(db.String(64), nullable=True)

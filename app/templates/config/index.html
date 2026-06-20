@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Configurações — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-gear me-2 text-warning"></i>Configurações</h1>
+  <p class="text-muted">Personalize o comportamento do sistema</p>
+</div>
+
+<div class="row g-4">
+
+  <!-- WhatsApp -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-whatsapp me-2 text-success"></i>Notificação WhatsApp</div>
+      <div class="card-body">
+        <form method="post">
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="whatsapp_notify" id="swWA"
+                   {% if cfg.get('whatsapp_notify') %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="swWA">
+              Enviar mensagem ao despachar entrega
+            </label>
+          </div>
+          <div class="text-muted small mb-3">
+            Ao clicar em <strong>Despachar</strong>, o WhatsApp abre automaticamente com a mensagem abaixo pronta para enviar ao cliente.
+          </div>
+          <label class="form-label fw-semibold">Mensagem <span class="text-muted fw-normal">(use {cliente} e {motoboy})</span></label>
+          <textarea name="whatsapp_msg" class="form-control" rows="4" placeholder="Olá {cliente}! Seu pedido saiu para entrega com o motoboy {motoboy}. Em breve chegará até você!">{{ cfg.get('whatsapp_msg', '') }}</textarea>
+          <div class="text-muted small mt-1">Deixe em branco para usar a mensagem padrão.</div>
+          <button type="submit" class="btn btn-warning fw-semibold mt-3">
+            <i class="bi bi-floppy me-1"></i>Salvar configurações
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Motoboys -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-bicycle me-2"></i>Motoboys</span>
+        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalMotoboy">
+          <i class="bi bi-plus-lg me-1"></i>Novo
+        </button>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th style="width:48px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in motoboys %}
+            <tr>
+              <td class="fw-semibold">{{ m.name }}</td>
+              <td class="text-muted small">{{ m.phone or '—' }}</td>
+              <td>
+                <form method="post" action="{{ url_for('config.motoboy_excluir', mid=m.id) }}"
+                      data-confirm="Excluir {{ m.name }}?">
+                  <button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-4">Nenhum motoboy cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal novo motoboy -->
+<div class="modal fade" id="modalMotoboy" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('config.motoboy_novo') }}">
+        <div class="modal-header py-2">
+          <h6 class="modal-title">Novo Motoboy</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <input type="text" name="name" class="form-control" placeholder="Nome *" required autofocus>
+          </div>
+          <div>
+            <input type="text" name="phone" class="form-control" placeholder="Telefone (com DDD)">
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="submit" class="btn btn-warning fw-semibold">Cadastrar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
