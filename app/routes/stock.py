@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
-from app.auth_utils import autenticar_operador, jsonify
+from app.auth_utils import autenticar_operador
 from flask_login import login_required, current_user
 from app import db
 from app.models.product import Product, ProductType
