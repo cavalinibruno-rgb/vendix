@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models.vale import Employee, Vale
+from app.models.motoboy import Motoboy
 from datetime import date, datetime
 
 vale_bp = Blueprint('vale', __name__, url_prefix='/vale')
@@ -28,9 +29,11 @@ def index():
     meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
              'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
+    motoboys = Motoboy.query.filter_by(tenant_id=tid()).order_by(Motoboy.name).all()
+
     return render_template('vale/index.html',
         employees=employees, totais=totais, total_geral=total_geral,
-        mes=mes, ano=ano, meses=meses,
+        mes=mes, ano=ano, meses=meses, motoboys=motoboys,
     )
 
 @vale_bp.route('/funcionario/novo', methods=['POST'])
@@ -107,3 +110,23 @@ def vale_excluir(vale_id):
     db.session.commit()
     flash('Vale removido.', 'success')
     return redirect(url_for('vale.funcionario_detalhe', emp_id=emp_id, mes=mes, ano=ano))
+
+@vale_bp.route('/motoboy/novo', methods=['POST'])
+@login_required
+def motoboy_novo():
+    name  = request.form.get('name', '').strip()
+    phone = request.form.get('phone', '').strip()
+    if name:
+        db.session.add(Motoboy(tenant_id=tid(), name=name, phone=phone))
+        db.session.commit()
+        flash(f'Motoboy "{name}" cadastrado.', 'success')
+    return redirect(url_for('vale.index'))
+
+@vale_bp.route('/motoboy/<int:mid>/excluir', methods=['POST'])
+@login_required
+def motoboy_excluir(mid):
+    m = Motoboy.query.filter_by(id=mid, tenant_id=tid()).first_or_404()
+    db.session.delete(m)
+    db.session.commit()
+    flash('Motoboy removido.', 'warning')
+    return redirect(url_for('vale.index'))
