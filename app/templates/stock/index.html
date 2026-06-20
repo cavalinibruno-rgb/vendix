@@ -127,11 +127,11 @@
         </form>
       </div>
 
-      <div class="card-body p-0" style="overflow-y:auto; max-height:620px;">
-        <table class="table table-sm table-hover mb-0 align-middle">
-          <thead class="table-light sticky-top">
+      <div class="card-body p-0">
+        <table class="table table-sm table-hover mb-0 align-middle" style="font-size:.82rem;">
+          <thead class="table-light">
             <tr>
-              <th>Produto</th>
+              <th class="ps-3">Produto</th>
               <th>Tipo</th>
               <th class="text-center">Qtd</th>
               <th>Motivo</th>
@@ -141,22 +141,22 @@
           </thead>
           <tbody>
             {% for m in movimentos %}
-            <tr>
-              <td class="small fw-semibold" style="max-width:100px;">{{ m.product_name }}</td>
+            <tr style="line-height:1.3;">
+              <td class="ps-3 fw-semibold" style="max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.product_name }}</td>
               <td>
                 {% if m.type == 'entrada' %}
-                <span class="badge bg-success-subtle text-success">Entrada</span>
+                <span class="badge bg-success">Entrada</span>
                 {% else %}
-                <span class="badge bg-danger-subtle text-danger">Saída</span>
+                <span class="badge bg-danger">Saída</span>
                 {% endif %}
               </td>
               <td class="text-center fw-semibold">{{ m.quantity }}</td>
-              <td class="small text-muted" style="max-width:120px;">{{ m.motive or '—' }}</td>
-              <td class="small text-muted">{{ m.user_name or '—' }}</td>
-              <td class="small text-muted">{{ m.created_at.strftime('%d/%m %H:%M') }}</td>
+              <td class="text-muted" style="max-width:110px;">{{ m.motive or '—' }}</td>
+              <td class="text-muted">{{ m.user_name or '—' }}</td>
+              <td class="text-muted">{{ m.created_at.strftime('%d/%m %H:%M') }}</td>
             </tr>
             {% else %}
-            <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma movimentação encontrada.</td></tr>
+            <tr><td colspan="6" class="text-center text-muted py-3">Nenhuma movimentação encontrada.</td></tr>
             {% endfor %}
           </tbody>
         </table>
