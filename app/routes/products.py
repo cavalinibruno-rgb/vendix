@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
+from PIL import Image
+import io
 from app import db
 from app.models.product import Product, ProductType, Brand
 
@@ -8,6 +10,16 @@ products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 
 def tenant_id():
     return current_user.tenant_id
+
+def _comprimir_imagem(file_storage, max_size=(600, 600), quality=75):
+    """Redimensiona e comprime imagem para JPEG. Retorna (bytes, mime)."""
+    img = Image.open(file_storage)
+    if img.mode not in ('RGB', 'L'):
+        img = img.convert('RGB')
+    img.thumbnail(max_size, Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=quality, optimize=True)
+    return buf.getvalue(), 'image/jpeg'
 
 @products_bp.route('/')
 @login_required
@@ -59,8 +71,7 @@ def novo():
         db.session.flush()
         foto = request.files.get('imagem')
         if foto and foto.filename:
-            product.image_data = foto.read()
-            product.image_mime = foto.mimetype
+            product.image_data, product.image_mime = _comprimir_imagem(foto)
         db.session.commit()
         flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
@@ -84,8 +95,7 @@ def editar(product_id):
         product.description    = request.form.get('description', '').strip()
         foto = request.files.get('imagem')
         if foto and foto.filename:
-            product.image_data = foto.read()
-            product.image_mime = foto.mimetype
+            product.image_data, product.image_mime = _comprimir_imagem(foto)
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
         return redirect(url_for('products.index'))
