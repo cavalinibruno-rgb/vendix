@@ -69,8 +69,56 @@
     font-size: .78rem; color: #c9a84c; font-weight: 700;
   }
 
-  /* ── Painel direito ── */
+  /* ── Painel direito: tema escuro ── */
   .cart-panel { position: sticky; top: 80px; }
+  .cart-panel .card {
+    background: #1e1e1e;
+    border-color: #3d3d3d;
+    color: #ddd;
+  }
+  .cart-panel .card-header {
+    background: #2a2a2a;
+    border-bottom-color: #3d3d3d;
+    color: #ddd;
+  }
+  .cart-panel .card-footer {
+    background: #2a2a2a;
+    border-top-color: #3d3d3d;
+  }
+  .cart-panel .form-control,
+  .cart-panel .form-select,
+  .cart-panel .input-group-text {
+    background: #2d2d2d;
+    border-color: #3d3d3d;
+    color: #ddd;
+  }
+  .cart-panel .form-control::placeholder { color: #666; }
+  .cart-panel .form-control:focus,
+  .cart-panel .form-select:focus {
+    background: #2d2d2d;
+    border-color: #c9a84c;
+    color: #ddd;
+    box-shadow: none;
+  }
+  .cart-panel .form-select option { background: #2d2d2d; }
+  .cart-panel .text-muted { color: #888 !important; }
+  .cart-panel .btn-outline-secondary {
+    border-color: #555; color: #aaa;
+  }
+  .cart-panel .btn-outline-secondary:hover { background: #333; color: #fff; }
+  .cart-panel .btn-outline-danger { border-color: #a33; color: #f77; }
+  .cart-panel .table { color: #ddd; }
+  .cart-panel .table td { border-color: #333; }
+  .cart-panel label.form-label { color: #bbb; }
+  /* Botões de toggle (Retirada/Entrega, Loja/App, forma de pagamento) */
+  .cart-panel .btn-group .btn-outline-secondary.active,
+  .cart-panel .btn-outline-warning.active,
+  .cart-panel .btn-warning { background: #c9a84c; border-color: #c9a84c; color: #1e1e1e; }
+  .pdv-finalizar {
+    background: #c9a84c; border-color: #c9a84c; color: #1e1e1e;
+    font-weight: 700; font-size: 1.1rem;
+  }
+  .pdv-finalizar:hover { background: #b8943d; border-color: #b8943d; }
 </style>
 {% endblock %}
 
