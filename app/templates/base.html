@@ -172,12 +172,56 @@
   {% block content %}{% endblock %}
 </div>
 
+<!-- Modal confirmação global -->
+<div class="modal fade" id="modalConfirm" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body py-4 text-center">
+        <p class="mb-0 fw-semibold" id="confirmMsg"></p>
+      </div>
+      <div class="modal-footer justify-content-center border-0 pt-0">
+        <button id="btnConfirmOk" class="btn btn-danger fw-semibold px-4">Confirmar</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
 <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/sw.js');
   }
+
+  // ── Confirmação global (substitui confirm() no Electron) ──
+  let _formPendente = null;
+  document.addEventListener('submit', function(e) {
+    const msg = e.target.dataset.confirm;
+    if (msg && !e.target.dataset.confirmado) {
+      e.preventDefault();
+      _formPendente = e.target;
+      document.getElementById('confirmMsg').textContent = msg;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirm')).show();
+    }
+  });
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-confirm-click]');
+    if (btn && !btn.dataset.confirmado) {
+      e.preventDefault(); e.stopPropagation();
+      _formPendente = btn;
+      document.getElementById('confirmMsg').textContent = btn.dataset.confirmClick;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirm')).show();
+    }
+  });
+  document.getElementById('btnConfirmOk').addEventListener('click', function() {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirm')).hide();
+    if (!_formPendente) return;
+    _formPendente.dataset.confirmado = '1';
+    if (_formPendente.tagName === 'FORM') _formPendente.submit();
+    else _formPendente.click();
+    _formPendente = null;
+  });
 
   // ── Menu colapsável ──────────────────────────────────
   const sidebar     = document.getElementById('sidebar');

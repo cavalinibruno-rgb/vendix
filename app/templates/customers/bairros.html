@@ -60,7 +60,7 @@
                   <i class="bi bi-pencil"></i>
                 </button>
                 <form method="post" action="{{ url_for('customers.bairro_excluir', bairro_id=n.id) }}" class="d-inline"
-                      onsubmit="return confirm('Remover {{ n.name }}?')">
+                      data-confirm='Remover {{ n.name }}?'>
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>
               </td>

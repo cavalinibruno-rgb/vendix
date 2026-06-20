@@ -51,7 +51,7 @@
               <td><span class="badge bg-secondary">{{ b.products|length }}</span></td>
               <td>
                 <form method="post" action="{{ url_for('products.marca_excluir', brand_id=b.id) }}"
-                      onsubmit="return confirm('Excluir marca {{ b.name }}?')">
+                      data-confirm='Excluir marca {{ b.name }}?'>
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>
               </td>

@@ -80,7 +80,7 @@
               {% if t.status == 'active' %}
               <a href="{{ url_for('master.tenant_suspender', tenant_id=t.id) }}"
                  class="btn btn-sm btn-outline-danger"
-                 onclick="return confirm('Suspender {{ t.store_name }}?')">
+                 data-confirm-click="Suspender {{ t.store_name }}?">
                 <i class="bi bi-pause-circle"></i>
               </a>
               {% else %}

@@ -51,7 +51,7 @@
               <td><span class="badge bg-secondary">{{ t.products|length }}</span></td>
               <td>
                 <form method="post" action="{{ url_for('products.tipo_excluir', tipo_id=t.id) }}"
-                      onsubmit="return confirm('Excluir categoria {{ t.name }}?')">
+                      data-confirm='Excluir categoria {{ t.name }}?'>
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>
               </td>

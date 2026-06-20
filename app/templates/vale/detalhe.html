@@ -58,7 +58,7 @@
               <td class="text-end fw-semibold text-danger">R$ {{ '%.2f'|format(v.amount) }}</td>
               <td>
                 <form method="post" action="{{ url_for('vale.vale_excluir', vale_id=v.id) }}"
-                      onsubmit="return confirm('Excluir este vale?')">
+                      data-confirm='Excluir este vale?'>
                   <button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
                 </form>
               </td>

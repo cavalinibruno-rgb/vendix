@@ -99,15 +99,33 @@
     </div>
 
     {% if sale.status == 'confirmed' %}
-    <form method="post" action="{{ url_for('sales.cancelar', sale_id=sale.id) }}"
-          onsubmit="return confirm('Cancelar esta venda?')">
-      <button class="btn btn-outline-danger w-100">
-        <i class="bi bi-x-circle me-1"></i> Cancelar Venda
-      </button>
-    </form>
+    <button class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+      <i class="bi bi-x-circle me-1"></i> Cancelar Venda
+    </button>
     {% else %}
     <div class="alert alert-danger text-center mb-0">Venda cancelada</div>
     {% endif %}
+  </div>
+</div>
+
+<!-- Modal confirmação de cancelamento -->
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cancelar Venda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja cancelar a venda <strong>#{{ sale.id }}</strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <form method="post" action="{{ url_for('sales.cancelar', sale_id=sale.id) }}">
+          <button type="submit" class="btn btn-danger fw-semibold">Sim, cancelar</button>
+        </form>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
