@@ -155,9 +155,8 @@ function despachar(saleId) {
     .then(r => r.json())
     .then(d => {
       if (!d.ok) return;
-      const row = document.getElementById('row-pend-' + saleId);
-      if (row) row.remove();
       if (d.wa_url) window.open(d.wa_url, '_blank');
+      location.reload();
     })
     .catch(() => alert('Erro ao despachar.'));
 }
