@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
 from app import db
 from app.models.product import Product, ProductType, Brand
 
@@ -154,44 +155,58 @@ def marca_excluir(brand_id):
     return redirect(url_for('products.marcas'))
 
 # ── API busca produtos ────────────────────────────────
+def _cols():
+    """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
+    return [Product.id, Product.name, Product.sale_price, Product.stock_quantity,
+            Product.type_id, Product.brand_id,
+            (Product.image_data != None).label('has_image')]
+
 @products_bp.route('/api/buscar')
 @login_required
 def api_buscar():
     q        = request.args.get('q', '')
     tipo_id  = request.args.get('tipo', type=int)
     marca_id = request.args.get('marca', type=int)
-    query    = Product.query.filter_by(tenant_id=tenant_id(), active=True)
-    if q:
-        query = query.filter(Product.name.ilike(f'%{q}%'))
-    if tipo_id:
-        query = query.filter_by(type_id=tipo_id)
-    if marca_id:
-        query = query.filter_by(brand_id=marca_id)
-    products = query.limit(20).all()
+    query = (db.session.query(*_cols())
+             .filter(Product.tenant_id == tenant_id(), Product.active == True))
+    if q:       query = query.filter(Product.name.ilike(f'%{q}%'))
+    if tipo_id: query = query.filter(Product.type_id == tipo_id)
+    if marca_id:query = query.filter(Product.brand_id == marca_id)
+    rows = query.limit(20).all()
+
+    tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+    marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
+
     return jsonify([{
-        'id': p.id, 'name': p.name,
-        'sale_price': p.sale_price,
-        'stock_quantity': p.stock_quantity,
-        'has_image': bool(p.image_data),
-        'type': p.type.name if p.type else '',
-        'type_id': p.type_id,
-        'brand': p.brand.name if p.brand else ''
-    } for p in products])
+        'id': r.id, 'name': r.name,
+        'sale_price': r.sale_price,
+        'stock_quantity': r.stock_quantity,
+        'has_image': bool(r.has_image),
+        'type': tipos.get(r.type_id, ''),
+        'type_id': r.type_id,
+        'brand': marcas.get(r.brand_id, ''),
+    } for r in rows])
 
 @products_bp.route('/api/todos')
 @login_required
 def api_todos():
-    products = Product.query.filter_by(tenant_id=tenant_id(), active=True).order_by(Product.name).all()
+    rows = (db.session.query(*_cols())
+            .filter(Product.tenant_id == tenant_id(), Product.active == True)
+            .order_by(Product.name).all())
+
+    tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+    marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
+
     return jsonify([{
-        'id': p.id, 'name': p.name,
-        'sale_price': p.sale_price,
-        'stock_quantity': p.stock_quantity,
-        'has_image': bool(p.image_data),
-        'type_id': p.type_id,
-        'type_name': p.type.name if p.type else 'Sem categoria',
-        'brand_id': p.brand_id,
-        'brand_name': p.brand.name if p.brand else None,
-    } for p in products])
+        'id': r.id, 'name': r.name,
+        'sale_price': r.sale_price,
+        'stock_quantity': r.stock_quantity,
+        'has_image': bool(r.has_image),
+        'type_id': r.type_id,
+        'type_name': tipos.get(r.type_id, 'Sem categoria'),
+        'brand_id': r.brand_id,
+        'brand_name': marcas.get(r.brand_id),
+    } for r in rows])
 
 @products_bp.route('/<int:product_id>/imagem')
 def imagem(product_id):
