@@ -49,7 +49,8 @@ def index():
 
     receita_bruta      = sum(v.total for v in vendas)
     deducao_cancelados = sum(v.total for v in canceladas)
-    deducao_impostos   = receita_bruta * (aliquota / 100)
+    base_imposto       = receita_bruta - deducao_cancelados
+    deducao_impostos   = base_imposto * (aliquota / 100)
     total_deducoes     = deducao_cancelados + deducao_impostos
     receita_liquida    = receita_bruta - total_deducoes
 
