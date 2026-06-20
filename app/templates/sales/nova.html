@@ -98,17 +98,16 @@
       </div>
 
       <!-- Filtros -->
-      <div class="row g-2 mb-3">
-        <div class="col-6">
-          <select id="filtroCategoria" class="form-select form-select-sm pdv-search" onchange="filtrarCategoria(this.value)">
-            <option value="todas">Todas as categorias</option>
-          </select>
-        </div>
-        <div class="col-6">
-          <select id="filtroMarca" class="form-select form-select-sm pdv-search" onchange="filtrarMarca(this.value)">
-            <option value="todas">Todas as marcas</option>
-          </select>
-        </div>
+      <div class="d-flex gap-2 mb-3 align-items-center">
+        <select id="filtroCategoria" class="form-select form-select-sm pdv-search" onchange="filtrarCategoria(this.value)">
+          <option value="todas">Todas as categorias</option>
+        </select>
+        <select id="filtroMarca" class="form-select form-select-sm pdv-search" onchange="filtrarMarca(this.value)">
+          <option value="todas">Todas as marcas</option>
+        </select>
+        <button class="btn btn-sm btn-outline-secondary flex-shrink-0" onclick="limparFiltros()" title="Limpar filtros">
+          <i class="bi bi-x-lg"></i>
+        </button>
       </div>
 
       <!-- Grid de produtos -->
@@ -352,6 +351,14 @@ function construirMarcas(lista) {
 
 function filtrarCategoria(val) { catAtual = val; aplicarFiltros(); }
 function filtrarMarca(val)     { marcaAtual = val; aplicarFiltros(); }
+
+function limparFiltros() {
+  catAtual = 'todas'; marcaAtual = 'todas';
+  document.getElementById('filtroCategoria').value = 'todas';
+  document.getElementById('filtroMarca').value = 'todas';
+  document.getElementById('produtoSearch').value = '';
+  aplicarFiltros();
+}
 
 function aplicarFiltros() {
   const q = document.getElementById('produtoSearch').value.trim().toLowerCase();
