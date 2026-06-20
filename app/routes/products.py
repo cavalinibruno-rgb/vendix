@@ -223,7 +223,29 @@ def imagem(product_id):
     product = Product.query.filter_by(id=product_id).first_or_404()
     if not product.image_data:
         return '', 404
-    return Response(product.image_data, mimetype=product.image_mime or 'image/jpeg')
+    resp = Response(product.image_data, mimetype='image/jpeg')
+    resp.headers['Cache-Control'] = 'public, max-age=604800'  # 7 dias
+    return resp
+
+@products_bp.route('/admin/recomprimir-imagens', methods=['POST'])
+@login_required
+def recomprimir_imagens():
+    produtos = Product.query.filter(
+        Product.tenant_id == tenant_id(),
+        Product.image_data != None
+    ).all()
+    count = 0
+    for p in produtos:
+        try:
+            dados, mime = _comprimir_imagem(io.BytesIO(p.image_data))
+            p.image_data = dados
+            p.image_mime = mime
+            count += 1
+        except Exception:
+            pass
+    db.session.commit()
+    flash(f'{count} imagem(ns) recomprimida(s) com sucesso.', 'success')
+    return redirect(url_for('products.index'))
 
 @products_bp.route('/api/categorias')
 @login_required
