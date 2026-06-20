@@ -30,12 +30,20 @@ def index():
     tipo_id  = request.args.get('tipo', type=int)
     tipos    = ProductType.query.filter_by(tenant_id=tid()).order_by(ProductType.name).all()
 
+    ordem    = request.args.get('ordem', '')
+
     query = Product.query.filter_by(tenant_id=tid(), active=True)
     if q:
         query = query.filter(Product.name.ilike(f'%{q}%'))
     if tipo_id:
         query = query.filter_by(type_id=tipo_id)
-    produtos = query.order_by(Product.name).all()
+    if ordem == 'estoque_asc':
+        query = query.order_by(Product.stock_quantity.asc())
+    elif ordem == 'estoque_desc':
+        query = query.order_by(Product.stock_quantity.desc())
+    else:
+        query = query.order_by(Product.name)
+    produtos = query.all()
 
     # Movimentações com filtros
     filtro_tipo = request.args.get('mov_tipo', '')   # entrada | saida | ''
@@ -55,7 +63,7 @@ def index():
     movimentos = mov_query.order_by(StockMovement.created_at.desc()).limit(100).all()
 
     return render_template('stock/index.html',
-        produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q,
+        produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
     )
 

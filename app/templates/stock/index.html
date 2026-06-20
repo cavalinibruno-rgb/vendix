@@ -52,7 +52,16 @@
               <th style="width:40px;"></th>
               <th>Produto</th>
               <th>Tipo</th>
-              <th class="text-center">Estoque</th>
+              <th class="text-center">
+                {% set prox = 'estoque_asc' if ordem != 'estoque_asc' else 'estoque_desc' %}
+                <a href="{{ url_for('stock.index', q=q, tipo=tipo_id, mov_tipo=filtro_tipo, mov_data=filtro_data, ordem=prox) }}"
+                   class="text-decoration-none text-dark">
+                  Estoque
+                  {% if ordem == 'estoque_asc' %}<i class="bi bi-sort-numeric-up ms-1"></i>
+                  {% elif ordem == 'estoque_desc' %}<i class="bi bi-sort-numeric-down ms-1"></i>
+                  {% else %}<i class="bi bi-arrow-down-up ms-1 text-muted"></i>{% endif %}
+                </a>
+              </th>
               <th class="text-end">Preço</th>
             </tr>
           </thead>
