@@ -82,30 +82,30 @@
 
     <!-- Dashboard do Operador -->
     <div class="card">
-      <div class="card-header"><i class="bi bi-eye-slash me-2 text-secondary"></i>Dashboard do Operador</div>
-      <div class="card-body">
+      <div class="card-header py-2"><i class="bi bi-eye-slash me-2 text-secondary"></i>Dashboard do Operador</div>
+      <div class="card-body p-3">
         <form method="post" action="{{ url_for('config.dashboard_operador') }}">
-          <div class="form-check form-switch mb-3">
+          <div class="form-check form-switch mb-2">
             <input class="form-check-input" type="checkbox" name="dashboard_operador_restrito" id="swDash"
                    {% if cfg.get('dashboard_operador_restrito') %}checked{% endif %}>
-            <label class="form-check-label fw-semibold" for="swDash">
+            <label class="form-check-label fw-semibold small" for="swDash">
               Restringir dashboard para operadores de caixa
             </label>
           </div>
-          <div class="text-muted small mb-3">
-            Quando ativo, enquanto um <strong>operador de caixa</strong> tiver o caixa aberto, a dashboard ocultará:<br>
+          <div class="text-muted small mb-2">
+            Quando ativo, enquanto um <strong>operador de caixa</strong> tiver o caixa aberto, a dashboard ocultará:
             <ul class="mb-0 mt-1">
               <li>Total do dia e valor em dinheiro</li>
               <li>Valores nas formas de pagamento (exibe só %)</li>
               <li>Coluna de valor nas últimas vendas</li>
             </ul>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">Senha do lojista <span class="text-danger">*</span></label>
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Senha do lojista <span class="text-danger">*</span></label>
             <input type="password" name="owner_password" class="form-control form-control-sm"
                    placeholder="Confirme sua senha para salvar" required autocomplete="current-password">
           </div>
-          <button type="submit" class="btn btn-warning fw-semibold">
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold">
             <i class="bi bi-floppy me-1"></i>Salvar
           </button>
         </form>
@@ -114,22 +114,22 @@
 
     <!-- Alterar Senha -->
     <div class="card" id="seguranca">
-      <div class="card-header"><i class="bi bi-lock me-2 text-warning"></i>Segurança — Alterar Senha</div>
-      <div class="card-body">
+      <div class="card-header py-2"><i class="bi bi-lock me-2 text-warning"></i>Segurança — Alterar Senha</div>
+      <div class="card-body p-3">
         <form method="post" action="{{ url_for('config.alterar_senha') }}">
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">Senha atual</label>
-            <input type="password" name="senha_atual" class="form-control" required placeholder="Digite sua senha atual">
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Senha atual</label>
+            <input type="password" name="senha_atual" class="form-control form-control-sm" required placeholder="Digite sua senha atual">
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">Nova senha</label>
-            <input type="password" name="nova_senha" class="form-control" required placeholder="Mínimo 4 caracteres">
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Nova senha</label>
+            <input type="password" name="nova_senha" class="form-control form-control-sm" required placeholder="Mínimo 4 caracteres">
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold small">Confirmar nova senha</label>
-            <input type="password" name="confirmar_senha" class="form-control" required placeholder="Repita a nova senha">
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Confirmar nova senha</label>
+            <input type="password" name="confirmar_senha" class="form-control form-control-sm" required placeholder="Repita a nova senha">
           </div>
-          <button type="submit" class="btn btn-warning fw-semibold">
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold mt-1">
             <i class="bi bi-floppy me-1"></i>Alterar Senha
           </button>
         </form>
