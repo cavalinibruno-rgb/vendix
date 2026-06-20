@@ -33,7 +33,9 @@ def index():
 
     ordem    = request.args.get('ordem', '')
 
-    query = Product.query.filter_by(tenant_id=tid(), active=True)
+    from app.models.combo import ComboItem
+    combo_ids = db.session.query(ComboItem.combo_id).distinct()
+    query = Product.query.filter_by(tenant_id=tid(), active=True).filter(~Product.id.in_(combo_ids))
     if q:
         query = query.filter(Product.name.ilike(f'%{q}%'))
     if tipo_id:
