@@ -97,14 +97,18 @@
                placeholder="Procurar produto…" autocomplete="off">
       </div>
 
-      <!-- Abas de categoria -->
-      <div class="d-flex pdv-tabs" id="pdvTabs">
-        <button class="pdv-tab active" data-cat="todas" onclick="filtrarCategoria('todas', this)">Todas</button>
-      </div>
-
-      <!-- Abas de marca -->
-      <div class="d-flex pdv-tabs" id="pdvMarcas" style="display:none !important;">
-        <button class="pdv-tab active" data-marca="todas" onclick="filtrarMarca('todas', this)">Todas as marcas</button>
+      <!-- Filtros -->
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <select id="filtroCategoria" class="form-select form-select-sm pdv-search" onchange="filtrarCategoria(this.value)">
+            <option value="todas">Todas as categorias</option>
+          </select>
+        </div>
+        <div class="col-6">
+          <select id="filtroMarca" class="form-select form-select-sm pdv-search" onchange="filtrarMarca(this.value)">
+            <option value="todas">Todas as marcas</option>
+          </select>
+        </div>
       </div>
 
       <!-- Grid de produtos -->
@@ -331,42 +335,23 @@ fetch('/produtos/api/todos').then(r => r.json()).then(lista => {
 function construirAbas(lista) {
   const cats = new Map();
   lista.forEach(p => { if (p.type_id && !cats.has(p.type_id)) cats.set(p.type_id, p.type_name); });
-  const tabs = document.getElementById('pdvTabs');
+  const sel = document.getElementById('filtroCategoria');
   cats.forEach((nome, id) => {
-    const btn = document.createElement('button');
-    btn.className = 'pdv-tab'; btn.dataset.cat = id; btn.textContent = nome;
-    btn.onclick = () => filtrarCategoria(id, btn);
-    tabs.appendChild(btn);
+    const o = document.createElement('option'); o.value = id; o.textContent = nome; sel.appendChild(o);
   });
 }
 
 function construirMarcas(lista) {
   const marcas = new Map();
   lista.forEach(p => { if (p.brand_id && !marcas.has(p.brand_id)) marcas.set(p.brand_id, p.brand_name); });
-  const row = document.getElementById('pdvMarcas');
-  if (!marcas.size) return; // sem marcas, não exibe a linha
-  row.style.removeProperty('display');
+  const sel = document.getElementById('filtroMarca');
   marcas.forEach((nome, id) => {
-    const btn = document.createElement('button');
-    btn.className = 'pdv-tab'; btn.dataset.marca = id; btn.textContent = nome;
-    btn.onclick = () => filtrarMarca(id, btn);
-    row.appendChild(btn);
+    const o = document.createElement('option'); o.value = id; o.textContent = nome; sel.appendChild(o);
   });
 }
 
-function filtrarCategoria(cat, btnEl) {
-  catAtual = cat;
-  document.querySelectorAll('#pdvTabs .pdv-tab').forEach(b => b.classList.remove('active'));
-  btnEl.classList.add('active');
-  aplicarFiltros();
-}
-
-function filtrarMarca(marca, btnEl) {
-  marcaAtual = marca;
-  document.querySelectorAll('#pdvMarcas .pdv-tab').forEach(b => b.classList.remove('active'));
-  btnEl.classList.add('active');
-  aplicarFiltros();
-}
+function filtrarCategoria(val) { catAtual = val; aplicarFiltros(); }
+function filtrarMarca(val)     { marcaAtual = val; aplicarFiltros(); }
 
 function aplicarFiltros() {
   const q = document.getElementById('produtoSearch').value.trim().toLowerCase();
