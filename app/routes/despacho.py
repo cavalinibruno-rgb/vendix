@@ -50,10 +50,26 @@ def despachar(sale_id):
         phone = ''.join(filter(str.isdigit, sale.customer.phone))
         if not phone.startswith('55'):
             phone = '55' + phone
+        itens = ', '.join(
+            f'{int(i.quantity)}x {i.product_name}' for i in sale.items
+        )
+        pgto_map = {
+            'dinheiro': 'Dinheiro', 'cartao': 'Cartão', 'pix': 'Pix',
+            'conta': 'Conta', 'pelo_app': 'Pelo app',
+            'entrega_dinheiro': 'Dinheiro na entrega',
+            'entrega_cartao': 'Cartão na entrega',
+            'entrega_pix': 'Pix na entrega',
+        }
+        pagamento = pgto_map.get(sale.payment_method, sale.payment_method)
+        total = f'R$ {sale.total:.2f}'.replace('.', ',')
+
         msg_tpl = cfg.get('whatsapp_msg') or 'Olá {cliente}! Seu pedido saiu para entrega com o motoboy {motoboy}. Em breve chegará até você!'
         msg = (msg_tpl
                .replace('{cliente}', sale.customer.name)
-               .replace('{motoboy}', motoboy.name if motoboy else 'nosso entregador'))
+               .replace('{motoboy}', motoboy.name if motoboy else 'nosso entregador')
+               .replace('{itens}', itens)
+               .replace('{pagamento}', pagamento)
+               .replace('{total}', total))
         import urllib.parse
         wa_url = f'whatsapp://send?phone={phone}&text={urllib.parse.quote(msg)}'
 

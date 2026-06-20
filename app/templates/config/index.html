@@ -25,9 +25,17 @@
           <div class="text-muted small mb-3">
             Ao clicar em <strong>Despachar</strong>, o WhatsApp abre automaticamente com a mensagem abaixo pronta para enviar ao cliente.
           </div>
-          <label class="form-label fw-semibold">Mensagem <span class="text-muted fw-normal">(use {cliente} e {motoboy})</span></label>
-          <textarea name="whatsapp_msg" class="form-control" rows="4" placeholder="Olá {cliente}! Seu pedido saiu para entrega com o motoboy {motoboy}. Em breve chegará até você!">{{ cfg.get('whatsapp_msg', '') }}</textarea>
-          <div class="text-muted small mt-1">Deixe em branco para usar a mensagem padrão.</div>
+          <label class="form-label fw-semibold">Mensagem</label>
+          <textarea name="whatsapp_msg" class="form-control" rows="5" placeholder="Olá {cliente}! Seu pedido saiu para entrega com o motoboy {motoboy}. Em breve chegará até você!">{{ cfg.get('whatsapp_msg', '') }}</textarea>
+          <div class="text-muted small mt-2">
+            Variáveis disponíveis:<br>
+            <code>{cliente}</code> — nome do cliente &nbsp;
+            <code>{motoboy}</code> — nome do motoboy &nbsp;
+            <code>{itens}</code> — lista de itens do pedido &nbsp;
+            <code>{pagamento}</code> — forma de pagamento &nbsp;
+            <code>{total}</code> — valor total<br>
+            Deixe em branco para usar a mensagem padrão.
+          </div>
           <button type="submit" class="btn btn-warning fw-semibold mt-3">
             <i class="bi bi-floppy me-1"></i>Salvar configurações
           </button>
