@@ -69,7 +69,10 @@ def fechar(caixa_id):
     esperado_caixa = caixa.opening_amount + total_dinheiro
 
     if request.method == 'POST':
-        def fval(name): return float(request.form.get(name, 0) or 0)
+        def fval(name):
+            v = request.form.get(name, '0').replace(',', '.').strip() or '0'
+            try: return float(v)
+            except ValueError: return 0.0
         op = {
             'loja_dinheiro': fval('loja_dinheiro'),
             'loja_cartao':   fval('loja_cartao'),
