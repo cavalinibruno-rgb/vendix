@@ -55,6 +55,6 @@ def despachar(sale_id):
                .replace('{cliente}', sale.customer.name)
                .replace('{motoboy}', motoboy.name if motoboy else 'nosso entregador'))
         import urllib.parse
-        wa_url = f'https://wa.me/{phone}?text={urllib.parse.quote(msg)}'
+        wa_url = f'whatsapp://send?phone={phone}&text={urllib.parse.quote(msg)}'
 
     return jsonify({'ok': True, 'wa_url': wa_url, 'sale_id': sale.id})
