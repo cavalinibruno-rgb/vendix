@@ -2,6 +2,15 @@
 {% block title %}Nova Venda – Vendix{% endblock %}
 
 {% block content %}
+<!-- Toast de aviso (substitui alert() para não travar foco no Electron) -->
+<div class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:9999;">
+  <div id="avisoToast" class="toast align-items-center text-bg-danger border-0" role="alert" data-bs-autohide="true" data-bs-delay="3500">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="avisoTexto"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
 <div class="page-header d-flex justify-content-between align-items-center">
   <div>
     <h1><i class="bi bi-cart-plus me-2"></i>Nova Venda</h1>
@@ -576,20 +585,26 @@ function calcTroco() {
   }
 }
 
+// ── Aviso (substitui alert para não travar foco no Electron) ──
+function aviso(msg) {
+  document.getElementById('avisoTexto').textContent = msg;
+  bootstrap.Toast.getOrCreateInstance(document.getElementById('avisoToast')).show();
+}
+
 // ── Finalizar ─────────────────────────────────────────
 function finalizarVenda() {
-  if (!carrinho.length) { alert('Adicione pelo menos um produto.'); return; }
-  if (!pgto) { alert('Selecione a forma de pagamento.'); return; }
-  if (pgto === 'conta' && !clienteAtual) { alert('Para lançar na Conta, selecione um cliente.'); return; }
+  if (!carrinho.length) { aviso('Adicione pelo menos um produto.'); return; }
+  if (!pgto) { aviso('Selecione a forma de pagamento.'); return; }
+  if (pgto === 'conta' && !clienteAtual) { aviso('Para lançar na Conta, selecione um cliente.'); return; }
   if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
-    alert('Informe o nome do app (iFood, Anotaí, etc.)'); return;
+    aviso('Informe o nome do app (iFood, Anotaí, etc.)'); return;
   }
   if (pgto === 'dinheiro' || pgto === 'entrega_dinheiro') {
     const recebido = parseFloat(document.getElementById('valorRecebido').value.replace(',', '.')) || 0;
     const total    = carrinho.reduce((s, i) => s + i.total, 0)
                    + (modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0);
     if (recebido < total) {
-      alert('Valor recebido menor que o total. Informe o valor correto.'); return;
+      aviso('Valor recebido menor que o total. Informe o valor correto.'); return;
     }
   }
 
@@ -616,10 +631,10 @@ function finalizarVenda() {
     if (d.sale_id) {
       window.location.href = `/vendas/${d.sale_id}`;
     } else {
-      alert('Erro: ' + (d.error || 'desconhecido'));
+      aviso('Erro: ' + (d.error || 'desconhecido'));
     }
   })
-  .catch(() => alert('Erro ao finalizar venda.'));
+  .catch(() => aviso('Erro ao finalizar venda.'));
 }
 
 // ── Util ──────────────────────────────────────────────
