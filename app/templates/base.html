@@ -53,6 +53,11 @@
     .sidebar.collapsed .sidebar-footer .footer-name { display: none; }
     .sidebar.collapsed .sidebar-footer .nav-link { padding: 6px 0; justify-content: center; }
 
+    /* Correção para navegador: evita sobreposição do footer no menu */
+    .sidebar.browser-mode { display: flex; flex-direction: column; }
+    .sidebar.browser-mode nav { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .sidebar.browser-mode .sidebar-footer { position: static; border-top: 1px solid #3d3d5e; padding: 16px 24px; flex-shrink: 0; }
+
     .main-content { margin-left: 240px; padding: 28px 32px; min-height: 100vh; transition: margin-left .2s ease; }
     .main-content.collapsed { margin-left: 60px; }
     .topbar { margin-left: 240px; background: #fff; border-bottom: 1px solid #e5e7eb;
@@ -257,6 +262,11 @@
 
   // Restaura estado salvo
   applyCollapse(localStorage.getItem('sidebarCollapsed') === 'true');
+
+  // Aplica layout flex no sidebar apenas no navegador (não no Electron)
+  if (!navigator.userAgent.includes('Electron')) {
+    document.getElementById('sidebar').classList.add('browser-mode');
+  }
 </script>
 </body>
 </html>
