@@ -13,7 +13,7 @@ class User(db.Model, UserMixin):
     password_hash= db.Column(db.String(256), nullable=False)
     display_name = db.Column(db.String(128))
     role         = db.Column(db.String(16), default='operator')  # master | admin | operator
-    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at   = db.Column(db.DateTime, default=datetime.now)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

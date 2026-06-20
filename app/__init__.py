@@ -1,10 +1,17 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-import os
+import os, time
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Força fuso horário de Brasília (UTC-3) no servidor Linux
+os.environ['TZ'] = 'America/Sao_Paulo'
+try:
+    time.tzset()
+except AttributeError:
+    pass  # Windows não tem tzset, ignora
 
 db = SQLAlchemy()
 login_manager = LoginManager()

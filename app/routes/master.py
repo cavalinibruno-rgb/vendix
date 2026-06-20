@@ -57,7 +57,7 @@ def tenant_novo():
                 email=email,
                 phone=phone,
                 status='active',
-                expires_at=datetime.utcnow() + timedelta(days=dias)
+                expires_at=datetime.now() + timedelta(days=dias)
             )
             db.session.add(tenant)
             db.session.flush()
@@ -98,7 +98,7 @@ def tenant_ativar(tenant_id):
     tenant = Tenant.query.get_or_404(tenant_id)
     dias = int(request.form.get('dias', 30))
     tenant.status = 'active'
-    tenant.expires_at = datetime.utcnow() + timedelta(days=dias)
+    tenant.expires_at = datetime.now() + timedelta(days=dias)
     db.session.commit()
     flash(f'Loja "{tenant.store_name}" reativada por {dias} dias.', 'success')
     return redirect(url_for('master.dashboard'))

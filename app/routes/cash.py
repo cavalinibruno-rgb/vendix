@@ -86,7 +86,7 @@ def fechar(caixa_id):
         caixa.closing_amount = total_operador
         caixa.closing_data   = json.dumps(op)
         caixa.closed_by      = current_user.id
-        caixa.closed_at      = datetime.utcnow()
+        caixa.closed_at      = datetime.now()
         caixa.status         = 'closed'
         caixa.notes          = request.form.get('notes', '')
         db.session.commit()
@@ -109,7 +109,7 @@ def resumo(caixa_id):
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
         Sale.created_at >= caixa.opened_at,
-        Sale.created_at <= (caixa.closed_at or datetime.utcnow()),
+        Sale.created_at <= (caixa.closed_at or datetime.now()),
     ).all()
 
     vendas_loja = [v for v in todas_vendas if v.source != 'app' and v.status == 'confirmed']

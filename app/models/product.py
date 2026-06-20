@@ -7,7 +7,7 @@ class ProductType(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     tenant_id  = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name       = db.Column(db.String(64), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     products = db.relationship('Product', backref='type', lazy=True)
 
@@ -17,7 +17,7 @@ class Brand(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     tenant_id  = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name       = db.Column(db.String(64), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     products = db.relationship('Product', backref='brand', lazy=True)
 
@@ -38,4 +38,4 @@ class Product(db.Model):
     image_path     = db.Column(db.String(256))
     image_data     = db.Column(db.LargeBinary)
     image_mime     = db.Column(db.String(32))
-    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at     = db.Column(db.DateTime, default=datetime.now)

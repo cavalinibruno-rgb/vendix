@@ -13,7 +13,7 @@ class CashRegister(db.Model):
     status         = db.Column(db.String(16), default='open')  # open | closed
     notes          = db.Column(db.Text)
     closing_data   = db.Column(db.Text)   # JSON com valores informados pelo operador
-    opened_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    opened_at      = db.Column(db.DateTime, default=datetime.now)
     closed_at      = db.Column(db.DateTime, nullable=True)
 
     opener = db.relationship('User', foreign_keys=[opened_by], backref='opened_registers')

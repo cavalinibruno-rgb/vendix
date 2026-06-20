@@ -11,7 +11,9 @@
     .sidebar {
       width: 240px; min-height: 100vh; background: linear-gradient(180deg,#1a1a2e,#2d2d4e);
       position: fixed; top: 0; left: 0; z-index: 100; padding: 0;
+      transition: width .2s ease; overflow: hidden;
     }
+    .sidebar.collapsed { width: 60px; }
     .sidebar-brand {
       padding: 20px 24px 16px;
       border-bottom: 1px solid #3d3d5e;
@@ -19,27 +21,49 @@
       font-size: 1.4rem;
       font-weight: 800;
       letter-spacing: 1px;
+      display: flex; align-items: center; justify-content: space-between; white-space: nowrap;
     }
     .sidebar-brand span { color: #fff; }
+    .sidebar-brand .btn-collapse {
+      background: none; border: none; color: #9ba8b5; cursor: pointer;
+      padding: 0; font-size: 1rem; flex-shrink: 0; line-height: 1;
+    }
+    .sidebar-brand .btn-collapse:hover { color: #fff; }
+    .sidebar.collapsed .sidebar-brand { padding: 20px 0 16px; justify-content: center; }
+    .sidebar.collapsed .sidebar-brand .brand-text { display: none; }
+    .sidebar .nav-section {
+      padding: 10px 24px 4px; font-size: .7rem; font-weight: 700;
+      letter-spacing: .08em; color: #5a6478; text-transform: uppercase; white-space: nowrap;
+    }
+    .sidebar.collapsed .nav-section { display: none; }
     .sidebar .nav-link {
       color: #9ba8b5; padding: 10px 24px; display: flex; align-items: center; gap: 10px;
-      font-size: .9rem; border-left: 3px solid transparent; transition: all .15s;
+      font-size: .9rem; border-left: 3px solid transparent; transition: all .15s; white-space: nowrap;
     }
     .sidebar .nav-link:hover, .sidebar .nav-link.active {
       color: #fff; background: rgba(201,168,76,.12); border-left-color: #c9a84c;
     }
-    .sidebar .nav-link i { font-size: 1.1rem; width: 20px; }
-    .main-content { margin-left: 240px; padding: 28px 32px; min-height: 100vh; }
+    .sidebar .nav-link i { font-size: 1.1rem; width: 20px; flex-shrink: 0; }
+    .sidebar .nav-link .nav-label { transition: opacity .15s; }
+    .sidebar.collapsed .nav-link { padding: 10px 0; justify-content: center; border-left: none; border-right: 3px solid transparent; }
+    .sidebar.collapsed .nav-link:hover, .sidebar.collapsed .nav-link.active { border-left: none; border-right-color: #c9a84c; }
+    .sidebar.collapsed .nav-label { display: none; }
+    .sidebar.collapsed .nav-link { position: relative; }
+    .sidebar .sidebar-footer { white-space: nowrap; }
+    .sidebar.collapsed .sidebar-footer .footer-name { display: none; }
+    .sidebar.collapsed .sidebar-footer .nav-link { padding: 6px 0; justify-content: center; }
+
+    .main-content { margin-left: 240px; padding: 28px 32px; min-height: 100vh; transition: margin-left .2s ease; }
+    .main-content.collapsed { margin-left: 60px; }
+    .topbar { margin-left: 240px; background: #fff; border-bottom: 1px solid #e5e7eb;
+      padding: 10px 32px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+      position: sticky; top: 0; z-index: 99; transition: margin-left .2s ease; }
+    .topbar.collapsed { margin-left: 60px; }
     .page-header { margin-bottom: 24px; }
     .page-header h1 { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; margin: 0; }
     .page-header p  { color: #6b7280; margin: 4px 0 0; font-size: .9rem; }
     .card { border: none; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
     .card-header { background: #fff; border-bottom: 1px solid #f0f2f5; border-radius: 12px 12px 0 0 !important; padding: 14px 20px; font-weight: 600; color: #374151; }
-    .topbar {
-      margin-left: 240px; background: #fff; border-bottom: 1px solid #e5e7eb;
-      padding: 10px 32px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;
-      position: sticky; top: 0; z-index: 99;
-    }
     .flash-messages { margin-bottom: 16px; }
   </style>
   <link rel="manifest" href="/static/manifest.json">
@@ -51,79 +75,77 @@
 </head>
 <body>
 
-<div class="sidebar">
-  <div class="sidebar-brand">Ven<span>dix</span></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-text">Ven<span>dix</span></span>
+    <button class="btn-collapse" onclick="toggleSidebar()" title="Recolher menu">
+      <i class="bi bi-layout-sidebar-reverse" id="collapseIcon"></i>
+    </button>
+  </div>
   <nav class="mt-2">
     {% if current_user.is_authenticated and current_user.is_master %}
       <a href="{{ url_for('master.dashboard') }}" class="nav-link {% if request.endpoint == 'master.dashboard' %}active{% endif %}">
-        <i class="bi bi-grid"></i> Painel Master
+        <i class="bi bi-grid"></i><span class="nav-label"> Painel Master</span>
       </a>
       <a href="{{ url_for('master.tenant_novo') }}" class="nav-link {% if request.endpoint == 'master.tenant_novo' %}active{% endif %}">
-        <i class="bi bi-plus-circle"></i> Nova Loja
+        <i class="bi bi-plus-circle"></i><span class="nav-label"> Nova Loja</span>
       </a>
     {% elif current_user.is_authenticated %}
       {% set ep = request.endpoint %}
 
       <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if ep == 'dashboard.index' %}active{% endif %}">
-        <i class="bi bi-speedometer2"></i> Dashboard
+        <i class="bi bi-speedometer2"></i><span class="nav-label"> Dashboard</span>
       </a>
-
       <a href="{{ url_for('cash.index') }}" class="nav-link {% if 'cash' in ep %}active{% endif %}">
-        <i class="bi bi-cash-stack"></i> Caixa
+        <i class="bi bi-cash-stack"></i><span class="nav-label"> Caixa</span>
       </a>
 
-      <!-- Operações -->
-      <div style="padding:10px 24px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;color:#5a6478;text-transform:uppercase;">
-        Operações
-      </div>
+      <div class="nav-section">Operações</div>
       <a href="{{ url_for('sales.nova') }}" class="nav-link {% if ep == 'sales.nova' %}active{% endif %}">
-        <i class="bi bi-cart-plus"></i> Nova Venda
+        <i class="bi bi-cart-plus"></i><span class="nav-label"> Nova Venda</span>
       </a>
       <a href="{{ url_for('sales.index') }}" class="nav-link {% if ep == 'sales.index' %}active{% endif %}">
-        <i class="bi bi-receipt"></i> Vendas
+        <i class="bi bi-receipt"></i><span class="nav-label"> Vendas</span>
       </a>
       <a href="{{ url_for('stock.index') }}" class="nav-link {% if 'stock' in ep %}active{% endif %}">
-        <i class="bi bi-boxes"></i> Estoque
+        <i class="bi bi-boxes"></i><span class="nav-label"> Estoque</span>
       </a>
       <a href="{{ url_for('account.index') }}" class="nav-link {% if 'account' in ep %}active{% endif %}">
-        <i class="bi bi-person-lines-fill"></i> Fiado
+        <i class="bi bi-person-lines-fill"></i><span class="nav-label"> Fiado</span>
       </a>
       <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in ep %}active{% endif %}">
-        <i class="bi bi-phone"></i> Apps
+        <i class="bi bi-phone"></i><span class="nav-label"> Apps</span>
       </a>
 
-      <!-- Cadastro -->
-      <div style="padding:10px 24px 4px;font-size:.7rem;font-weight:700;letter-spacing:.08em;color:#5a6478;text-transform:uppercase;">
-        Cadastro
-      </div>
-      <a href="{{ url_for('customers.index') }}" class="nav-link {% if ep == 'customers.index' or ep == 'customers.novo' or ep == 'customers.editar' %}active{% endif %}">
-        <i class="bi bi-people"></i> Clientes
+      <div class="nav-section">Cadastro</div>
+      <a href="{{ url_for('customers.index') }}" class="nav-link {% if ep in ('customers.index','customers.novo','customers.editar') %}active{% endif %}">
+        <i class="bi bi-people"></i><span class="nav-label"> Clientes</span>
       </a>
       <a href="{{ url_for('customers.bairros') }}" class="nav-link {% if ep == 'customers.bairros' %}active{% endif %}">
-        <i class="bi bi-geo-alt"></i> Bairros
+        <i class="bi bi-geo-alt"></i><span class="nav-label"> Bairros</span>
       </a>
-      <a href="{{ url_for('products.index') }}" class="nav-link {% if ep == 'products.index' or ep == 'products.novo' or ep == 'products.editar' %}active{% endif %}">
-        <i class="bi bi-box-seam"></i> Produtos
+      <a href="{{ url_for('products.index') }}" class="nav-link {% if ep in ('products.index','products.novo','products.editar') %}active{% endif %}">
+        <i class="bi bi-box-seam"></i><span class="nav-label"> Produtos</span>
       </a>
       <a href="{{ url_for('products.tipos') }}" class="nav-link {% if ep == 'products.tipos' %}active{% endif %}">
-        <i class="bi bi-tags"></i> Categorias
+        <i class="bi bi-tags"></i><span class="nav-label"> Categorias</span>
       </a>
       <a href="{{ url_for('products.marcas') }}" class="nav-link {% if ep == 'products.marcas' %}active{% endif %}">
-        <i class="bi bi-bookmark-star"></i> Marcas
+        <i class="bi bi-bookmark-star"></i><span class="nav-label"> Marcas</span>
       </a>
     {% endif %}
   </nav>
-  <div style="position:absolute;bottom:0;width:100%;padding:16px 24px;border-top:1px solid #3d3d5e;">
+  <div class="sidebar-footer" style="position:absolute;bottom:0;width:100%;padding:16px 24px;border-top:1px solid #3d3d5e;">
     {% if current_user.is_authenticated %}
-    <div style="color:#9ba8b5;font-size:.8rem;margin-bottom:8px;">{{ current_user.display_name or current_user.username }}</div>
+    <div class="footer-name" style="color:#9ba8b5;font-size:.8rem;margin-bottom:8px;white-space:nowrap;overflow:hidden;">{{ current_user.display_name or current_user.username }}</div>
     <a href="{{ url_for('auth.logout') }}" class="nav-link" style="padding:6px 0;">
-      <i class="bi bi-box-arrow-left"></i> Sair
+      <i class="bi bi-box-arrow-left"></i><span class="nav-label"> Sair</span>
     </a>
     {% endif %}
   </div>
 </div>
 
-<div class="topbar">
+<div class="topbar" id="topbar">
   {% if current_user.is_authenticated and not current_user.is_master %}
     {% set tenant = current_user.tenant %}
     {% if tenant %}
@@ -135,7 +157,7 @@
   {% endif %}
 </div>
 
-<div class="main-content">
+<div class="main-content" id="mainContent">
   <div class="flash-messages">
     {% for cat, msg in get_flashed_messages(with_categories=true) %}
     <div class="alert alert-{{ 'danger' if cat == 'danger' else 'success' if cat == 'success' else 'warning' }} alert-dismissible fade show" role="alert">
@@ -153,6 +175,28 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/static/sw.js');
   }
+
+  // ── Menu colapsável ──────────────────────────────────
+  const sidebar     = document.getElementById('sidebar');
+  const topbar      = document.getElementById('topbar');
+  const mainContent = document.getElementById('mainContent');
+  const icon        = document.getElementById('collapseIcon');
+
+  function applyCollapse(collapsed) {
+    sidebar.classList.toggle('collapsed', collapsed);
+    topbar.classList.toggle('collapsed', collapsed);
+    mainContent.classList.toggle('collapsed', collapsed);
+    icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-reverse';
+  }
+
+  function toggleSidebar() {
+    const collapsed = !sidebar.classList.contains('collapsed');
+    localStorage.setItem('sidebarCollapsed', collapsed);
+    applyCollapse(collapsed);
+  }
+
+  // Restaura estado salvo
+  applyCollapse(localStorage.getItem('sidebarCollapsed') === 'true');
 </script>
 </body>
 </html>
