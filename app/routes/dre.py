@@ -18,17 +18,49 @@ def fval(name, default='0'):
     except ValueError:
         return 0.0
 
+def _calcular_impostos(regime, cfg, base):
+    """Retorna (dict_detalhado, total, reduz_receita).
+    reduz_receita=False para MEI (DAS vai para despesas, não deduz receita).
+    """
+    if regime == 'mei':
+        das = cfg.get('das_mei', 0)
+        return {'DAS MEI (fixo mensal)': das}, das, False
+
+    if regime == 'simples':
+        aliq = cfg.get('aliquota_simples', 0)
+        valor = base * (aliq / 100)
+        return {f'Simples Nacional ({aliq:.2f}%)': valor}, valor, True
+
+    # presumido ou real
+    campos = [
+        ('aliq_pis',   'PIS'),
+        ('aliq_cofins','COFINS'),
+        ('aliq_iss',   'ISS'),
+        ('aliq_icms',  'ICMS'),
+        ('aliq_irpj',  'IRPJ'),
+        ('aliq_csll',  'CSLL'),
+    ]
+    detalhado = {}
+    for key, label in campos:
+        aliq = cfg.get(key, 0)
+        if aliq:
+            detalhado[f'{label} ({aliq:.2f}%)'] = base * (aliq / 100)
+    total = sum(detalhado.values())
+    return detalhado, total, True
+
 @dre_bp.route('/')
 @login_required
 def index():
+    tenant = Tenant.query.get(tid())
+    cfg    = tenant.get_settings()
+    regime = cfg.get('regime_tributario', 'simples')
+
     # Período — padrão: mês atual
     hoje = date.today()
     inicio_str = request.args.get('inicio', hoje.replace(day=1).strftime('%Y-%m-%d'))
     fim_str    = request.args.get('fim',    hoje.strftime('%Y-%m-%d'))
     inicio = datetime.strptime(inicio_str, '%Y-%m-%d')
     fim    = datetime.strptime(fim_str,    '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-
-    aliquota = float(request.args.get('aliquota', '0') or '0')
 
     # Vendas confirmadas no período
     vendas = Sale.query.filter(
@@ -38,7 +70,7 @@ def index():
         Sale.created_at <= fim,
     ).all()
 
-    # Vendas canceladas no período (deduções)
+    # Vendas canceladas no período
     canceladas = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'cancelled',
@@ -49,9 +81,15 @@ def index():
     receita_bruta      = sum(v.total for v in vendas)
     deducao_cancelados = sum(v.total for v in canceladas)
     base_imposto       = receita_bruta - deducao_cancelados
-    deducao_impostos   = base_imposto * (aliquota / 100)
-    total_deducoes     = deducao_cancelados + deducao_impostos
-    receita_liquida    = receita_bruta - total_deducoes
+
+    impostos_detalhado, total_impostos, reduz_receita = _calcular_impostos(regime, cfg, base_imposto)
+
+    deducao_impostos = total_impostos if reduz_receita else 0
+    total_deducoes   = deducao_cancelados + deducao_impostos
+    receita_liquida  = receita_bruta - total_deducoes
+
+    # Para MEI o DAS entra como despesa extra, não reduz receita
+    das_mei = total_impostos if regime == 'mei' else 0
 
     # CMV — usa custo gravado no momento da venda (histórico fiel)
     cmv = sum(
@@ -60,7 +98,8 @@ def index():
         for item in v.items
     )
 
-    lucro_bruto = receita_liquida - cmv
+    lucro_bruto       = receita_liquida - cmv
+    resultado_liquido = lucro_bruto - total_despesas - das_mei
 
     # Despesas operacionais
     despesas = Expense.query.filter(
@@ -69,8 +108,7 @@ def index():
         Expense.date <= fim.date(),
     ).order_by(Expense.date.desc()).all()
 
-    total_despesas  = sum(d.amount for d in despesas)
-    resultado_liquido = lucro_bruto - total_despesas
+    total_despesas = sum(d.amount for d in despesas)
 
     # Agrupamento por categoria
     por_categoria = {}
@@ -78,10 +116,14 @@ def index():
         por_categoria[d.category] = por_categoria.get(d.category, 0) + d.amount
 
     return render_template('dre/index.html',
-        inicio=inicio_str, fim=fim_str, aliquota=aliquota,
+        inicio=inicio_str, fim=fim_str,
+        regime=regime, cfg=cfg,
+        impostos_detalhado=impostos_detalhado,
+        total_impostos=total_impostos,
+        reduz_receita=reduz_receita,
+        das_mei=das_mei,
         receita_bruta=receita_bruta,
         deducao_cancelados=deducao_cancelados,
-        deducao_impostos=deducao_impostos,
         total_deducoes=total_deducoes,
         receita_liquida=receita_liquida,
         cmv=cmv,

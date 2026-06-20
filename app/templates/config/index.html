@@ -7,6 +7,76 @@
   <p class="text-muted">Personalize o comportamento do sistema</p>
 </div>
 
+<div class="row g-4 mb-4" id="regime">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-receipt-cutoff me-2 text-warning"></i>Regime Tributário</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('config.regime_tributario') }}">
+          <div class="row g-3 align-items-start">
+
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small">Regime</label>
+              <div class="d-flex flex-column gap-2">
+                {% for val, label in [('mei','MEI'),('simples','Simples Nacional'),('presumido','Lucro Presumido'),('real','Lucro Real')] %}
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="regime_tributario"
+                         id="reg_{{ val }}" value="{{ val }}"
+                         {% if cfg.get('regime_tributario','simples') == val %}checked{% endif %}
+                         onchange="mostrarCampos()">
+                  <label class="form-check-label" for="reg_{{ val }}">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- MEI -->
+            <div class="col-md-9" id="campos_mei" style="display:none">
+              <label class="form-label fw-semibold small">Valor fixo do DAS mensal (R$)</label>
+              <input type="number" name="das_mei" class="form-control" style="max-width:200px"
+                     step="0.01" value="{{ cfg.get('das_mei', 0) }}" placeholder="Ex: 80.00">
+              <div class="text-muted small mt-1">O DAS não incide por venda — é lançado como despesa fixa no resultado.</div>
+            </div>
+
+            <!-- Simples Nacional -->
+            <div class="col-md-9" id="campos_simples" style="display:none">
+              <label class="form-label fw-semibold small">Alíquota Efetiva (%)</label>
+              <input type="number" name="aliquota_simples" class="form-control" style="max-width:200px"
+                     step="0.01" value="{{ cfg.get('aliquota_simples', 0) }}" placeholder="Ex: 6.00">
+              <div class="text-muted small mt-1">Consulte o PGDAS ou seu contador para a alíquota efetiva do seu CNPJ.</div>
+            </div>
+
+            <!-- Lucro Presumido / Real -->
+            <div class="col-md-9" id="campos_presumido" style="display:none">
+              <div class="row g-2">
+                {% for campo, label, exemplo in [
+                  ('aliq_pis',   'PIS (%)',   '0.65'),
+                  ('aliq_cofins','COFINS (%)','3.00'),
+                  ('aliq_iss',   'ISS (%)',   '2.00'),
+                  ('aliq_icms',  'ICMS (%)',  '12.00'),
+                  ('aliq_irpj',  'IRPJ (%)',  '1.20'),
+                  ('aliq_csll',  'CSLL (%)',  '1.08'),
+                ] %}
+                <div class="col-6 col-md-2">
+                  <label class="form-label fw-semibold small">{{ label }}</label>
+                  <input type="number" name="{{ campo }}" class="form-control form-control-sm"
+                         step="0.01" value="{{ cfg.get(campo, 0) }}" placeholder="{{ exemplo }}">
+                </div>
+                {% endfor %}
+              </div>
+              <div class="text-muted small mt-2">Deixe zerado os tributos que não se aplicam. IRPJ e CSLL são estimativas mensais.</div>
+            </div>
+
+          </div>
+          <button type="submit" class="btn btn-warning fw-semibold mt-3">
+            <i class="bi bi-floppy me-1"></i>Salvar Regime
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="row g-4">
   <div class="col-lg-5">
     <div class="card mb-4">
@@ -75,4 +145,16 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mostrarCampos() {
+  const regime = document.querySelector('input[name="regime_tributario"]:checked')?.value;
+  document.getElementById('campos_mei').style.display       = regime === 'mei'      ? '' : 'none';
+  document.getElementById('campos_simples').style.display   = regime === 'simples'  ? '' : 'none';
+  document.getElementById('campos_presumido').style.display = (regime === 'presumido' || regime === 'real') ? '' : 'none';
+}
+mostrarCampos();
+</script>
 {% endblock %}

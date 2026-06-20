@@ -23,6 +23,33 @@ def index():
 
     return render_template('config/index.html', cfg=cfg)
 
+@config_bp.route('/regime-tributario', methods=['POST'])
+@login_required
+def regime_tributario():
+    tenant = current_user.tenant
+    cfg = tenant.get_settings()
+
+    regime = request.form.get('regime_tributario', 'simples')
+    cfg['regime_tributario'] = regime
+
+    def fval(name):
+        v = request.form.get(name, '0').replace(',', '.').strip() or '0'
+        try: return float(v)
+        except ValueError: return 0.0
+
+    if regime == 'mei':
+        cfg['das_mei'] = fval('das_mei')
+    elif regime == 'simples':
+        cfg['aliquota_simples'] = fval('aliquota_simples')
+    elif regime in ('presumido', 'real'):
+        for campo in ('aliq_pis', 'aliq_cofins', 'aliq_iss', 'aliq_icms', 'aliq_irpj', 'aliq_csll'):
+            cfg[campo] = fval(campo)
+
+    tenant.save_settings(cfg)
+    db.session.commit()
+    flash('Regime tributário salvo.', 'success')
+    return redirect(url_for('config.index'))
+
 @config_bp.route('/dashboard-operador', methods=['POST'])
 @login_required
 def dashboard_operador():

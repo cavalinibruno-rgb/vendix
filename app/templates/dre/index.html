@@ -5,7 +5,15 @@
 <div class="page-header d-flex align-items-center justify-content-between">
   <div>
     <h1><i class="bi bi-graph-up-arrow me-2 text-warning"></i>DRE</h1>
-    <p class="text-muted mb-0">Demonstração do Resultado do Exercício</p>
+    <p class="text-muted mb-0">Demonstração do Resultado do Exercício
+      <span class="badge bg-secondary ms-2">
+        {% if regime == 'mei' %}MEI
+        {% elif regime == 'simples' %}Simples Nacional
+        {% elif regime == 'presumido' %}Lucro Presumido
+        {% elif regime == 'real' %}Lucro Real
+        {% endif %}
+      </span>
+    </p>
   </div>
   <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalDespesa">
     <i class="bi bi-plus-circle me-1"></i> Nova Despesa
@@ -25,14 +33,12 @@
         <input type="date" name="fim" class="form-control" value="{{ fim }}">
       </div>
       <div class="col-auto">
-        <label class="form-label fw-semibold small">Alíquota de Imposto (%)</label>
-        <input type="number" name="aliquota" class="form-control" style="width:100px"
-               value="{{ aliquota }}" min="0" max="100" step="0.01" placeholder="0">
+        <button class="btn btn-primary"><i class="bi bi-search me-1"></i>Gerar</button>
       </div>
-      <div class="col-auto">
-        <button class="btn btn-primary">
-          <i class="bi bi-search me-1"></i>Gerar
-        </button>
+      <div class="col-auto ms-auto">
+        <a href="{{ url_for('config.index') }}#regime" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-gear me-1"></i>Configurar regime tributário
+        </a>
       </div>
     </form>
   </div>
@@ -51,34 +57,43 @@
         <table class="table table-sm mb-0">
           <tbody>
 
+            <!-- Receita Bruta -->
             <tr class="table-light">
               <td class="fw-semibold ps-3">Receita Bruta</td>
               <td class="text-end pe-3 fw-semibold text-success">R$ {{ '%.2f'|format(receita_bruta) }}</td>
             </tr>
 
-            {% if total_deducoes > 0 %}
+            <!-- Cancelamentos -->
+            {% if deducao_cancelados > 0 %}
             <tr>
-              <td class="ps-4 text-muted small">(-) Cancelamentos</td>
+              <td class="ps-4 text-muted small">(-) Cancelamentos / Devoluções</td>
               <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(deducao_cancelados) }}</td>
             </tr>
-            {% if deducao_impostos > 0 %}
-            <tr>
-              <td class="ps-4 text-muted small">(-) Impostos ({{ aliquota }}%)</td>
-              <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(deducao_impostos) }}</td>
-            </tr>
-            {% endif %}
             {% endif %}
 
+            <!-- Impostos que reduzem receita (Simples, Presumido, Real) -->
+            {% if reduz_receita and total_impostos > 0 %}
+            {% for label, valor in impostos_detalhado.items() %}
+            <tr>
+              <td class="ps-4 text-muted small">(-) {{ label }}</td>
+              <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(valor) }}</td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Receita Líquida -->
             <tr class="table-light">
               <td class="fw-semibold ps-3">Receita Líquida</td>
               <td class="text-end pe-3 fw-semibold">R$ {{ '%.2f'|format(receita_liquida) }}</td>
             </tr>
 
+            <!-- CMV -->
             <tr>
               <td class="ps-4 text-muted small">(-) CMV — Custo das Mercadorias</td>
               <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(cmv) }}</td>
             </tr>
 
+            <!-- Lucro Bruto -->
             <tr class="table-light">
               <td class="fw-semibold ps-3">Lucro Bruto</td>
               <td class="text-end pe-3 fw-semibold {{ 'text-success' if lucro_bruto >= 0 else 'text-danger' }}">
@@ -86,11 +101,21 @@
               </td>
             </tr>
 
+            <!-- Despesas Operacionais -->
             <tr>
               <td class="ps-4 text-muted small">(-) Despesas Operacionais</td>
               <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(total_despesas) }}</td>
             </tr>
 
+            <!-- MEI: DAS como despesa -->
+            {% if regime == 'mei' and das_mei > 0 %}
+            <tr>
+              <td class="ps-4 text-muted small">(-) DAS MEI (fixo mensal)</td>
+              <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(das_mei) }}</td>
+            </tr>
+            {% endif %}
+
+            <!-- Resultado Líquido -->
             <tr class="{% if resultado_liquido >= 0 %}table-success{% else %}table-danger{% endif %}">
               <td class="fw-bold ps-3 fs-6">
                 {% if resultado_liquido >= 0 %}
@@ -109,7 +134,7 @@
       </div>
       {% if cmv == 0 %}
       <div class="card-footer text-muted small">
-        <i class="bi bi-info-circle me-1"></i>CMV zerado — cadastre o preço de custo nos produtos para calcular automaticamente.
+        <i class="bi bi-info-circle me-1"></i>CMV zerado — cadastre o preço de custo nos produtos.
       </div>
       {% endif %}
     </div>
@@ -161,11 +186,8 @@
     <table class="table table-sm table-hover mb-0">
       <thead class="table-light">
         <tr>
-          <th>Data</th>
-          <th>Categoria</th>
-          <th>Descrição</th>
-          <th class="text-end">Valor</th>
-          <th></th>
+          <th>Data</th><th>Categoria</th><th>Descrição</th>
+          <th class="text-end">Valor</th><th></th>
         </tr>
       </thead>
       <tbody>
@@ -178,9 +200,7 @@
           <td>
             <form method="post" action="{{ url_for('dre.despesa_excluir', eid=d.id) }}"
                   data-confirm="Excluir esta despesa?">
-              <button class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i>
-              </button>
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
           </td>
         </tr>
@@ -203,16 +223,13 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label fw-semibold">Data</label>
-            <input type="date" name="date" class="form-control"
-                   value="{{ inicio }}" required>
+            <input type="date" name="date" class="form-control" value="{{ inicio }}" required>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Categoria</label>
             <select name="category" class="form-select" required>
               <option value="">— Selecionar —</option>
-              {% for c in categorias %}
-              <option value="{{ c }}">{{ c }}</option>
-              {% endfor %}
+              {% for c in categorias %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
             </select>
           </div>
           <div class="mb-3">
