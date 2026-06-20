@@ -40,8 +40,11 @@ def index():
 @login_required
 def funcionario_novo():
     name = request.form.get('name', '').strip()
+    role = request.form.get('role', 'caixa')
+    if role not in ('caixa', 'motoboy'):
+        role = 'caixa'
     if name:
-        e = Employee(tenant_id=tid(), name=name)
+        e = Employee(tenant_id=tid(), name=name, role=role)
         db.session.add(e)
         db.session.commit()
         flash(f'Funcionário "{name}" cadastrado!', 'success')

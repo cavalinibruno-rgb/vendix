@@ -44,6 +44,10 @@ def _run_migrations(db):
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cancelled_by_name VARCHAR(64)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cancel_reason TEXT",
         "ALTER TABLE cash_registers ADD COLUMN IF NOT EXISTS closing_data TEXT",
+        "ALTER TABLE employees ADD COLUMN IF NOT EXISTS role VARCHAR(32) DEFAULT 'caixa'",
+        "ALTER TABLE cash_registers ADD COLUMN IF NOT EXISTS operator_employee_id INTEGER REFERENCES employees(id)",
+        "ALTER TABLE cash_registers ADD COLUMN IF NOT EXISTS operator_name VARCHAR(128)",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cashier_name VARCHAR(128)",
         """CREATE TABLE IF NOT EXISTS employees (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

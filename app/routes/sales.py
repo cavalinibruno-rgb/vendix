@@ -46,6 +46,9 @@ def confirmar():
     subtotal = sum(float(i['unit_price']) * float(i['quantity']) for i in items)
     total    = subtotal + (delivery_fee if delivery_mode == 'entrega' else 0)
 
+    caixa = _caixa_aberto()
+    cashier = caixa.operator_name if caixa and caixa.operator_name else (current_user.display_name or current_user.username)
+
     sale = Sale(
         tenant_id      = tid(),
         customer_id    = customer_id,
@@ -59,6 +62,7 @@ def confirmar():
         app_name       = app_name,
         amount_paid    = amount_paid,
         change_amount  = round(amount_paid - total, 2) if amount_paid and amount_paid > total else None,
+        cashier_name   = cashier,
     )
     db.session.add(sale)
     db.session.flush()

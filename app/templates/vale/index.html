@@ -49,6 +49,7 @@
           <thead class="table-light">
             <tr>
               <th>Funcionário</th>
+              <th>Cargo</th>
               <th class="text-end">Total {{ meses[mes-1] }}/{{ ano }}</th>
               <th style="width:120px;"></th>
             </tr>
@@ -60,6 +61,13 @@
                 <a href="{{ url_for('vale.funcionario_detalhe', emp_id=e.id, mes=mes, ano=ano) }}" class="text-decoration-none text-dark">
                   <i class="bi bi-person me-1 text-muted"></i>{{ e.name }}
                 </a>
+              </td>
+              <td>
+                {% if e.role == 'caixa' %}
+                  <span class="badge bg-primary-subtle text-primary">Op. de Caixa</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis">Motoboy</span>
+                {% endif %}
               </td>
               <td class="text-end">
                 {% if totais[e.id] > 0 %}
@@ -145,7 +153,15 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="text" name="name" class="form-control" placeholder="Nome do funcionário" required autofocus>
+          <div class="mb-2">
+            <input type="text" name="name" class="form-control" placeholder="Nome do funcionário" required autofocus>
+          </div>
+          <div>
+            <select name="role" class="form-select" required>
+              <option value="caixa">Op. de Caixa</option>
+              <option value="motoboy">Motoboy</option>
+            </select>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-warning fw-semibold">Cadastrar</button>

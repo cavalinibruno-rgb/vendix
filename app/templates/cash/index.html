@@ -13,6 +13,9 @@
   <div>
     <strong>Caixa aberto</strong> desde {{ caixa.opened_at.strftime('%d/%m/%Y às %H:%M') }}
     — Troco inicial: <strong>R$ {{ '%.2f'|format(caixa.opening_amount) }}</strong>
+    {% if caixa.operator_name %}
+    &nbsp;·&nbsp; Operador: <strong>{{ caixa.operator_name }}</strong>
+    {% endif %}
   </div>
   <a href="{{ url_for('cash.fechar', caixa_id=caixa.id) }}" class="btn btn-danger ms-auto fw-semibold">
     <i class="bi bi-lock-fill me-1"></i> Fechar Caixa
@@ -20,21 +23,71 @@
 </div>
 {% else %}
 <!-- ABRIR CAIXA -->
-<div class="card mb-4" style="max-width:420px;">
-  <div class="card-header">Abrir Caixa</div>
+<div class="card mb-4" style="max-width:480px;">
+  <div class="card-header fw-semibold">Abrir Caixa</div>
   <div class="card-body">
-    <form method="post" action="{{ url_for('cash.abrir') }}">
+
+    <!-- Tabs: Funcionário / Lojista -->
+    <ul class="nav nav-pills mb-4" id="tabModo">
+      {% if operadores %}
+      <li class="nav-item">
+        <button class="nav-link active" onclick="setModo('funcionario')">
+          <i class="bi bi-person-badge me-1"></i>Operador de Caixa
+        </button>
+      </li>
+      {% endif %}
+      <li class="nav-item">
+        <button class="nav-link {% if not operadores %}active{% endif %}" onclick="setModo('lojista')">
+          <i class="bi bi-shield-lock me-1"></i>Lojista
+        </button>
+      </li>
+    </ul>
+
+    <!-- Form Funcionário -->
+    {% if operadores %}
+    <form method="post" action="{{ url_for('cash.abrir') }}" id="formFuncionario">
+      <input type="hidden" name="modo" value="funcionario">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Operador</label>
+        <select name="employee_id" class="form-select form-select-lg" required>
+          <option value="">Selecione o operador...</option>
+          {% for op in operadores %}
+          <option value="{{ op.id }}">{{ op.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Troco inicial (R$)</label>
         <input type="text" name="opening_amount" class="form-control form-control-lg"
                value="0.00" onfocus="if(this.value=='0.00')this.value=''"
                onblur="if(this.value==='')this.value='0.00'">
-        <div class="form-text">Valor em dinheiro que está no caixa antes de começar.</div>
       </div>
       <button class="btn btn-success w-100 fw-semibold py-2">
         <i class="bi bi-unlock me-2"></i>Abrir Caixa
       </button>
     </form>
+    {% endif %}
+
+    <!-- Form Lojista -->
+    <form method="post" action="{{ url_for('cash.abrir') }}" id="formLojista" {% if operadores %}style="display:none"{% endif %}>
+      <input type="hidden" name="modo" value="lojista">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Sua senha</label>
+        <input type="password" name="password" class="form-control form-control-lg"
+               placeholder="Digite sua senha para confirmar" required autocomplete="current-password">
+        <div class="form-text">Confirme sua senha para abrir o caixa como lojista.</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Troco inicial (R$)</label>
+        <input type="text" name="opening_amount" class="form-control form-control-lg"
+               value="0.00" onfocus="if(this.value=='0.00')this.value=''"
+               onblur="if(this.value==='')this.value='0.00'">
+      </div>
+      <button class="btn btn-success w-100 fw-semibold py-2">
+        <i class="bi bi-unlock me-2"></i>Abrir Caixa
+      </button>
+    </form>
+
   </div>
 </div>
 {% endif %}
@@ -48,6 +101,7 @@
       <thead class="table-light">
         <tr>
           <th>#</th>
+          <th>Operador</th>
           <th>Aberto em</th>
           <th>Fechado em</th>
           <th>Troco inicial</th>
@@ -61,6 +115,7 @@
         {% set dif = (c.closing_amount or 0) - (c.opening_amount) %}
         <tr>
           <td class="text-muted small">{{ c.id }}</td>
+          <td class="small fw-semibold">{{ c.operator_name or (c.opener.display_name if c.opener else '—') }}</td>
           <td class="small">{{ c.opened_at.strftime('%d/%m %H:%M') }}</td>
           <td class="small">{{ c.closed_at.strftime('%d/%m %H:%M') if c.closed_at else '—' }}</td>
           <td>R$ {{ '%.2f'|format(c.opening_amount) }}</td>
@@ -80,4 +135,27 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setModo(modo) {
+  const btnFun = document.querySelector('#tabModo .nav-link:first-child');
+  const btnLoj = document.querySelector('#tabModo .nav-link:last-child');
+  const formFun = document.getElementById('formFuncionario');
+  const formLoj = document.getElementById('formLojista');
+
+  if (modo === 'funcionario' && formFun) {
+    formFun.style.display = '';
+    formLoj.style.display = 'none';
+    btnFun.classList.add('active');
+    btnLoj.classList.remove('active');
+  } else {
+    if (formFun) formFun.style.display = 'none';
+    formLoj.style.display = '';
+    if (btnFun) btnFun.classList.remove('active');
+    btnLoj.classList.add('active');
+  }
+}
+</script>
 {% endblock %}

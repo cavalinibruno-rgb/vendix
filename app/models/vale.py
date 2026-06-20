@@ -6,6 +6,7 @@ class Employee(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     tenant_id  = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     name       = db.Column(db.String(128), nullable=False)
+    role       = db.Column(db.String(32), default='caixa')  # caixa | motoboy
     created_at = db.Column(db.DateTime, default=datetime.now)
     vales      = db.relationship('Vale', backref='employee', lazy=True, cascade='all, delete-orphan')
 

@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.cash import CashRegister
 from app.models.sale import Sale
+from app.models.vale import Employee
 from datetime import datetime
 from sqlalchemy import func
 
@@ -27,7 +28,8 @@ def index():
     caixa = caixa_aberto()
     historico = CashRegister.query.filter_by(tenant_id=tid(), status='closed')\
                                   .order_by(CashRegister.closed_at.desc()).limit(30).all()
-    return render_template('cash/index.html', caixa=caixa, historico=historico)
+    operadores = Employee.query.filter_by(tenant_id=tid(), role='caixa').order_by(Employee.name).all()
+    return render_template('cash/index.html', caixa=caixa, historico=historico, operadores=operadores)
 
 @cash_bp.route('/abrir', methods=['POST'])
 @login_required
@@ -35,16 +37,37 @@ def abrir():
     if caixa_aberto():
         flash('Já existe um caixa aberto.', 'warning')
         return redirect(url_for('cash.index'))
-    valor = float(request.form.get('opening_amount', 0) or 0)
+
+    modo  = request.form.get('modo', 'lojista')
+    valor = float((request.form.get('opening_amount', '0') or '0').replace(',', '.'))
+
+    if modo == 'funcionario':
+        emp_id = request.form.get('employee_id', type=int)
+        emp = Employee.query.filter_by(id=emp_id, tenant_id=tid(), role='caixa').first()
+        if not emp:
+            flash('Operador de caixa não encontrado.', 'danger')
+            return redirect(url_for('cash.index'))
+        operator_name        = emp.name
+        operator_employee_id = emp.id
+    else:
+        senha = request.form.get('password', '')
+        if not current_user.check_password(senha):
+            flash('Senha incorreta.', 'danger')
+            return redirect(url_for('cash.index'))
+        operator_name        = current_user.display_name or current_user.username
+        operator_employee_id = None
+
     caixa = CashRegister(
-        tenant_id=tid(),
-        opened_by=current_user.id,
-        opening_amount=valor,
-        status='open',
+        tenant_id            = tid(),
+        opened_by            = current_user.id,
+        opening_amount       = valor,
+        operator_employee_id = operator_employee_id,
+        operator_name        = operator_name,
+        status               = 'open',
     )
     db.session.add(caixa)
     db.session.commit()
-    flash(f'Caixa aberto com R$ {valor:.2f} de troco inicial.', 'success')
+    flash(f'Caixa aberto por {operator_name}. Troco inicial: R$ {valor:.2f}', 'success')
     return redirect(url_for('cash.index'))
 
 @cash_bp.route('/<int:caixa_id>/fechar', methods=['GET', 'POST'])
