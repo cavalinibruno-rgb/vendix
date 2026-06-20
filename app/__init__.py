@@ -33,6 +33,18 @@ def _run_migrations(db):
             name VARCHAR(128) NOT NULL,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
+        """CREATE TABLE IF NOT EXISTS stock_movements (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            product_id INTEGER REFERENCES products(id),
+            product_name VARCHAR(128) NOT NULL,
+            type VARCHAR(8) NOT NULL,
+            quantity INTEGER NOT NULL,
+            motive VARCHAR(128),
+            user_id INTEGER REFERENCES users(id),
+            user_name VARCHAR(64),
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
         """CREATE TABLE IF NOT EXISTS vales (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

@@ -3,116 +3,257 @@
 
 {% block content %}
 <div class="page-header d-flex align-items-center justify-content-between">
-  <h1><i class="bi bi-box-seam me-2"></i>Estoque</h1>
-  <a href="{{ url_for('products.novo') }}" class="btn btn-primary">
-    <i class="bi bi-plus-lg me-1"></i> Novo Produto
-  </a>
-</div>
-
-{% if baixo %}
-<div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
-  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
   <div>
-    <strong>{{ baixo|length }} produto(s) com estoque baixo ou zerado:</strong>
-    {{ baixo|map(attribute='name')|join(', ') }}
+    <h1><i class="bi bi-boxes me-2 text-warning"></i>Estoque</h1>
+    <p>Dê entrada e gerencie o estoque dos produtos</p>
   </div>
-</div>
-{% endif %}
-
-<div class="card">
-  <div class="card-body p-0">
-    <table class="table table-hover mb-0 align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Produto</th>
-          <th class="text-center">Estoque atual</th>
-          <th class="text-center">Alerta abaixo de</th>
-          <th class="text-center">Status</th>
-          <th class="text-center">Ajustar</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in produtos %}
-        {% set baixo_flag = p.stock_quantity <= p.min_stock %}
-        <tr class="{{ 'table-warning' if baixo_flag else '' }}">
-          <td>
-            <div class="fw-semibold">{{ p.name }}</div>
-            {% if p.type %}<div class="text-muted small">{{ p.type.name }}</div>{% endif %}
-          </td>
-          <td class="text-center fs-5 fw-bold {{ 'text-danger' if p.stock_quantity == 0 else ('text-warning' if baixo_flag else 'text-success') }}">
-            {{ p.stock_quantity }}
-          </td>
-          <td class="text-center text-muted">{{ p.min_stock }}</td>
-          <td class="text-center">
-            {% if p.stock_quantity == 0 %}
-              <span class="badge bg-danger">Zerado</span>
-            {% elif baixo_flag %}
-              <span class="badge bg-warning text-dark">Baixo</span>
-            {% else %}
-              <span class="badge bg-success">OK</span>
-            {% endif %}
-          </td>
-          <td class="text-center">
-            <button class="btn btn-sm btn-outline-secondary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalAjuste"
-                    data-id="{{ p.id }}"
-                    data-nome="{{ p.name }}"
-                    data-qtd="{{ p.stock_quantity }}">
-              <i class="bi bi-pencil"></i>
-            </button>
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="5" class="text-center text-muted py-4">Nenhum produto cadastrado.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="d-flex gap-2">
+    <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEntrada">
+      <i class="bi bi-plus-circle me-1"></i>Entrada de Estoque
+    </button>
+    <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuste">
+      <i class="bi bi-sliders me-1"></i>Ajuste
+    </button>
   </div>
 </div>
 
-<!-- Modal ajuste -->
-<div class="modal fade" id="modalAjuste" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Ajustar Estoque</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="row g-3">
+
+  <!-- Painel esquerdo: Produtos -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Produtos em Estoque</div>
+
+      <!-- Filtros -->
+      <div class="card-body border-bottom py-2">
+        <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+          <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+                 style="max-width:200px;" placeholder="Buscar produto...">
+          <select name="tipo" class="form-select form-select-sm" style="max-width:160px;" onchange="this.form.submit()">
+            <option value="">Todos os tipos</option>
+            {% for t in tipos %}
+            <option value="{{ t.id }}" {% if t.id == tipo_id %}selected{% endif %}>{{ t.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search me-1"></i>Filtrar</button>
+          {% if q or tipo_id %}
+          <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+          {% endif %}
+          {# preservar filtros de movimentação #}
+          <input type="hidden" name="mov_tipo" value="{{ filtro_tipo }}">
+          <input type="hidden" name="mov_data" value="{{ filtro_data }}">
+        </form>
       </div>
-      <form method="post" id="formAjuste">
-        <div class="modal-body">
-          <p class="fw-semibold mb-3" id="modalNome"></p>
-          <p class="text-muted small mb-3">Estoque atual: <strong id="modalQtd"></strong></p>
 
+      <div class="card-body p-0" style="overflow-y:auto; max-height:620px;">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th style="width:40px;"></th>
+              <th>Produto</th>
+              <th>Tipo</th>
+              <th class="text-center">Estoque</th>
+              <th class="text-end">Preço</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in produtos %}
+            {% set zerado  = p.stock_quantity <= 0 %}
+            {% set baixo   = p.stock_quantity > 0 and p.stock_quantity <= p.min_stock %}
+            <tr>
+              <td class="ps-3">
+                {% if p.image_data %}
+                <img src="{{ url_for('products.imagem', product_id=p.id) }}"
+                     style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
+                {% else %}
+                <div style="width:32px;height:32px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-box text-muted" style="font-size:.75rem;"></i>
+                </div>
+                {% endif %}
+              </td>
+              <td class="fw-semibold small">{{ p.name }}</td>
+              <td>
+                {% if p.type %}
+                <span class="badge bg-warning-subtle text-warning-emphasis">{{ p.type.name }}</span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td class="text-center">
+                {% if zerado %}
+                  <span class="text-danger fw-bold"><i class="bi bi-x-circle me-1"></i>{{ p.stock_quantity }}</span>
+                {% elif baixo %}
+                  <span class="text-warning fw-bold"><i class="bi bi-exclamation-circle me-1"></i>{{ p.stock_quantity }}</span>
+                {% else %}
+                  <span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>{{ p.stock_quantity }}</span>
+                {% endif %}
+              </td>
+              <td class="text-end small text-muted">R$ {{ '%.2f'|format(p.sale_price) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-4">Nenhum produto encontrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Painel direito: Movimentações -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Últimas Movimentações</div>
+
+      <!-- Filtros de movimentação -->
+      <div class="card-body border-bottom py-2">
+        <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+          {# preservar filtros de produto #}
+          <input type="hidden" name="q" value="{{ q }}">
+          <input type="hidden" name="tipo" value="{{ tipo_id or '' }}">
+
+          <div class="btn-group btn-group-sm" role="group">
+            <a href="?mov_tipo=&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+               class="btn {{ 'btn-dark' if not filtro_tipo else 'btn-outline-secondary' }}">Todas</a>
+            <a href="?mov_tipo=entrada&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+               class="btn {{ 'btn-success' if filtro_tipo == 'entrada' else 'btn-outline-success' }}">Entradas</a>
+            <a href="?mov_tipo=saida&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+               class="btn {{ 'btn-danger' if filtro_tipo == 'saida' else 'btn-outline-danger' }}">Saídas</a>
+          </div>
+
+          <input type="date" name="mov_data" value="{{ filtro_data }}"
+                 class="form-control form-control-sm" style="width:auto;" onchange="this.form.submit()">
+          {% if filtro_data %}
+          <a href="?mov_tipo={{ filtro_tipo }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+             class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+          {% endif %}
+        </form>
+      </div>
+
+      <div class="card-body p-0" style="overflow-y:auto; max-height:620px;">
+        <table class="table table-sm table-hover mb-0 align-middle">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th>Produto</th>
+              <th>Tipo</th>
+              <th class="text-center">Qtd</th>
+              <th>Motivo</th>
+              <th>Responsável</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in movimentos %}
+            <tr>
+              <td class="small fw-semibold" style="max-width:100px;">{{ m.product_name }}</td>
+              <td>
+                {% if m.type == 'entrada' %}
+                <span class="badge bg-success-subtle text-success">Entrada</span>
+                {% else %}
+                <span class="badge bg-danger-subtle text-danger">Saída</span>
+                {% endif %}
+              </td>
+              <td class="text-center fw-semibold">{{ m.quantity }}</td>
+              <td class="small text-muted" style="max-width:120px;">{{ m.motive or '—' }}</td>
+              <td class="small text-muted">{{ m.user_name or '—' }}</td>
+              <td class="small text-muted">{{ m.created_at.strftime('%d/%m %H:%M') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">Nenhuma movimentação encontrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Entrada de Estoque -->
+<div class="modal fade" id="modalEntrada" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('stock.entrada') }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-success"></i>Entrada de Estoque</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label fw-semibold">Operação</label>
-            <select name="operacao" class="form-select">
-              <option value="adicionar">Adicionar (entrada)</option>
-              <option value="subtrair">Subtrair (saída manual)</option>
-              <option value="definir">Definir valor exato</option>
+            <label class="form-label fw-semibold">Produto *</label>
+            <select name="product_id" class="form-select" required>
+              <option value="">— Selecione —</option>
+              {% for p in produtos %}
+              <option value="{{ p.id }}">{{ p.name }} (atual: {{ p.stock_quantity }})</option>
+              {% endfor %}
             </select>
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantidade *</label>
+            <input type="number" name="quantidade" class="form-control" min="1" value="1" required>
+          </div>
           <div class="mb-0">
-            <label class="form-label fw-semibold">Quantidade</label>
-            <input type="text" name="valor" class="form-control" value="0"
-                   inputmode="numeric" pattern="[0-9]+">
+            <label class="form-label fw-semibold">Motivo (opcional)</label>
+            <input type="text" name="motivo" class="form-control" placeholder="Ex: Compra fornecedor, Reposição...">
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Salvar</button>
+          <button type="submit" class="btn btn-success fw-semibold">Registrar Entrada</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
+<!-- Modal Ajuste -->
+<div class="modal fade" id="modalAjuste" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="formAjuste">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>Ajuste de Estoque</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Produto *</label>
+            <select name="product_id_ajuste" id="produtoAjuste" class="form-select" required onchange="selecionarProdutoAjuste(this)">
+              <option value="">— Selecione —</option>
+              {% for p in produtos %}
+              <option value="{{ p.id }}" data-qtd="{{ p.stock_quantity }}">{{ p.name }} (atual: {{ p.stock_quantity }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Operação *</label>
+            <select name="operacao" class="form-select">
+              <option value="adicionar">Adicionar (entrada)</option>
+              <option value="subtrair">Subtrair (saída)</option>
+              <option value="definir">Definir valor exato</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantidade *</label>
+            <input type="number" name="valor" class="form-control" min="0" value="1" required>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-semibold">Motivo (opcional)</label>
+            <input type="text" name="motivo" class="form-control" placeholder="Ex: Quebra, Perda, Correção...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-warning fw-semibold">Salvar Ajuste</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-document.getElementById('modalAjuste').addEventListener('show.bs.modal', function(e) {
-  const btn = e.relatedTarget;
-  document.getElementById('modalNome').textContent = btn.dataset.nome;
-  document.getElementById('modalQtd').textContent  = btn.dataset.qtd;
-  document.getElementById('formAjuste').action = '/estoque/' + btn.dataset.id + '/ajustar';
-});
+function selecionarProdutoAjuste(sel) {
+  const id = sel.value;
+  document.getElementById('formAjuste').action = id ? `/estoque/${id}/ajustar` : '#';
+}
 </script>
 {% endblock %}

@@ -5,6 +5,7 @@ from app.models.sale import Sale, SaleItem
 from app.models.product import Product
 from app.models.customer import Customer
 from app.models.cash import CashRegister
+from app.models.stock import StockMovement
 
 sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
 
@@ -74,12 +75,28 @@ def confirmar():
         )
         db.session.add(item)
 
-        # desconta estoque
+        # desconta estoque e registra movimentação
         pid = i.get('product_id')
         if pid:
             prod = Product.query.filter_by(id=pid, tenant_id=tid()).first()
             if prod:
+                deducao = min(int(qty), prod.stock_quantity)
                 prod.stock_quantity = max(0, prod.stock_quantity - int(qty))
+                if source == 'app' and app_name:
+                    mot = f'Venda App #{sale.id} ({app_name})'
+                else:
+                    mot = f'Venda #{sale.id}'
+                mov = StockMovement(
+                    tenant_id    = tid(),
+                    product_id   = prod.id,
+                    product_name = prod.name,
+                    type         = 'saida',
+                    quantity     = int(qty),
+                    motive       = mot,
+                    user_id      = current_user.id,
+                    user_name    = current_user.display_name or current_user.username,
+                )
+                db.session.add(mov)
 
     db.session.commit()
     return jsonify({'sale_id': sale.id})
