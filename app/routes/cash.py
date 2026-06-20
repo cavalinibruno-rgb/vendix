@@ -17,7 +17,10 @@ def caixa_aberto():
     return CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
 
 def _entra_no_caixa(venda):
-    """Vendas de loja sempre entram. Vendas de app só entram se pagas na entrega."""
+    """Entregas só entram no caixa quando concluídas (motoboy voltou). Retiradas entram imediatamente."""
+    if venda.delivery_mode == 'entrega':
+        return venda.delivered_at is not None
+    # retirada: loja entra sempre; app só se pago na entrega
     if venda.source == 'loja' or venda.source is None:
         return True
     return venda.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
@@ -91,7 +94,19 @@ def fechar(caixa_id):
     total_geral    = sum(v.total for v in vendas)
     esperado_caixa = caixa.opening_amount + total_dinheiro
 
+    # Bloqueia fechamento se há entregas em rota (despachadas mas não concluídas)
+    em_rota = Sale.query.filter(
+        Sale.tenant_id == tid(),
+        Sale.status == 'confirmed',
+        Sale.delivery_mode == 'entrega',
+        Sale.dispatched_at != None,
+        Sale.delivered_at == None,
+    ).count()
+
     if request.method == 'POST':
+        if em_rota > 0:
+            flash(f'Há {em_rota} entrega(s) ainda em rota. Conclua todas antes de fechar o caixa.', 'danger')
+            return redirect(url_for('cash.fechar', caixa_id=caixa_id))
         def fval(name):
             v = request.form.get(name, '0').replace(',', '.').strip() or '0'
             try: return float(v)
@@ -121,6 +136,7 @@ def fechar(caixa_id):
         total_dinheiro=total_dinheiro, total_cartao=total_cartao,
         total_pix=total_pix, total_conta=total_conta,
         total_geral=total_geral, esperado_caixa=esperado_caixa,
+        em_rota=em_rota,
     )
 
 @cash_bp.route('/<int:caixa_id>/resumo')

@@ -5,7 +5,7 @@ from app import db
 from app.models.sale import Sale
 from app.models.motoboy import Motoboy
 
-despacho_bp = Blueprint('despacho', __name__, url_prefix='/despacho')
+despacho_bp = Blueprint('entregas', __name__, url_prefix='/entregas')
 
 def tid():
     return current_user.tenant_id
@@ -13,23 +13,21 @@ def tid():
 @despacho_bp.route('/')
 @login_required
 def index():
-    pendentes = (Sale.query
-                 .filter_by(tenant_id=tid(), status='confirmed', delivery_mode='entrega')
-                 .filter(Sale.dispatched_at == None)
-                 .order_by(Sale.created_at.asc()).all())
+    base = Sale.query.filter_by(tenant_id=tid(), status='confirmed', delivery_mode='entrega')
 
-    despachados = (Sale.query
-                   .filter_by(tenant_id=tid(), status='confirmed', delivery_mode='entrega')
-                   .filter(Sale.dispatched_at != None)
-                   .order_by(Sale.dispatched_at.desc()).limit(20).all())
+    pendentes   = base.filter(Sale.dispatched_at == None).order_by(Sale.created_at.asc()).all()
+    em_rota     = (base.filter(Sale.dispatched_at != None, Sale.delivered_at == None)
+                       .order_by(Sale.dispatched_at.asc()).all())
+    concluidas  = (Sale.query
+                       .filter_by(tenant_id=tid(), delivery_mode='entrega')
+                       .filter(Sale.delivered_at != None)
+                       .order_by(Sale.delivered_at.desc()).limit(20).all())
 
     motoboys = Motoboy.query.filter_by(tenant_id=tid(), active=True).order_by(Motoboy.name).all()
-
-    tenant = current_user.tenant
-    cfg = tenant.get_settings()
+    cfg = current_user.tenant.get_settings()
 
     return render_template('despacho/index.html',
-        pendentes=pendentes, despachados=despachados,
+        pendentes=pendentes, em_rota=em_rota, concluidas=concluidas,
         motoboys=motoboys, cfg=cfg)
 
 @despacho_bp.route('/<int:sale_id>/despachar', methods=['POST'])
@@ -39,9 +37,9 @@ def despachar(sale_id):
     motoboy_id = request.form.get('motoboy_id', type=int)
 
     motoboy = Motoboy.query.filter_by(id=motoboy_id, tenant_id=tid()).first() if motoboy_id else None
-    sale.dispatched_at  = datetime.now()
-    sale.motoboy_id     = motoboy.id if motoboy else None
-    sale.motoboy_name   = motoboy.name if motoboy else None
+    sale.dispatched_at = datetime.now()
+    sale.motoboy_id    = motoboy.id   if motoboy else None
+    sale.motoboy_name  = motoboy.name if motoboy else None
     db.session.commit()
 
     cfg = current_user.tenant.get_settings()
@@ -50,9 +48,7 @@ def despachar(sale_id):
         phone = ''.join(filter(str.isdigit, sale.customer.phone))
         if not phone.startswith('55'):
             phone = '55' + phone
-        itens = ', '.join(
-            f'{int(i.quantity)}x {i.product_name}' for i in sale.items
-        )
+        itens = ', '.join(f'{int(i.quantity)}x {i.product_name}' for i in sale.items)
         pgto_map = {
             'dinheiro': 'Dinheiro', 'cartao': 'Cartão', 'pix': 'Pix',
             'conta': 'Conta', 'pelo_app': 'Pelo app',
@@ -62,7 +58,6 @@ def despachar(sale_id):
         }
         pagamento = pgto_map.get(sale.payment_method, sale.payment_method)
         total = f'R$ {sale.total:.2f}'.replace('.', ',')
-
         msg_tpl = cfg.get('whatsapp_msg') or 'Olá {cliente}! Seu pedido saiu para entrega com o motoboy {motoboy}. Em breve chegará até você!'
         msg = (msg_tpl
                .replace('{cliente}', sale.customer.name)
@@ -74,3 +69,11 @@ def despachar(sale_id):
         wa_url = f'whatsapp://send?phone={phone}&text={urllib.parse.quote(msg)}'
 
     return jsonify({'ok': True, 'wa_url': wa_url, 'sale_id': sale.id})
+
+@despacho_bp.route('/<int:sale_id>/concluir', methods=['POST'])
+@login_required
+def concluir(sale_id):
+    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    sale.delivered_at = datetime.now()
+    db.session.commit()
+    return jsonify({'ok': True, 'sale_id': sale.id})

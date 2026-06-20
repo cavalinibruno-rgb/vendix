@@ -9,6 +9,19 @@
   <h1 class="mb-0"><i class="bi bi-lock me-2"></i>Fechar Caixa</h1>
 </div>
 
+{% if em_rota > 0 %}
+<div class="alert alert-danger d-flex align-items-center gap-3 mb-4">
+  <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+  <div>
+    <strong>Não é possível fechar o caixa.</strong>
+    Há <strong>{{ em_rota }} entrega(s)</strong> ainda em rota. Conclua todas as entregas antes de fechar.
+    <a href="{{ url_for('entregas.index') }}" class="btn btn-sm btn-danger ms-3">
+      <i class="bi bi-send me-1"></i>Ver Entregas
+    </a>
+  </div>
+</div>
+{% endif %}
+
 <form method="post">
   <div class="row g-4">
 

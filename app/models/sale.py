@@ -26,6 +26,7 @@ class Sale(db.Model):
     cancelled_by_name = db.Column(db.String(64), nullable=True)
     cancel_reason     = db.Column(db.Text, nullable=True)
     cashier_name      = db.Column(db.String(128), nullable=True)
+    delivered_at      = db.Column(db.DateTime, nullable=True)
     created_at       = db.Column(db.DateTime, default=datetime.now)
 
     items    = db.relationship('SaleItem', backref='sale', lazy=True, cascade='all, delete-orphan')
