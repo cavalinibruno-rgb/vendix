@@ -63,6 +63,7 @@
           <th>DATA VENDA</th>
           <th>CANCELADO EM</th>
           <th>CANCELADO POR</th>
+          <th>MOTIVO</th>
         </tr>
       </thead>
       <tbody>
@@ -93,6 +94,7 @@
             <span class="text-muted"><i class="bi bi-person-circle me-1"></i>{{ v.cancelled_by_name }}</span>
             {% else %}—{% endif %}
           </td>
+          <td class="small text-muted">{{ v.cancel_reason or '—' }}</td>
         </tr>
         {% else %}
         <tr>

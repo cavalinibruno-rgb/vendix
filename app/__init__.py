@@ -29,6 +29,7 @@ def _run_migrations(db):
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cancelled_by_id INTEGER REFERENCES users(id)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cancelled_by_name VARCHAR(64)",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cancel_reason TEXT",
         "ALTER TABLE cash_registers ADD COLUMN IF NOT EXISTS closing_data TEXT",
         """CREATE TABLE IF NOT EXISTS employees (
             id SERIAL PRIMARY KEY,

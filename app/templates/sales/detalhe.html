@@ -110,22 +110,33 @@
 
 <!-- Modal confirmação de cancelamento -->
 <div class="modal fade" id="modalCancelar" tabindex="-1">
-  <div class="modal-dialog modal-sm">
+  <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Cancelar Venda</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-0">Tem certeza que deseja cancelar a venda <strong>#{{ sale.id }}</strong>?</p>
-      </div>
-      <div class="modal-footer">
-        <form method="post" action="{{ url_for('sales.cancelar', sale_id=sale.id) }}">
+      <form method="post" action="{{ url_for('sales.cancelar', sale_id=sale.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Cancelar Venda #{{ sale.id }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">Esta ação não pode ser desfeita. Informe o motivo abaixo.</p>
+          <label class="form-label fw-semibold">Motivo do cancelamento <span class="text-danger">*</span></label>
+          <textarea name="cancel_reason" id="cancelReason" class="form-control" rows="3"
+                    placeholder="Ex: Pedido duplicado, cliente desistiu, erro no lançamento…" required></textarea>
+        </div>
+        <div class="modal-footer">
           <button type="submit" class="btn btn-danger fw-semibold">Sim, cancelar</button>
-        </form>
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
-      </div>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
+
+{% block scripts %}
+<script>
+document.getElementById('modalCancelar').addEventListener('shown.bs.modal', function() {
+  document.getElementById('cancelReason').focus();
+});
+</script>
+{% endblock %}
 {% endblock %}

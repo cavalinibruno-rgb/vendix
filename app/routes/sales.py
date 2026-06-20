@@ -119,10 +119,15 @@ def detalhe(sale_id):
 def cancelar(sale_id):
     from datetime import datetime
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    motivo = request.form.get('cancel_reason', '').strip()
+    if not motivo:
+        flash('Informe o motivo do cancelamento.', 'danger')
+        return redirect(url_for('sales.detalhe', sale_id=sale_id))
     sale.status = 'cancelled'
     sale.cancelled_at = datetime.now()
     sale.cancelled_by_id = current_user.id
     sale.cancelled_by_name = current_user.display_name or current_user.username
+    sale.cancel_reason = motivo
     db.session.commit()
     flash('Venda cancelada.', 'warning')
     return redirect(url_for('sales.index'))

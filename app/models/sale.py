@@ -18,9 +18,10 @@ class Sale(db.Model):
     app_name        = db.Column(db.String(64))                        # iFood, Anotaí, etc.
     amount_paid      = db.Column(db.Float, nullable=True)
     change_amount    = db.Column(db.Float, nullable=True)
-    cancelled_at     = db.Column(db.DateTime, nullable=True)
-    cancelled_by_id  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    cancelled_by_name= db.Column(db.String(64), nullable=True)
+    cancelled_at      = db.Column(db.DateTime, nullable=True)
+    cancelled_by_id   = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    cancelled_by_name = db.Column(db.String(64), nullable=True)
+    cancel_reason     = db.Column(db.Text, nullable=True)
     created_at       = db.Column(db.DateTime, default=datetime.now)
 
     items    = db.relationship('SaleItem', backref='sale', lazy=True, cascade='all, delete-orphan')
