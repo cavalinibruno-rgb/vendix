@@ -54,6 +54,13 @@ def index():
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
                                .order_by(Sale.created_at.desc()).limit(10).all()
 
+    cfg = tenant.get_settings()
+    modo_restrito = (
+        cfg.get('dashboard_operador_restrito') and
+        caixa is not None and
+        caixa.operator_employee_id is not None
+    )
+
     return render_template('dashboard/index.html',
         tenant=tenant,
         qtd_vendas=len(vendas_hoje),
@@ -64,4 +71,5 @@ def index():
         total_geral=total_geral,
         caixa=caixa,
         ultimas_vendas=ultimas_vendas,
+        modo_restrito=modo_restrito,
     )

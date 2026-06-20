@@ -8,6 +8,34 @@
 </div>
 
 <div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-eye-slash me-2 text-secondary"></i>Dashboard do Operador</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('config.dashboard_operador') }}">
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="dashboard_operador_restrito" id="swDash"
+                   {% if cfg.get('dashboard_operador_restrito') %}checked{% endif %}>
+            <label class="form-check-label fw-semibold" for="swDash">
+              Restringir dashboard para operadores de caixa
+            </label>
+          </div>
+          <div class="text-muted small mb-3">
+            Quando ativo, enquanto um <strong>operador de caixa</strong> tiver o caixa aberto, a dashboard ocultará:<br>
+            <ul class="mb-0 mt-1">
+              <li>Total do dia e valor em dinheiro</li>
+              <li>Valores nas formas de pagamento (exibe só %)</li>
+              <li>Coluna de valor nas últimas vendas</li>
+            </ul>
+          </div>
+          <button type="submit" class="btn btn-secondary fw-semibold">
+            <i class="bi bi-floppy me-1"></i>Salvar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="col-lg-7">
     <div class="card">
       <div class="card-header"><i class="bi bi-whatsapp me-2 text-success"></i>Notificação WhatsApp</div>

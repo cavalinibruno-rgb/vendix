@@ -22,3 +22,14 @@ def index():
         return redirect(url_for('config.index'))
 
     return render_template('config/index.html', cfg=cfg)
+
+@config_bp.route('/dashboard-operador', methods=['POST'])
+@login_required
+def dashboard_operador():
+    tenant = current_user.tenant
+    cfg = tenant.get_settings()
+    cfg['dashboard_operador_restrito'] = 'dashboard_operador_restrito' in request.form
+    tenant.save_settings(cfg)
+    db.session.commit()
+    flash('Configuração salva.', 'success')
+    return redirect(url_for('config.index'))

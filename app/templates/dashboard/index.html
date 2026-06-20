@@ -42,6 +42,7 @@
       <div class="text-muted small">pedidos</div>
     </div>
   </div>
+  {% if not modo_restrito %}
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
       <div class="text-muted small mb-1">Total do dia</div>
@@ -56,6 +57,7 @@
       <div class="text-muted small"><i class="bi bi-cash"></i> Dinheiro</div>
     </div>
   </div>
+  {% endif %}
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
       <div class="text-muted small mb-1">Conta (fiado)</div>
@@ -76,29 +78,31 @@
           <tbody>
             <tr>
               <td><i class="bi bi-cash me-2 text-success"></i>Dinheiro</td>
-              <td class="text-end">R$ {{ '%.2f'|format(total_dinheiro) }}</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_dinheiro) }}</td>{% endif %}
               <td class="text-end text-muted small">{{ '%.0f'|format(total_dinheiro / total_geral * 100) }}%</td>
             </tr>
             <tr>
               <td><i class="bi bi-credit-card me-2 text-primary"></i>Cartão</td>
-              <td class="text-end">R$ {{ '%.2f'|format(total_cartao) }}</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_cartao) }}</td>{% endif %}
               <td class="text-end text-muted small">{{ '%.0f'|format(total_cartao / total_geral * 100) }}%</td>
             </tr>
             <tr>
               <td><i class="bi bi-qr-code me-2 text-info"></i>Pix</td>
-              <td class="text-end">R$ {{ '%.2f'|format(total_pix) }}</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_pix) }}</td>{% endif %}
               <td class="text-end text-muted small">{{ '%.0f'|format(total_pix / total_geral * 100) }}%</td>
             </tr>
             <tr>
               <td><i class="bi bi-person-lines-fill me-2 text-warning"></i>Conta</td>
-              <td class="text-end">R$ {{ '%.2f'|format(total_conta) }}</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_conta) }}</td>{% endif %}
               <td class="text-end text-muted small">{{ '%.0f'|format(total_conta / total_geral * 100) }}%</td>
             </tr>
+            {% if not modo_restrito %}
             <tr class="table-light fw-semibold">
               <td>Total</td>
               <td class="text-end">R$ {{ '%.2f'|format(total_geral) }}</td>
               <td class="text-end text-muted small">100%</td>
             </tr>
+            {% endif %}
           </tbody>
         </table>
         {% else %}
@@ -123,7 +127,7 @@
               <th>Horário</th>
               <th>Cliente</th>
               <th>Pagamento</th>
-              <th class="text-end">Total</th>
+              {% if not modo_restrito %}<th class="text-end">Total</th>{% endif %}
             </tr>
           </thead>
           <tbody>
@@ -137,7 +141,7 @@
                 {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
                 {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
               </td>
-              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+              {% if not modo_restrito %}<td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>{% endif %}
             </tr>
             {% endfor %}
           </tbody>
