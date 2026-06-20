@@ -47,9 +47,12 @@
   }
   .pdv-card:hover { background: #363636; transform: translateY(-2px); }
   .pdv-card:active { transform: scale(.97); }
+  .pdv-card-img-wrap {
+    width: 100%; height: 90px; background: #3a3a3a;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
   .pdv-card-img {
-    width: 100%; height: 90px; object-fit: cover;
-    background: #3a3a3a;
+    max-width: 100%; max-height: 90px; width: auto; height: auto; object-fit: contain;
   }
   .pdv-card-placeholder {
     width: 100%; height: 90px; background: #3a3a3a;
@@ -388,7 +391,7 @@ function renderCards(lista) {
     card.className = 'pdv-card';
     card.onclick = () => abrirModalProd(p);
     const imgHtml = p.thumbnail
-      ? `<img src="${p.thumbnail}" class="pdv-card-img" alt="${p.name}">`
+      ? `<div class="pdv-card-img-wrap"><img src="${p.thumbnail}" class="pdv-card-img" alt="${p.name}"></div>`
       : `<div class="pdv-card-placeholder"><i class="bi bi-box-seam"></i></div>`;
     card.innerHTML = `
       ${imgHtml}
