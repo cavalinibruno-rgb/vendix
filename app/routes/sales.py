@@ -128,6 +128,25 @@ def cancelar(sale_id):
     sale.cancelled_by_id = current_user.id
     sale.cancelled_by_name = current_user.display_name or current_user.username
     sale.cancel_reason = motivo
+
+    # Devolve estoque e registra movimentação
+    for item in sale.items:
+        if item.product_id:
+            prod = Product.query.filter_by(id=item.product_id, tenant_id=tid()).first()
+            if prod:
+                prod.stock_quantity += int(item.quantity)
+                mov = StockMovement(
+                    tenant_id    = tid(),
+                    product_id   = prod.id,
+                    product_name = prod.name,
+                    type         = 'entrada',
+                    quantity     = int(item.quantity),
+                    motive       = f'Cancelamento Venda #{sale.id} — {motivo}',
+                    user_id      = current_user.id,
+                    user_name    = current_user.display_name or current_user.username,
+                )
+                db.session.add(mov)
+
     db.session.commit()
     flash('Venda cancelada.', 'warning')
     return redirect(url_for('sales.index'))
