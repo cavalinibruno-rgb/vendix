@@ -71,54 +71,70 @@
 
   /* ── Painel direito: tema escuro ── */
   .cart-panel { position: sticky; top: 80px; }
-  .cart-panel .card {
+  .cart-area {
     background: #1e1e1e;
-    border-color: #3d3d3d;
-    color: #ddd;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
-  .cart-panel .card-header {
+  /* Seções internas */
+  .cart-section {
     background: #2a2a2a;
-    border-bottom-color: #3d3d3d;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .cart-section-header {
+    background: #333;
+    padding: 10px 14px;
+    font-weight: 600;
     color: #ddd;
+    font-size: .85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
-  .cart-panel .card-footer {
-    background: #2a2a2a;
-    border-top-color: #3d3d3d;
+  .cart-section-body {
+    padding: 12px 14px;
   }
-  .cart-panel .form-control,
-  .cart-panel .form-select,
-  .cart-panel .input-group-text {
+  .cart-section-footer {
+    background: #333;
+    padding: 10px 14px;
+  }
+  /* Campos */
+  .cart-area .form-control,
+  .cart-area .form-select,
+  .cart-area .input-group-text {
     background: #2d2d2d;
-    border-color: #3d3d3d;
+    border-color: #444;
     color: #ddd;
   }
-  .cart-panel .form-control::placeholder { color: #666; }
-  .cart-panel .form-control:focus,
-  .cart-panel .form-select:focus {
+  .cart-area .form-control::placeholder { color: #666; }
+  .cart-area .form-control:focus,
+  .cart-area .form-select:focus {
     background: #2d2d2d;
     border-color: #c9a84c;
     color: #ddd;
     box-shadow: none;
   }
-  .cart-panel .form-select option { background: #2d2d2d; }
-  .cart-panel .text-muted { color: #888 !important; }
-  .cart-panel .btn-outline-secondary {
-    border-color: #555; color: #aaa;
-  }
-  .cart-panel .btn-outline-secondary:hover { background: #333; color: #fff; }
-  .cart-panel .btn-outline-danger { border-color: #a33; color: #f77; }
-  .cart-panel .table { color: #ddd; }
-  .cart-panel .table td { border-color: #333; }
-  .cart-panel label.form-label { color: #bbb; }
-  /* Botões de toggle (Retirada/Entrega, Loja/App, forma de pagamento) */
-  .cart-panel .btn-group .btn-outline-secondary.active,
-  .cart-panel .btn-outline-warning.active,
-  .cart-panel .btn-warning { background: #c9a84c; border-color: #c9a84c; color: #1e1e1e; }
-  .pdv-finalizar {
-    background: #c9a84c; border-color: #c9a84c; color: #1e1e1e;
-    font-weight: 700; font-size: 1.1rem;
-  }
-  .pdv-finalizar:hover { background: #b8943d; border-color: #b8943d; }
+  .cart-area .form-select option { background: #2d2d2d; }
+  .cart-area .text-muted { color: #888 !important; }
+  .cart-area label.form-label { color: #bbb; }
+  /* Botões */
+  .cart-area .btn-outline-secondary { border-color: #555; color: #aaa; }
+  .cart-area .btn-outline-secondary:hover { background: #3a3a3a; color: #fff; }
+  .cart-area .btn-outline-danger { border-color: #a33; color: #f77; background: transparent; }
+  .cart-area .btn-outline-danger:hover { background: #a33; color: #fff; }
+  .cart-area .btn-warning { background: #c9a84c; border-color: #c9a84c; color: #1e1e1e; font-weight: 600; }
+  .cart-area .btn-warning:hover { background: #b8943d; border-color: #b8943d; }
+  /* Tabela do carrinho */
+  .cart-area .table { color: #ddd; }
+  .cart-area .table td { border-color: #3a3a3a; }
+  /* Linha de item */
+  .cart-item-remove { color: #f77; background: none; border: none; font-size: 1rem; line-height: 1; padding: 0 4px; }
+  .cart-item-remove:hover { color: #ff4444; }
 </style>
 {% endblock %}
 
@@ -170,162 +186,166 @@
   <!-- ── Coluna direita: carrinho + pagamento ── -->
   <div class="col-lg-5">
     <div class="cart-panel">
+      <div class="cart-area">
 
-      <!-- Carrinho -->
-      <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-cart3 me-1"></i>Carrinho</span>
-          <button class="btn btn-outline-danger btn-sm" onclick="limparCarrinho()">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-        <div class="card-body p-0">
-          <div id="carrinhoVazio" class="text-center text-muted py-4" style="font-size:.85rem;">
-            Nenhum item adicionado
+        <!-- Carrinho -->
+        <div class="cart-section">
+          <div class="cart-section-header">
+            <span><i class="bi bi-cart3 me-1"></i>Carrinho</span>
+            <button class="btn btn-outline-danger btn-sm" onclick="limparCarrinho()">
+              <i class="bi bi-trash"></i>
+            </button>
           </div>
-          <table class="table table-sm mb-0" id="carrinhoTabela" style="display:none;">
-            <tbody id="carrinhoItens"></tbody>
-          </table>
-        </div>
-        <div class="card-footer">
-          <div class="d-flex justify-content-between text-muted small mb-1">
-            <span>Subtotal</span>
-            <span>R$ <span id="resumoSubtotal">0,00</span></span>
+          <div style="padding:0;">
+            <div id="carrinhoVazio" class="text-center text-muted py-4" style="font-size:.85rem;">
+              Nenhum item adicionado
+            </div>
+            <table class="table table-sm mb-0" id="carrinhoTabela" style="display:none;">
+              <tbody id="carrinhoItens"></tbody>
+            </table>
           </div>
-          <div class="d-flex justify-content-between text-muted small mb-1" id="linhaEntrega" style="display:none !important;">
-            <span>Taxa de entrega</span>
-            <span>R$ <span id="resumoTaxa">0,00</span></span>
-          </div>
-          <div class="d-flex justify-content-between fw-bold">
-            <span>Total</span>
-            <span class="text-warning fs-5">R$ <span id="resumoTotal">0,00</span></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Cliente -->
-      <div class="card mb-3">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span>Cliente</span>
-          <div class="btn-group btn-group-sm">
-            <button type="button" id="btnRetirada" class="btn btn-warning active" onclick="setModo('retirada')">Retirada</button>
-            <button type="button" id="btnEntrega"  class="btn btn-outline-secondary" onclick="setModo('entrega')">Entrega</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="input-group mb-2">
-            <span class="input-group-text"><i class="bi bi-person"></i></span>
-            <input type="text" id="clienteSearch" class="form-control" placeholder="Buscar cliente (opcional)…" autocomplete="off">
-            <button class="btn btn-outline-secondary" onclick="limparCliente()"><i class="bi bi-x"></i></button>
-          </div>
-          <div id="clienteResultados" class="list-group mb-2" style="display:none;max-height:180px;overflow-y:auto;"></div>
-          <div id="clienteSelecionado" class="text-success small" style="display:none;">
-            <i class="bi bi-check-circle me-1"></i><span id="clienteNome"></span>
-          </div>
-          <div id="clienteEndereco" class="mt-2" style="display:none;">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-              <input type="text" id="clienteEnderecoTexto" class="form-control form-control-sm" placeholder="Endereço de entrega">
+          <div class="cart-section-footer">
+            <div class="d-flex justify-content-between text-muted small mb-1">
+              <span>Subtotal</span>
+              <span>R$ <span id="resumoSubtotal">0,00</span></span>
+            </div>
+            <div class="d-flex justify-content-between text-muted small mb-1" id="linhaEntrega" style="display:none !important;">
+              <span>Taxa de entrega</span>
+              <span>R$ <span id="resumoTaxa">0,00</span></span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold" style="color:#ddd;">
+              <span>Total</span>
+              <span class="text-warning fs-5">R$ <span id="resumoTotal">0,00</span></span>
             </div>
           </div>
-          <div id="camposEntrega" style="display:none;" class="mt-2">
-            <div class="row g-2">
-              <div class="col-8">
-                <label class="form-label fw-semibold small mb-1">Bairro</label>
-                <select id="bairroSelect" class="form-select form-select-sm" onchange="onBairroChange(this)">
-                  <option value="">— Sem bairro —</option>
-                </select>
-              </div>
-              <div class="col-4">
-                <label class="form-label fw-semibold small mb-1">Taxa (R$)</label>
-                <input type="text" id="taxaEntrega" class="form-control form-control-sm" value="0.00" oninput="calcTotais()">
+        </div>
+
+        <!-- Cliente -->
+        <div class="cart-section">
+          <div class="cart-section-header">
+            <span>Cliente</span>
+            <div class="btn-group btn-group-sm">
+              <button type="button" id="btnRetirada" class="btn btn-warning active" onclick="setModo('retirada')">Retirada</button>
+              <button type="button" id="btnEntrega"  class="btn btn-outline-secondary" onclick="setModo('entrega')">Entrega</button>
+            </div>
+          </div>
+          <div class="cart-section-body">
+            <div class="input-group mb-2">
+              <span class="input-group-text"><i class="bi bi-person"></i></span>
+              <input type="text" id="clienteSearch" class="form-control" placeholder="Buscar cliente (opcional)…" autocomplete="off">
+              <button class="btn btn-outline-secondary" onclick="limparCliente()"><i class="bi bi-x"></i></button>
+            </div>
+            <div id="clienteResultados" class="list-group mb-2" style="display:none;max-height:180px;overflow-y:auto;"></div>
+            <div id="clienteSelecionado" class="text-success small" style="display:none;">
+              <i class="bi bi-check-circle me-1"></i><span id="clienteNome"></span>
+            </div>
+            <div id="clienteEndereco" class="mt-2" style="display:none;">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                <input type="text" id="clienteEnderecoTexto" class="form-control form-control-sm" placeholder="Endereço de entrega">
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Observação -->
-      <div class="card mb-3">
-        <div class="card-body py-2">
-          <input type="text" id="obsVenda" class="form-control form-control-sm" placeholder="Observação (opcional)">
-        </div>
-      </div>
-
-      <!-- Pagamento -->
-      <div class="card mb-3">
-        <div class="card-header">Forma de Pagamento</div>
-        <div class="card-body">
-          <div id="pgtoLoja" style="display:flex; flex-direction:column; gap:.5rem;">
-            <div class="btn-group w-100">
-              <button class="btn btn-outline-secondary pgto-btn" data-pgto="dinheiro" onclick="setPgto(this)">
-                <i class="bi bi-cash me-1"></i>Dinheiro
-              </button>
-              <button class="btn btn-outline-secondary pgto-btn" data-pgto="cartao" onclick="setPgto(this)">
-                <i class="bi bi-credit-card me-1"></i>Cartão
-              </button>
-            </div>
-            <div class="btn-group w-100">
-              <button class="btn btn-outline-secondary pgto-btn" data-pgto="pix" onclick="setPgto(this)">
-                <i class="bi bi-qr-code me-1"></i>Pix
-              </button>
-              <button class="btn btn-outline-secondary pgto-btn" data-pgto="conta" onclick="setPgto(this)">
-                <i class="bi bi-person-lines-fill me-1"></i>Conta
-              </button>
-            </div>
-          </div>
-          <div id="campoTroco" style="display:none;" class="mt-2">
-            <label class="form-label fw-semibold small mb-1">Valor recebido (R$)</label>
-            <input type="text" id="valorRecebido" class="form-control" inputmode="decimal" placeholder="0,00" oninput="calcTroco()">
-            <div id="trocoResultado" class="mt-2" style="display:none;">
-              <div class="d-flex justify-content-between align-items-center p-2 rounded" id="trocoBox">
-                <span id="trocoLabel"></span>
-                <strong id="trocoValor"></strong>
+            <div id="camposEntrega" style="display:none;" class="mt-2">
+              <div class="row g-2">
+                <div class="col-8">
+                  <label class="form-label fw-semibold small mb-1">Bairro</label>
+                  <select id="bairroSelect" class="form-select form-select-sm" onchange="onBairroChange(this)">
+                    <option value="">— Sem bairro —</option>
+                  </select>
+                </div>
+                <div class="col-4">
+                  <label class="form-label fw-semibold small mb-1">Taxa (R$)</label>
+                  <input type="text" id="taxaEntrega" class="form-control form-control-sm" value="0.00" oninput="calcTotais()">
+                </div>
               </div>
             </div>
           </div>
-          <div id="pgtoApp" style="display:none; flex-direction:column; gap:.5rem;">
-            <button class="btn btn-outline-secondary pgto-btn w-100" data-pgto="pelo_app" onclick="setPgto(this)">
-              <i class="bi bi-phone me-1"></i>Pelo app
-            </button>
-            <div class="btn-group w-100">
-              <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_dinheiro" onclick="setPgto(this)">
-                <i class="bi bi-cash me-1"></i>Na entrega – Dinheiro
-              </button>
+        </div>
+
+        <!-- Observação -->
+        <div class="cart-section">
+          <div class="cart-section-body py-2">
+            <input type="text" id="obsVenda" class="form-control form-control-sm" placeholder="Observação (opcional)">
+          </div>
+        </div>
+
+        <!-- Pagamento -->
+        <div class="cart-section">
+          <div class="cart-section-header">Forma de Pagamento</div>
+          <div class="cart-section-body">
+            <div id="pgtoLoja" style="display:flex; flex-direction:column; gap:.5rem;">
+              <div class="btn-group w-100">
+                <button class="btn btn-outline-secondary pgto-btn" data-pgto="dinheiro" onclick="setPgto(this)">
+                  <i class="bi bi-cash me-1"></i>Dinheiro
+                </button>
+                <button class="btn btn-outline-secondary pgto-btn" data-pgto="cartao" onclick="setPgto(this)">
+                  <i class="bi bi-credit-card me-1"></i>Cartão
+                </button>
+              </div>
+              <div class="btn-group w-100">
+                <button class="btn btn-outline-secondary pgto-btn" data-pgto="pix" onclick="setPgto(this)">
+                  <i class="bi bi-qr-code me-1"></i>Pix
+                </button>
+                <button class="btn btn-outline-secondary pgto-btn" data-pgto="conta" onclick="setPgto(this)">
+                  <i class="bi bi-person-lines-fill me-1"></i>Conta
+                </button>
+              </div>
             </div>
-            <div class="btn-group w-100">
-              <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_cartao" onclick="setPgto(this)">
-                <i class="bi bi-credit-card me-1"></i>Na entrega – Cartão
+            <div id="campoTroco" style="display:none;" class="mt-2">
+              <label class="form-label fw-semibold small mb-1">Valor recebido (R$)</label>
+              <input type="text" id="valorRecebido" class="form-control" inputmode="decimal" placeholder="0,00" oninput="calcTroco()">
+              <div id="trocoResultado" class="mt-2" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center p-2 rounded" id="trocoBox">
+                  <span id="trocoLabel"></span>
+                  <strong id="trocoValor"></strong>
+                </div>
+              </div>
+            </div>
+            <div id="pgtoApp" style="display:none; flex-direction:column; gap:.5rem;">
+              <button class="btn btn-outline-secondary pgto-btn w-100" data-pgto="pelo_app" onclick="setPgto(this)">
+                <i class="bi bi-phone me-1"></i>Pelo app
               </button>
-              <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_pix" onclick="setPgto(this)">
-                <i class="bi bi-qr-code me-1"></i>Na entrega – Pix
-              </button>
+              <div class="btn-group w-100">
+                <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_dinheiro" onclick="setPgto(this)">
+                  <i class="bi bi-cash me-1"></i>Na entrega – Dinheiro
+                </button>
+              </div>
+              <div class="btn-group w-100">
+                <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_cartao" onclick="setPgto(this)">
+                  <i class="bi bi-credit-card me-1"></i>Na entrega – Cartão
+                </button>
+                <button class="btn btn-outline-secondary pgto-btn" data-pgto="entrega_pix" onclick="setPgto(this)">
+                  <i class="bi bi-qr-code me-1"></i>Na entrega – Pix
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Origem -->
-      <div class="card mb-3">
-        <div class="card-header">Origem do Pedido</div>
-        <div class="card-body">
-          <div class="btn-group w-100">
-            <button type="button" id="btnLoja" class="btn btn-warning active" onclick="setOrigem('loja')">
-              <i class="bi bi-shop me-1"></i> Loja
-            </button>
-            <button type="button" id="btnApp" class="btn btn-outline-secondary" onclick="setOrigem('app')">
-              <i class="bi bi-phone me-1"></i> App
-            </button>
-          </div>
-          <div id="campoApp" style="display:none;" class="mt-2">
-            <input type="text" id="appNome" class="form-control" placeholder="Nome do app (ex: iFood, Anotaí…)">
+        <!-- Origem -->
+        <div class="cart-section">
+          <div class="cart-section-header">Origem do Pedido</div>
+          <div class="cart-section-body">
+            <div class="btn-group w-100">
+              <button type="button" id="btnLoja" class="btn btn-warning active" onclick="setOrigem('loja')">
+                <i class="bi bi-shop me-1"></i> Loja
+              </button>
+              <button type="button" id="btnApp" class="btn btn-outline-secondary" onclick="setOrigem('app')">
+                <i class="bi bi-phone me-1"></i> App
+              </button>
+            </div>
+            <div id="campoApp" style="display:none;" class="mt-2">
+              <input type="text" id="appNome" class="form-control" placeholder="Nome do app (ex: iFood, Anotaí…)">
+            </div>
           </div>
         </div>
-      </div>
 
-      <button class="btn btn-warning w-100 fw-bold py-3 fs-5" onclick="finalizarVenda()">
-        <i class="bi bi-check-circle me-2"></i>Finalizar Venda
-      </button>
+        <!-- Finalizar -->
+        <button class="btn btn-warning w-100 fw-bold py-3 fs-5" onclick="finalizarVenda()">
+          <i class="bi bi-check-circle me-2"></i>Finalizar Venda
+        </button>
+
+      </div><!-- /cart-area -->
     </div>
   </div>
 </div>
