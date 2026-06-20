@@ -34,6 +34,14 @@
 {% endif %}
 
 <!-- Cards de totais do dia -->
+{% if not desbloqueado %}
+<div class="alert alert-secondary d-flex align-items-center justify-content-between py-2 mb-4">
+  <span><i class="bi bi-eye-slash me-2"></i>Informações ocultas — caixa fechado.</span>
+  <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalDesbloquear">
+    <i class="bi bi-key me-1"></i> Ver informações
+  </button>
+</div>
+{% else %}
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
@@ -66,8 +74,10 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Detalhamento por pagamento -->
+{% if desbloqueado %}
 <div class="row g-3 mb-4">
   <div class="col-md-5">
     <div class="card h-100">
@@ -153,6 +163,38 @@
     </div>
   </div>
 </div>
+{% endif %}{# desbloqueado #}
+
+<!-- Modal senha dono -->
+<div class="modal fade" id="modalDesbloquear" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-key me-2"></i>Senha do Dono</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('dashboard.desbloquear') }}">
+        <div class="modal-body">
+          {% if senha_erro %}
+          <div class="alert alert-danger py-1 small">Senha incorreta.</div>
+          {% endif %}
+          <input type="password" name="senha" class="form-control" placeholder="Senha" autofocus required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary w-100">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if desbloqueado and not caixa %}
+<div class="mb-3 text-end">
+  <a href="{{ url_for('dashboard.bloquear') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-eye-slash me-1"></i> Ocultar informações
+  </a>
+</div>
+{% endif %}
 
 <!-- Atalhos -->
 <div class="row g-3">
