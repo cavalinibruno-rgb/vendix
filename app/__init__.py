@@ -19,6 +19,7 @@ login_manager = LoginManager()
 def _run_migrations(db):
     """Adiciona colunas novas em tabelas existentes sem quebrar dados."""
     migrations = [
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS thumbnail_data BYTEA",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS source VARCHAR(16) DEFAULT 'loja'",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS app_name VARCHAR(64)",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS brand_id INTEGER REFERENCES brands(id)",

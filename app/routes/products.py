@@ -21,6 +21,17 @@ def _comprimir_imagem(file_storage, max_size=(600, 600), quality=75):
     img.save(buf, format='JPEG', quality=quality, optimize=True)
     return buf.getvalue(), 'image/jpeg'
 
+def _gerar_thumbnail(image_bytes, size=(80, 80), quality=55):
+    """Gera miniatura ultra-compacta para embutir em JSON como base64."""
+    img = Image.open(io.BytesIO(image_bytes))
+    if img.mode not in ('RGB', 'L'):
+        img = img.convert('RGB')
+    img.thumbnail(size, Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=quality, optimize=True)
+    import base64
+    return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
+
 @products_bp.route('/')
 @login_required
 def index():
@@ -72,6 +83,7 @@ def novo():
         foto = request.files.get('imagem')
         if foto and foto.filename:
             product.image_data, product.image_mime = _comprimir_imagem(foto)
+            product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
         db.session.commit()
         flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
@@ -96,6 +108,7 @@ def editar(product_id):
         foto = request.files.get('imagem')
         if foto and foto.filename:
             product.image_data, product.image_mime = _comprimir_imagem(foto)
+            product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
         return redirect(url_for('products.index'))
@@ -207,11 +220,25 @@ def api_todos():
     tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
     marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
 
+    # Busca thumbnails (BYTEA) apenas dos produtos que têm imagem
+    ids_com_img = [r.id for r in rows if r.has_image]
+    thumbs = {}
+    if ids_com_img:
+        for p in Product.query.filter(Product.id.in_(ids_com_img)).with_entities(Product.id, Product.thumbnail_data, Product.image_data).all():
+            if p.thumbnail_data:
+                thumbs[p.id] = p.thumbnail_data.decode()
+            elif p.image_data:
+                # thumbnail ainda não gerado — gera on-the-fly e salva
+                t = _gerar_thumbnail(p.image_data)
+                thumbs[p.id] = t
+                Product.query.filter_by(id=p.id).update({'thumbnail_data': t.encode()})
+        db.session.commit()
+
     return jsonify([{
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
         'stock_quantity': r.stock_quantity,
-        'has_image': bool(r.has_image),
+        'thumbnail': thumbs.get(r.id),
         'type_id': r.type_id,
         'type_name': tipos.get(r.type_id, 'Sem categoria'),
         'brand_id': r.brand_id,

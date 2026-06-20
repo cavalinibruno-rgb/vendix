@@ -38,4 +38,5 @@ class Product(db.Model):
     image_path     = db.Column(db.String(256))
     image_data     = db.Column(db.LargeBinary)
     image_mime     = db.Column(db.String(32))
+    thumbnail_data = db.Column(db.LargeBinary)
     created_at     = db.Column(db.DateTime, default=datetime.now)

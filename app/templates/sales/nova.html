@@ -387,8 +387,8 @@ function renderCards(lista) {
     const card = document.createElement('div');
     card.className = 'pdv-card';
     card.onclick = () => abrirModalProd(p);
-    const imgHtml = p.has_image
-      ? `<img src="/produtos/${p.id}/imagem" class="pdv-card-img" alt="${p.name}" loading="lazy">`
+    const imgHtml = p.thumbnail
+      ? `<img src="${p.thumbnail}" class="pdv-card-img" alt="${p.name}">`
       : `<div class="pdv-card-placeholder"><i class="bi bi-box-seam"></i></div>`;
     card.innerHTML = `
       ${imgHtml}
