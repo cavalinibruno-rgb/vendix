@@ -29,7 +29,7 @@ def index():
     meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
              'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
-    motoboys = Motoboy.query.filter_by(tenant_id=tid()).order_by(Motoboy.name).all()
+    motoboys = Motoboy.query.filter_by(tenant_id=tid(), active=True).order_by(Motoboy.name).all()
 
     return render_template('vale/index.html',
         employees=employees, totais=totais, total_geral=total_geral,
