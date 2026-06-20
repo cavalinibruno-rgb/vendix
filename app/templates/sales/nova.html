@@ -525,6 +525,7 @@ function setOrigem(o) {
   document.getElementById('campoApp').style.display  = o === 'app'  ? '' : 'none';
   document.getElementById('pgtoLoja').style.display  = o === 'loja' ? 'flex' : 'none';
   document.getElementById('pgtoApp').style.display   = o === 'app'  ? 'flex' : 'none';
+  renderCarrinho();
 }
 
 // ── Pagamento ─────────────────────────────────────────
