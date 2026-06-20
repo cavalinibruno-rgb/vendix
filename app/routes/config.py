@@ -26,6 +26,10 @@ def index():
 @config_bp.route('/dashboard-operador', methods=['POST'])
 @login_required
 def dashboard_operador():
+    senha = request.form.get('owner_password', '')
+    if not current_user.check_password(senha):
+        flash('Senha incorreta. Configuração não foi alterada.', 'danger')
+        return redirect(url_for('config.index'))
     tenant = current_user.tenant
     cfg = tenant.get_settings()
     cfg['dashboard_operador_restrito'] = 'dashboard_operador_restrito' in request.form
