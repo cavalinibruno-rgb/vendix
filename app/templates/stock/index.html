@@ -102,34 +102,30 @@
     <div class="card h-100">
       <div class="card-header fw-semibold">Últimas Movimentações</div>
 
-      <!-- Filtros de movimentação -->
-      <div class="card-body border-bottom py-2">
-        <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
-          {# preservar filtros de produto #}
-          <input type="hidden" name="q" value="{{ q }}">
-          <input type="hidden" name="tipo" value="{{ tipo_id or '' }}">
-
-          <div class="btn-group btn-group-sm" role="group">
-            <a href="?mov_tipo=&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-               class="btn {{ 'btn-dark' if not filtro_tipo else 'btn-outline-secondary' }}">Todas</a>
-            <a href="?mov_tipo=entrada&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-               class="btn {{ 'btn-success' if filtro_tipo == 'entrada' else 'btn-outline-success' }}">Entradas</a>
-            <a href="?mov_tipo=saida&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-               class="btn {{ 'btn-danger' if filtro_tipo == 'saida' else 'btn-outline-danger' }}">Saídas</a>
-          </div>
-
-          <input type="date" name="mov_data" value="{{ filtro_data }}"
-                 class="form-control form-control-sm" style="width:auto;" onchange="this.form.submit()">
-          {% if filtro_data %}
-          <a href="?mov_tipo={{ filtro_tipo }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-             class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
-          {% endif %}
-        </form>
-      </div>
-
       <div class="card-body p-0">
         <table class="table table-sm table-hover mb-0 align-middle" style="font-size:.82rem;">
           <thead class="table-light">
+            <tr>
+              <td colspan="6" class="py-2 px-3 border-bottom">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <a href="?mov_tipo=&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+                       class="btn {{ 'btn-dark' if not filtro_tipo else 'btn-outline-secondary' }}">Todas</a>
+                    <a href="?mov_tipo=entrada&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+                       class="btn {{ 'btn-success' if filtro_tipo == 'entrada' else 'btn-outline-success' }}">Entradas</a>
+                    <a href="?mov_tipo=saida&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+                       class="btn {{ 'btn-danger' if filtro_tipo == 'saida' else 'btn-outline-danger' }}">Saídas</a>
+                  </div>
+                  <input type="date" name="mov_data" value="{{ filtro_data }}"
+                         class="form-control form-control-sm" style="width:auto;"
+                         onchange="window.location='?mov_tipo={{ filtro_tipo }}&mov_data='+this.value+'&q={{ q }}&tipo={{ tipo_id or '' }}'">
+                  {% if filtro_data %}
+                  <a href="?mov_tipo={{ filtro_tipo }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+                     class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
             <tr>
               <th class="ps-3">Produto</th>
               <th>Tipo</th>
