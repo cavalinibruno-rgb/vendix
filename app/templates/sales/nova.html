@@ -479,7 +479,7 @@ function renderCarrinho() {
     const precoCell = origem === 'app'
       ? `<input type="text" class="form-control form-control-sm text-center p-1" inputmode="decimal"
                value="${fmtNum(item.unit_price)}" style="width:70px;"
-               onchange="alterarPreco(${idx}, this.value)">`
+               oninput="alterarPreco(${idx}, this.value)">`
       : `<span class="text-muted" style="font-size:.75rem;">R$ ${fmtNum(item.unit_price)}</span>`;
 
     tr.innerHTML = `
