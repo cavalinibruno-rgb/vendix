@@ -98,8 +98,7 @@ def index():
         for item in v.items
     )
 
-    lucro_bruto       = receita_liquida - cmv
-    resultado_liquido = lucro_bruto - total_despesas - das_mei
+    lucro_bruto = receita_liquida - cmv
 
     # Despesas operacionais
     despesas = Expense.query.filter(
@@ -108,7 +107,8 @@ def index():
         Expense.date <= fim.date(),
     ).order_by(Expense.date.desc()).all()
 
-    total_despesas = sum(d.amount for d in despesas)
+    total_despesas    = sum(d.amount for d in despesas)
+    resultado_liquido = lucro_bruto - total_despesas - das_mei
 
     # Agrupamento por categoria
     por_categoria = {}
