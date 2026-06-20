@@ -9,8 +9,8 @@
   <h1 class="mb-0"><i class="bi bi-receipt me-2"></i>Resumo do Caixa #{{ caixa.id }}</h1>
 </div>
 
-<div class="row g-4">
-  <!-- Info do caixa -->
+<div class="row g-4 mb-4">
+  <!-- Informações -->
   <div class="col-md-4">
     <div class="card h-100">
       <div class="card-header fw-semibold">Informações</div>
@@ -31,64 +31,64 @@
     </div>
   </div>
 
-  <!-- Totais por forma de pagamento -->
-  <div class="col-md-4">
+  <!-- Resultado geral -->
+  <div class="col-md-8">
     <div class="card h-100">
-      <div class="card-header fw-semibold">Vendas por Pagamento</div>
-      <div class="card-body">
-        <table class="table mb-0">
+      <div class="card-header fw-semibold">Conferência — Sistema vs Operador</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Categoria</th>
+              <th class="text-end">Sistema</th>
+              <th class="text-end">Operador</th>
+              <th class="text-end">Diferença</th>
+            </tr>
+          </thead>
           <tbody>
+            {% for c in conferencia %}
             <tr>
-              <td><i class="bi bi-cash me-2 text-success"></i>Dinheiro</td>
-              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_dinheiro) }}</td>
+              <td><i class="bi {{ c.icon }} me-1 {{ c.color }}"></i>{{ c.label }}</td>
+              <td class="text-end text-muted">R$ {{ '%.2f'|format(c.sistema) }}</td>
+              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(c.operador) }}</td>
+              <td class="text-end fw-semibold
+                {% if c.diff > 0 %}text-success
+                {% elif c.diff < 0 %}text-danger
+                {% else %}text-muted{% endif %}">
+                {% if c.diff > 0 %}+{% endif %}R$ {{ '%.2f'|format(c.diff) }}
+              </td>
             </tr>
-            <tr>
-              <td><i class="bi bi-credit-card me-2 text-primary"></i>Cartão</td>
-              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_cartao) }}</td>
-            </tr>
-            <tr>
-              <td><i class="bi bi-qr-code me-2 text-info"></i>Pix</td>
-              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_pix) }}</td>
-            </tr>
-            <tr>
-              <td><i class="bi bi-person-lines-fill me-2 text-warning"></i>Conta</td>
-              <td class="text-end fw-semibold">R$ {{ '%.2f'|format(total_conta) }}</td>
-            </tr>
-            <tr class="table-dark">
-              <td><strong>Total Geral</strong></td>
-              <td class="text-end fw-bold">R$ {{ '%.2f'|format(total_geral) }}</td>
-            </tr>
+            {% endfor %}
           </tbody>
+          <tfoot class="table-dark">
+            <tr>
+              <td><strong>Total</strong></td>
+              <td class="text-end">R$ {{ '%.2f'|format(total_sistema) }}</td>
+              <td class="text-end">R$ {{ '%.2f'|format(total_operador) }}</td>
+              <td class="text-end fw-bold
+                {% if diff_total > 0 %}text-success
+                {% elif diff_total < 0 %}text-danger
+                {% else %}text-light{% endif %}">
+                {% if diff_total > 0 %}+{% endif %}R$ {{ '%.2f'|format(diff_total) }}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
-    </div>
-  </div>
-
-  <!-- Conferência -->
-  <div class="col-md-4">
-    <div class="card h-100">
-      <div class="card-header fw-semibold">Conferência do Caixa</div>
-      <div class="card-body">
-        <div class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Troco inicial</span>
-          <span>R$ {{ '%.2f'|format(caixa.opening_amount) }}</span>
+      <div class="card-footer">
+        {% if diff_total == 0 %}
+        <div class="alert alert-success mb-0 py-2 text-center fw-bold">
+          <i class="bi bi-check-circle me-1"></i>Valores conferem!
         </div>
-        <div class="d-flex justify-content-between mb-2">
-          <span class="text-muted">+ Dinheiro recebido</span>
-          <span>R$ {{ '%.2f'|format(total_dinheiro) }}</span>
+        {% elif diff_total > 0 %}
+        <div class="alert alert-warning mb-0 py-2 text-center fw-bold">
+          <i class="bi bi-exclamation-triangle me-1"></i>Sobra de R$ {{ '%.2f'|format(diff_total) }} no caixa
         </div>
-        <div class="d-flex justify-content-between mb-3 border-top pt-2">
-          <strong>Esperado</strong>
-          <strong>R$ {{ '%.2f'|format(esperado_caixa) }}</strong>
+        {% else %}
+        <div class="alert alert-danger mb-0 py-2 text-center fw-bold">
+          <i class="bi bi-x-circle me-1"></i>Falta de R$ {{ '%.2f'|format(diff_total|abs) }} no caixa
         </div>
-        <div class="d-flex justify-content-between mb-2">
-          <span class="text-muted">Valor contado</span>
-          <span>R$ {{ '%.2f'|format(caixa.closing_amount or 0) }}</span>
-        </div>
-        <div class="alert {{ 'alert-success' if diferenca >= 0 else 'alert-danger' }} d-flex justify-content-between mb-0">
-          <strong>Diferença</strong>
-          <strong>{{ '+' if diferenca >= 0 else '' }}R$ {{ '%.2f'|format(diferenca) }}</strong>
-        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -96,7 +96,7 @@
 
 <!-- Lista de vendas -->
 {% if vendas %}
-<div class="card mt-4">
+<div class="card">
   <div class="card-header">Vendas do Período ({{ vendas|length }})</div>
   <div class="card-body p-0">
     <table class="table table-sm table-hover mb-0">
@@ -104,6 +104,7 @@
         <tr>
           <th>#</th>
           <th>Horário</th>
+          <th>Origem</th>
           <th>Cliente</th>
           <th>Pagamento</th>
           <th class="text-end">Total</th>
@@ -114,11 +115,13 @@
         <tr>
           <td class="text-muted small">{{ v.id }}</td>
           <td class="small">{{ v.created_at.strftime('%H:%M') }}</td>
+          <td class="small">{{ 'App' if v.source == 'app' else 'Loja' }}</td>
           <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
           <td>
-            {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
-            {% elif v.payment_method == 'cartao' %}<span class="badge bg-primary">Cartão</span>
-            {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
+            {% set pm = v.payment_method %}
+            {% if pm in ('dinheiro','entrega_dinheiro') %}<span class="badge bg-success">Dinheiro</span>
+            {% elif pm in ('cartao','entrega_cartao') %}<span class="badge bg-primary">Cartão</span>
+            {% elif pm in ('pix','entrega_pix') %}<span class="badge bg-info text-dark">Pix</span>
             {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
           </td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>

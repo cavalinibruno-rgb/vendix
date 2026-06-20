@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash
+import json
 from flask_login import login_required, current_user
 from app import db
 from app.models.cash import CashRegister
@@ -68,13 +69,23 @@ def fechar(caixa_id):
     esperado_caixa = caixa.opening_amount + total_dinheiro
 
     if request.method == 'POST':
-        valor_contado = float(request.form.get('closing_amount', 0) or 0)
-        notes = request.form.get('notes', '')
-        caixa.closing_amount = valor_contado
-        caixa.closed_by = current_user.id
-        caixa.closed_at = datetime.utcnow()
-        caixa.status = 'closed'
-        caixa.notes = notes
+        def fval(name): return float(request.form.get(name, 0) or 0)
+        op = {
+            'loja_dinheiro': fval('loja_dinheiro'),
+            'loja_cartao':   fval('loja_cartao'),
+            'loja_pix':      fval('loja_pix'),
+            'loja_conta':    fval('loja_conta'),
+            'app_dinheiro':  fval('app_dinheiro'),
+            'app_cartao':    fval('app_cartao'),
+            'app_pix':       fval('app_pix'),
+        }
+        total_operador = sum(op.values())
+        caixa.closing_amount = total_operador
+        caixa.closing_data   = json.dumps(op)
+        caixa.closed_by      = current_user.id
+        caixa.closed_at      = datetime.utcnow()
+        caixa.status         = 'closed'
+        caixa.notes          = request.form.get('notes', '')
         db.session.commit()
         flash('Caixa fechado com sucesso!', 'success')
         return redirect(url_for('cash.resumo', caixa_id=caixa.id))
@@ -98,20 +109,49 @@ def resumo(caixa_id):
         Sale.created_at <= (caixa.closed_at or datetime.utcnow()),
     ).all()
 
-    vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
+    vendas_loja = [v for v in todas_vendas if v.source != 'app' and v.status == 'confirmed']
+    vendas_app  = [v for v in todas_vendas if v.source == 'app'  and v.status == 'confirmed']
 
-    total_dinheiro = sum(v.total for v in vendas if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
-    total_cartao   = sum(v.total for v in vendas if v.payment_method in ('cartao', 'entrega_cartao'))
-    total_pix      = sum(v.total for v in vendas if v.payment_method in ('pix', 'entrega_pix'))
-    total_conta    = sum(v.total for v in vendas if v.payment_method == 'conta')
-    total_geral    = sum(v.total for v in vendas)
-    esperado_caixa = caixa.opening_amount + total_dinheiro
-    diferenca      = (caixa.closing_amount or 0) - esperado_caixa
+    def tot(lst, methods): return sum(v.total for v in lst if v.payment_method in methods)
+
+    sis = {
+        'loja_dinheiro': tot(vendas_loja, ('dinheiro', 'entrega_dinheiro')),
+        'loja_cartao':   tot(vendas_loja, ('cartao',   'entrega_cartao')),
+        'loja_pix':      tot(vendas_loja, ('pix',      'entrega_pix')),
+        'loja_conta':    tot(vendas_loja, ('conta',)),
+        'app_dinheiro':  tot(vendas_app,  ('dinheiro', 'entrega_dinheiro')),
+        'app_cartao':    tot(vendas_app,  ('cartao',   'entrega_cartao')),
+        'app_pix':       tot(vendas_app,  ('pix',      'entrega_pix')),
+    }
+
+    op = json.loads(caixa.closing_data) if caixa.closing_data else {k: 0 for k in sis}
+
+    conferencia = []
+    for key, label, icon, color in [
+        ('loja_dinheiro', 'Loja — Dinheiro', 'bi-cash',             'text-success'),
+        ('loja_cartao',   'Loja — Cartão',   'bi-credit-card',      'text-primary'),
+        ('loja_pix',      'Loja — Pix',      'bi-qr-code',          'text-info'),
+        ('loja_conta',    'Loja — Conta',    'bi-person-lines-fill','text-warning'),
+        ('app_dinheiro',  'App — Dinheiro',  'bi-cash',             'text-success'),
+        ('app_cartao',    'App — Cartão',    'bi-credit-card',      'text-primary'),
+        ('app_pix',       'App — Pix',       'bi-qr-code',          'text-info'),
+    ]:
+        s = sis.get(key, 0)
+        o = op.get(key, 0)
+        diff = o - s
+        conferencia.append({'label': label, 'icon': icon, 'color': color,
+                            'sistema': s, 'operador': o, 'diff': diff})
+
+    total_sistema  = sum(sis.values())
+    total_operador = sum(op.values())
+    diff_total     = total_operador - total_sistema
+
+    vendas = vendas_loja + vendas_app
 
     return render_template('cash/resumo.html',
         caixa=caixa, vendas=vendas,
-        total_dinheiro=total_dinheiro, total_cartao=total_cartao,
-        total_pix=total_pix, total_conta=total_conta,
-        total_geral=total_geral, esperado_caixa=esperado_caixa,
-        diferenca=diferenca,
+        conferencia=conferencia,
+        total_sistema=total_sistema,
+        total_operador=total_operador,
+        diff_total=diff_total,
     )

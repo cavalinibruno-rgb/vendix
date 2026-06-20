@@ -12,6 +12,7 @@ class CashRegister(db.Model):
     closing_amount = db.Column(db.Float, nullable=True)  # valor contado no fechamento
     status         = db.Column(db.String(16), default='open')  # open | closed
     notes          = db.Column(db.Text)
+    closing_data   = db.Column(db.Text)   # JSON com valores informados pelo operador
     opened_at      = db.Column(db.DateTime, default=datetime.utcnow)
     closed_at      = db.Column(db.DateTime, nullable=True)
 
