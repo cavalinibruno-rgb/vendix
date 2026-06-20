@@ -4,20 +4,30 @@ from app import db
 from app.models.sale import Sale, SaleItem
 from app.models.product import Product
 from app.models.customer import Customer
+from app.models.cash import CashRegister
 
 sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
 
 def tid():
     return current_user.tenant_id
 
+def _caixa_aberto():
+    return CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
+
 @sales_bp.route('/nova')
 @login_required
 def nova():
+    if not _caixa_aberto():
+        flash('Abra o caixa antes de realizar uma venda.', 'warning')
+        return redirect(url_for('cash.index'))
     return render_template('sales/nova.html')
 
 @sales_bp.route('/confirmar', methods=['POST'])
 @login_required
 def confirmar():
+    if not _caixa_aberto():
+        return jsonify({'error': 'Caixa fechado. Abra o caixa antes de realizar uma venda.'}), 403
+
     data = request.get_json()
     if not data or not data.get('items'):
         return jsonify({'error': 'Carrinho vazio'}), 400
