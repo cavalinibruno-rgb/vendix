@@ -150,6 +150,9 @@
       </a>
 
       <div class="nav-section">Sistema</div>
+      <a href="{{ url_for('dre.index') }}" class="nav-link {% if 'dre' in ep %}active{% endif %}">
+        <i class="bi bi-graph-up-arrow"></i><span class="nav-label"> DRE</span>
+      </a>
       <a href="{{ url_for('config.index') }}" class="nav-link {% if 'config' in ep %}active{% endif %}">
         <i class="bi bi-gear"></i><span class="nav-label"> Configurações</span>
       </a>

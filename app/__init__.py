@@ -60,6 +60,16 @@ def _run_migrations(db):
         )""",
         "ALTER TABLE employees ADD COLUMN IF NOT EXISTS username VARCHAR(64)",
         "ALTER TABLE employees ADD COLUMN IF NOT EXISTS password_hash VARCHAR(256)",
+        """CREATE TABLE IF NOT EXISTS expenses (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            date DATE NOT NULL,
+            category VARCHAR(64) NOT NULL,
+            description VARCHAR(256),
+            amount FLOAT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price FLOAT DEFAULT 0",
         """CREATE TABLE IF NOT EXISTS employees (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
@@ -130,6 +140,7 @@ def create_app():
     from app.routes.vale import vale_bp
     from app.routes.despacho import despacho_bp
     from app.routes.config import config_bp
+    from app.routes.dre import dre_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -144,11 +155,13 @@ def create_app():
     app.register_blueprint(vale_bp)
     app.register_blueprint(despacho_bp)
     app.register_blueprint(config_bp)
+    app.register_blueprint(dre_bp)
 
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
-        from app.models.cash_withdrawal import CashWithdrawal  # noqa: F401 — needed for db.create_all()
+        from app.models.cash_withdrawal import CashWithdrawal  # noqa: F401
+        from app.models.expense import Expense  # noqa: F401
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master

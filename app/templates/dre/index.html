@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% block title %}DRE — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-graph-up-arrow me-2 text-warning"></i>DRE</h1>
+    <p class="text-muted mb-0">Demonstração do Resultado do Exercício</p>
+  </div>
+  <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalDespesa">
+    <i class="bi bi-plus-circle me-1"></i> Nova Despesa
+  </button>
+</div>
+
+<!-- Filtro de período -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label fw-semibold small">De</label>
+        <input type="date" name="inicio" class="form-control" value="{{ inicio }}">
+      </div>
+      <div class="col-auto">
+        <label class="form-label fw-semibold small">Até</label>
+        <input type="date" name="fim" class="form-control" value="{{ fim }}">
+      </div>
+      <div class="col-auto">
+        <label class="form-label fw-semibold small">Alíquota de Imposto (%)</label>
+        <input type="number" name="aliquota" class="form-control" style="width:100px"
+               value="{{ aliquota }}" min="0" max="100" step="0.01" placeholder="0">
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-primary">
+          <i class="bi bi-search me-1"></i>Gerar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- DRE -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-file-earmark-bar-graph me-2 text-warning"></i>Resultado do Período
+        <span class="text-muted small fw-normal ms-2">{{ qtd_vendas }} vendas</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+
+            <tr class="table-light">
+              <td class="fw-semibold ps-3">Receita Bruta</td>
+              <td class="text-end pe-3 fw-semibold text-success">R$ {{ '%.2f'|format(receita_bruta) }}</td>
+            </tr>
+
+            {% if total_deducoes > 0 %}
+            <tr>
+              <td class="ps-4 text-muted small">(-) Cancelamentos</td>
+              <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(deducao_cancelados) }}</td>
+            </tr>
+            {% if deducao_impostos > 0 %}
+            <tr>
+              <td class="ps-4 text-muted small">(-) Impostos ({{ aliquota }}%)</td>
+              <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(deducao_impostos) }}</td>
+            </tr>
+            {% endif %}
+            {% endif %}
+
+            <tr class="table-light">
+              <td class="fw-semibold ps-3">Receita Líquida</td>
+              <td class="text-end pe-3 fw-semibold">R$ {{ '%.2f'|format(receita_liquida) }}</td>
+            </tr>
+
+            <tr>
+              <td class="ps-4 text-muted small">(-) CMV — Custo das Mercadorias</td>
+              <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(cmv) }}</td>
+            </tr>
+
+            <tr class="table-light">
+              <td class="fw-semibold ps-3">Lucro Bruto</td>
+              <td class="text-end pe-3 fw-semibold {{ 'text-success' if lucro_bruto >= 0 else 'text-danger' }}">
+                R$ {{ '%.2f'|format(lucro_bruto) }}
+              </td>
+            </tr>
+
+            <tr>
+              <td class="ps-4 text-muted small">(-) Despesas Operacionais</td>
+              <td class="text-end pe-3 text-danger small">- R$ {{ '%.2f'|format(total_despesas) }}</td>
+            </tr>
+
+            <tr class="{% if resultado_liquido >= 0 %}table-success{% else %}table-danger{% endif %}">
+              <td class="fw-bold ps-3 fs-6">
+                {% if resultado_liquido >= 0 %}
+                <i class="bi bi-arrow-up-circle-fill me-1 text-success"></i>Lucro Líquido
+                {% else %}
+                <i class="bi bi-arrow-down-circle-fill me-1 text-danger"></i>Prejuízo
+                {% endif %}
+              </td>
+              <td class="text-end pe-3 fw-bold fs-6 {{ 'text-success' if resultado_liquido >= 0 else 'text-danger' }}">
+                R$ {{ '%.2f'|format(resultado_liquido|abs) }}
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+      {% if cmv == 0 %}
+      <div class="card-footer text-muted small">
+        <i class="bi bi-info-circle me-1"></i>CMV zerado — cadastre o preço de custo nos produtos para calcular automaticamente.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Despesas por categoria -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-pie-chart me-2 text-danger"></i>Despesas por Categoria
+      </div>
+      <div class="card-body p-0">
+        {% if por_categoria %}
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for cat, val in por_categoria.items()|sort(attribute='1', reverse=True) %}
+            <tr>
+              <td class="ps-3">{{ cat }}</td>
+              <td class="text-end pe-3 fw-semibold text-danger">R$ {{ '%.2f'|format(val) }}</td>
+              <td class="pe-3 text-muted small" style="width:60px">
+                {{ '%.0f'|format(val / total_despesas * 100) }}%
+              </td>
+            </tr>
+            {% endfor %}
+            <tr class="table-light fw-semibold">
+              <td class="ps-3">Total</td>
+              <td class="text-end pe-3 text-danger">R$ {{ '%.2f'|format(total_despesas) }}</td>
+              <td class="pe-3 text-muted small">100%</td>
+            </tr>
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center py-4 mb-0">Nenhuma despesa no período.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Lista de despesas -->
+{% if despesas %}
+<div class="card mt-4">
+  <div class="card-header fw-semibold d-flex justify-content-between">
+    <span><i class="bi bi-list-ul me-2"></i>Despesas do Período</span>
+    <span class="text-danger fw-bold">- R$ {{ '%.2f'|format(total_despesas) }}</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Data</th>
+          <th>Categoria</th>
+          <th>Descrição</th>
+          <th class="text-end">Valor</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in despesas %}
+        <tr>
+          <td class="text-muted small">{{ d.date.strftime('%d/%m/%Y') }}</td>
+          <td><span class="badge bg-secondary">{{ d.category }}</span></td>
+          <td class="small text-muted">{{ d.description or '—' }}</td>
+          <td class="text-end fw-semibold text-danger">R$ {{ '%.2f'|format(d.amount) }}</td>
+          <td>
+            <form method="post" action="{{ url_for('dre.despesa_excluir', eid=d.id) }}"
+                  data-confirm="Excluir esta despesa?">
+              <button class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal Nova Despesa -->
+<div class="modal fade" id="modalDespesa" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-warning"></i>Nova Despesa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('dre.despesa_nova') }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Data</label>
+            <input type="date" name="date" class="form-control"
+                   value="{{ inicio }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Categoria</label>
+            <select name="category" class="form-select" required>
+              <option value="">— Selecionar —</option>
+              {% for c in categorias %}
+              <option value="{{ c }}">{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Descrição <span class="text-muted small">(opcional)</span></label>
+            <input type="text" name="description" class="form-control"
+                   placeholder="Ex: Conta de luz — fevereiro">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Valor (R$)</label>
+            <input type="number" name="amount" class="form-control"
+                   step="0.01" min="0.01" placeholder="0,00" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning fw-semibold">
+            <i class="bi bi-check-lg me-1"></i>Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
