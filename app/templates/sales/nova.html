@@ -76,8 +76,13 @@
         <div id="clienteSelecionado" class="text-success small" style="display:none;">
           <i class="bi bi-check-circle me-1"></i><span id="clienteNome"></span>
         </div>
-        <div id="clienteEndereco" class="text-muted small mt-1" style="display:none;">
-          <i class="bi bi-geo-alt me-1"></i><span id="clienteEnderecoTexto"></span>
+        <div id="clienteEndereco" class="mt-2" style="display:none;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+            <input type="text" id="clienteEnderecoTexto" name="endereco_entrega"
+                   class="form-control form-control-sm"
+                   placeholder="Endereço de entrega">
+          </div>
         </div>
 
         <!-- Campos entrega -->
@@ -276,7 +281,7 @@ function setModo(m) {
     }
     const endDiv = document.getElementById('clienteEndereco');
     if (clienteAtual.address) {
-      document.getElementById('clienteEnderecoTexto').textContent = clienteAtual.address;
+      document.getElementById('clienteEnderecoTexto').value = clienteAtual.address;
       endDiv.style.display = '';
     } else {
       endDiv.style.display = 'none';
@@ -373,10 +378,9 @@ function selecionarCliente(c) {
   document.getElementById('clienteSearch').value = c.name;
 
   // Endereço
-  const endDiv  = document.getElementById('clienteEndereco');
-  const endSpan = document.getElementById('clienteEnderecoTexto');
-  if (modo === 'entrega' && c.address) {
-    endSpan.textContent = c.address;
+  const endDiv = document.getElementById('clienteEndereco');
+  if (modo === 'entrega') {
+    document.getElementById('clienteEnderecoTexto').value = c.address || '';
     endDiv.style.display = '';
   } else {
     endDiv.style.display = 'none';
