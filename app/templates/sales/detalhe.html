@@ -73,6 +73,20 @@
           <dt class="col-5 text-muted">Pagamento</dt>
           <dd class="col-7">{{ sale.payment_method|capitalize }}</dd>
 
+          {% if sale.amount_paid %}
+          <dt class="col-5 text-muted">Valor pago</dt>
+          <dd class="col-7 fw-bold">R$ {{ '%.2f'|format(sale.amount_paid) }}</dd>
+
+          <dt class="col-5 text-muted">Troco</dt>
+          <dd class="col-7 fw-bold {% if sale.change_amount and sale.change_amount > 0 %}text-success{% else %}text-muted{% endif %}">
+            {% if sale.change_amount and sale.change_amount > 0 %}
+              R$ {{ '%.2f'|format(sale.change_amount) }}
+            {% else %}
+              Sem troco
+            {% endif %}
+          </dd>
+          {% endif %}
+
           <dt class="col-5 text-muted">Entrega</dt>
           <dd class="col-7">{{ 'Entrega' if sale.delivery_mode == 'entrega' else 'Retirada' }}</dd>
 

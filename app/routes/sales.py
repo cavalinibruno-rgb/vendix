@@ -29,6 +29,7 @@ def confirmar():
     notes          = data.get('notes', '')
     source         = data.get('source', 'loja')
     app_name       = data.get('app_name', '') if source == 'app' else None
+    amount_paid    = float(data.get('amount_paid', 0) or 0) or None
     items          = data.get('items', [])
 
     subtotal = sum(float(i['unit_price']) * float(i['quantity']) for i in items)
@@ -45,6 +46,8 @@ def confirmar():
         notes          = notes,
         source         = source,
         app_name       = app_name,
+        amount_paid    = amount_paid,
+        change_amount  = round(amount_paid - total, 2) if amount_paid and amount_paid > total else None,
     )
     db.session.add(sale)
     db.session.flush()

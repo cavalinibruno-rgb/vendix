@@ -17,6 +17,8 @@ def _run_migrations(db):
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS brand_id INTEGER REFERENCES brands(id)",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS image_data BYTEA",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS image_mime VARCHAR(32)",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS amount_paid FLOAT",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS change_amount FLOAT",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

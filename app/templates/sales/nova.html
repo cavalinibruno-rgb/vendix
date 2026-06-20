@@ -602,6 +602,7 @@ function finalizarVenda() {
     notes:          document.getElementById('obsVenda').value,
     source:         origem,
     app_name:       origem === 'app' ? document.getElementById('appNome').value.trim() : null,
+    amount_paid:    (pgto === 'dinheiro' || pgto === 'entrega_dinheiro') ? (parseFloat(document.getElementById('valorRecebido').value.replace(',','.')) || 0) : null,
     items:          carrinho,
   };
 
