@@ -132,9 +132,17 @@
   /* Tabela do carrinho */
   .cart-area .table { color: #ddd; }
   .cart-area .table td { border-color: #3a3a3a; }
-  /* Linha de item */
-  .cart-item-remove { color: #f77; background: none; border: none; font-size: 1rem; line-height: 1; padding: 0 4px; }
-  .cart-item-remove:hover { color: #ff4444; }
+  /* Tabela de itens do carrinho */
+  #carrinhoTabela, #carrinhoTabela tr, #carrinhoTabela td {
+    background: transparent !important;
+    color: #ddd;
+    border-color: #3a3a3a;
+  }
+  #carrinhoTabela .form-control {
+    background: #2d2d2d !important;
+    border-color: #444;
+    color: #ddd;
+  }
 </style>
 {% endblock %}
 
