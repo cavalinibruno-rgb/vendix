@@ -28,28 +28,31 @@ def index():
     tenant = Tenant.query.get(current_user.tenant_id)
     tid = current_user.tenant_id
 
-    hoje_inicio = datetime.combine(date.today(), datetime.min.time())
-
-    todas_hoje = Sale.query.filter(
-        Sale.tenant_id == tid,
-        Sale.status == 'confirmed',
-        Sale.created_at >= hoje_inicio,
-    ).all()
-
-    def entra_no_caixa(v):
-        if v.source == 'loja' or v.source is None:
-            return True
-        return v.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
-
-    vendas_hoje = [v for v in todas_hoje if entra_no_caixa(v)]
-
-    total_dinheiro = sum(v.total for v in vendas_hoje if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
-    total_cartao   = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao', 'entrega_cartao'))
-    total_pix      = sum(v.total for v in vendas_hoje if v.payment_method in ('pix', 'entrega_pix'))
-    total_conta    = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
-    total_geral    = sum(v.total for v in vendas_hoje)
-
     caixa = CashRegister.query.filter_by(tenant_id=tid, status='open').first()
+
+    if caixa:
+        todas_hoje = Sale.query.filter(
+            Sale.tenant_id == tid,
+            Sale.status == 'confirmed',
+            Sale.created_at >= caixa.opened_at,
+        ).all()
+
+        def entra_no_caixa(v):
+            if v.delivery_mode == 'entrega':
+                return v.delivered_at is not None
+            if v.source == 'loja' or v.source is None:
+                return True
+            return v.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
+
+        vendas_hoje    = [v for v in todas_hoje if entra_no_caixa(v)]
+        total_dinheiro = sum(v.total for v in vendas_hoje if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
+        total_cartao   = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao', 'entrega_cartao'))
+        total_pix      = sum(v.total for v in vendas_hoje if v.payment_method in ('pix', 'entrega_pix'))
+        total_conta    = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
+        total_geral    = sum(v.total for v in vendas_hoje)
+    else:
+        vendas_hoje = []
+        total_dinheiro = total_cartao = total_pix = total_conta = total_geral = 0
 
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
                                .order_by(Sale.created_at.desc()).limit(10).all()

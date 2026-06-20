@@ -34,10 +34,11 @@
 {% endif %}
 
 <!-- Cards de totais do dia -->
+{% if caixa %}
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
-      <div class="text-muted small mb-1">Vendas hoje</div>
+      <div class="text-muted small mb-1">Vendas no caixa</div>
       <div class="fs-2 fw-bold text-primary">{{ qtd_vendas }}</div>
       <div class="text-muted small">pedidos</div>
     </div>
@@ -57,7 +58,6 @@
       <div class="text-muted small"><i class="bi bi-cash"></i> Dinheiro</div>
     </div>
   </div>
-  {% endif %}
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
       <div class="text-muted small mb-1">Conta (fiado)</div>
@@ -65,7 +65,9 @@
       <div class="text-muted small"><i class="bi bi-person-lines-fill"></i> A receber</div>
     </div>
   </div>
+  {% endif %}
 </div>
+{% endif %}
 
 <!-- Detalhamento por pagamento -->
 <div class="row g-3 mb-4">
@@ -73,7 +75,9 @@
     <div class="card h-100">
       <div class="card-header fw-semibold">Formas de Pagamento — Hoje</div>
       <div class="card-body">
-        {% if total_geral > 0 %}
+        {% if not caixa %}
+        <p class="text-muted text-center mb-0 py-3"><i class="bi bi-lock me-1"></i>Abra o caixa para ver os dados.</p>
+        {% elif total_geral > 0 %}
         <table class="table mb-0">
           <tbody>
             <tr>
@@ -106,7 +110,7 @@
           </tbody>
         </table>
         {% else %}
-        <p class="text-muted text-center mb-0 py-3">Nenhuma venda registrada hoje.</p>
+        <p class="text-muted text-center mb-0 py-3">Nenhuma venda registrada neste caixa.</p>
         {% endif %}
       </div>
     </div>
