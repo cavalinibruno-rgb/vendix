@@ -109,9 +109,46 @@ def confirmar():
 @sales_bp.route('/')
 @login_required
 def index():
-    sales = Sale.query.filter_by(tenant_id=tid(), status='confirmed')\
-                      .order_by(Sale.created_at.desc()).limit(100).all()
-    return render_template('sales/index.html', sales=sales)
+    from datetime import date, datetime
+    from app.models.cash import CashRegister
+
+    data_str = request.args.get('data', date.today().isoformat())
+    try:
+        data_fil = date.fromisoformat(data_str)
+    except ValueError:
+        data_fil = date.today()
+
+    inicio = datetime.combine(data_fil, datetime.min.time())
+    fim    = datetime.combine(data_fil, datetime.max.time())
+
+    # Modo restrito: config ativa + caixa aberto por funcionário
+    tenant = current_user.tenant
+    cfg = tenant.get_settings()
+    caixa = CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
+    modo_restrito = (
+        cfg.get('dashboard_operador_restrito') and
+        caixa is not None and
+        caixa.operator_employee_id is not None
+    )
+
+    limite = 15 if modo_restrito else 500
+
+    sales = Sale.query.filter(
+        Sale.tenant_id == tid(),
+        Sale.status == 'confirmed',
+        Sale.created_at >= inicio,
+        Sale.created_at <= fim,
+    ).order_by(Sale.created_at.desc()).limit(limite).all()
+
+    from datetime import timedelta
+    return render_template('sales/index.html',
+        sales=sales,
+        data_fil=data_fil,
+        modo_restrito=modo_restrito,
+        limite=limite,
+        hoje=date.today().isoformat(),
+        ontem=(date.today() - timedelta(days=1)).isoformat(),
+    )
 
 @sales_bp.route('/<int:sale_id>')
 @login_required
