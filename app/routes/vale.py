@@ -61,7 +61,7 @@ def funcionario_excluir(emp_id):
     if e.role == 'motoboy':
         m = Motoboy.query.filter_by(tenant_id=tid(), name=e.name).first()
         if m:
-            db.session.delete(m)
+            m.active = False  # desativa para não quebrar FK de vendas existentes
     db.session.delete(e)
     db.session.commit()
     flash('Funcionário removido.', 'success')
@@ -137,7 +137,7 @@ def motoboy_novo():
 @login_required
 def motoboy_excluir(mid):
     m = Motoboy.query.filter_by(id=mid, tenant_id=tid()).first_or_404()
-    db.session.delete(m)
+    m.active = False
     db.session.commit()
     flash('Motoboy removido.', 'warning')
     return redirect(url_for('vale.index'))
