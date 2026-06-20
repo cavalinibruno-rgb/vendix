@@ -33,11 +33,11 @@
   </div>
   <div class="col-6 col-md-3">
     {% if saldo > 0 %}
-    <button class="card text-center py-3 w-100 h-100 border-0 bg-success text-white fw-semibold"
+    <button class="card w-100 h-100 border-0 bg-success text-white fw-semibold d-flex align-items-center justify-content-center"
             data-bs-toggle="modal" data-bs-target="#modalPagar"
-            style="cursor:pointer; border-radius:12px;">
-      <div class="small mb-1 text-white-50">Registrar</div>
-      <div class="fs-5 fw-bold"><i class="bi bi-cash me-1"></i>Pagamento</div>
+            style="cursor:pointer; border-radius:12px; min-height:90px;">
+      <div class="text-white-50 small mb-1">Registrar Pagamento</div>
+      <div class="fs-4 fw-bold"><i class="bi bi-cash me-1"></i></div>
     </button>
     {% else %}
     <div class="card text-center py-3 h-100 bg-success text-white" style="border-radius:12px;">
