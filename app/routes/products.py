@@ -172,8 +172,23 @@ def api_buscar():
         'id': p.id, 'name': p.name,
         'sale_price': p.sale_price,
         'stock_quantity': p.stock_quantity,
+        'has_image': bool(p.image_data),
         'type': p.type.name if p.type else '',
+        'type_id': p.type_id,
         'brand': p.brand.name if p.brand else ''
+    } for p in products])
+
+@products_bp.route('/api/todos')
+@login_required
+def api_todos():
+    products = Product.query.filter_by(tenant_id=tenant_id(), active=True).order_by(Product.name).all()
+    return jsonify([{
+        'id': p.id, 'name': p.name,
+        'sale_price': p.sale_price,
+        'stock_quantity': p.stock_quantity,
+        'has_image': bool(p.image_data),
+        'type_id': p.type_id,
+        'type_name': p.type.name if p.type else 'Sem categoria',
     } for p in products])
 
 @products_bp.route('/<int:product_id>/imagem')
