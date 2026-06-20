@@ -125,9 +125,6 @@
       <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in ep %}active{% endif %}">
         <i class="bi bi-phone"></i><span class="nav-label"> Apps</span>
       </a>
-      <a href="{{ url_for('vale.index') }}" class="nav-link {% if 'vale' in ep %}active{% endif %}">
-        <i class="bi bi-people"></i><span class="nav-label"> Funcionários</span>
-      </a>
       <a href="{{ url_for('sales.cancelamentos') }}" class="nav-link {% if ep == 'sales.cancelamentos' %}active{% endif %}">
         <i class="bi bi-x-circle"></i><span class="nav-label"> Cancelamentos</span>
       </a>
@@ -147,6 +144,9 @@
       </a>
       <a href="{{ url_for('products.marcas') }}" class="nav-link {% if ep == 'products.marcas' %}active{% endif %}">
         <i class="bi bi-bookmark-star"></i><span class="nav-label"> Marcas</span>
+      </a>
+      <a href="{{ url_for('vale.index') }}" class="nav-link {% if 'vale' in ep %}active{% endif %}">
+        <i class="bi bi-people"></i><span class="nav-label"> Funcionários</span>
       </a>
 
       <div class="nav-section">Sistema</div>
