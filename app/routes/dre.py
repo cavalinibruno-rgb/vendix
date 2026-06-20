@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models.sale import Sale, SaleItem
+from app.models.product import Product
 from app.models.expense import Expense, CATEGORIAS
 from app.models.tenant import Tenant
 from datetime import date, datetime
@@ -91,12 +92,19 @@ def index():
     # Para MEI o DAS entra como despesa extra, não reduz receita
     das_mei = total_impostos if regime == 'mei' else 0
 
-    # CMV — usa custo gravado no momento da venda (histórico fiel)
-    cmv = sum(
-        (item.cost_price or 0) * item.quantity
-        for v in vendas
-        for item in v.items
-    )
+    # CMV — usa custo gravado no item; fallback para custo atual do produto em vendas antigas
+    _produto_cache = {}
+    def _custo_item(item):
+        if item.cost_price:
+            return item.cost_price
+        if item.product_id:
+            if item.product_id not in _produto_cache:
+                _produto_cache[item.product_id] = Product.query.get(item.product_id)
+            p = _produto_cache[item.product_id]
+            return (p.cost_price or 0) if p else 0
+        return 0
+
+    cmv = sum(_custo_item(item) * item.quantity for v in vendas for item in v.items)
 
     lucro_bruto = receita_liquida - cmv
 
