@@ -46,6 +46,10 @@ def funcionario_novo():
     if name:
         e = Employee(tenant_id=tid(), name=name, role=role)
         db.session.add(e)
+        db.session.flush()
+        # Sincroniza com tabela motoboys para aparecer no despacho
+        if role == 'motoboy':
+            db.session.add(Motoboy(tenant_id=tid(), name=name))
         db.session.commit()
         flash(f'Funcionário "{name}" cadastrado!', 'success')
     return redirect(url_for('vale.index'))
@@ -54,6 +58,10 @@ def funcionario_novo():
 @login_required
 def funcionario_excluir(emp_id):
     e = Employee.query.filter_by(id=emp_id, tenant_id=tid()).first_or_404()
+    if e.role == 'motoboy':
+        m = Motoboy.query.filter_by(tenant_id=tid(), name=e.name).first()
+        if m:
+            db.session.delete(m)
     db.session.delete(e)
     db.session.commit()
     flash('Funcionário removido.', 'success')
