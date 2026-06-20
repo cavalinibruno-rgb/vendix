@@ -27,6 +27,21 @@ def _run_migrations(db):
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS amount_paid FLOAT",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS change_amount FLOAT",
         "ALTER TABLE cash_registers ADD COLUMN IF NOT EXISTS closing_data TEXT",
+        """CREATE TABLE IF NOT EXISTS employees (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            name VARCHAR(128) NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
+        """CREATE TABLE IF NOT EXISTS vales (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            employee_id INTEGER REFERENCES employees(id) NOT NULL,
+            amount FLOAT NOT NULL,
+            date DATE NOT NULL,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:
@@ -67,6 +82,7 @@ def create_app():
     from app.routes.stock import stock_bp
     from app.routes.account import account_bp
     from app.routes.apps import apps_bp
+    from app.routes.vale import vale_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -78,6 +94,7 @@ def create_app():
     app.register_blueprint(stock_bp)
     app.register_blueprint(account_bp)
     app.register_blueprint(apps_bp)
+    app.register_blueprint(vale_bp)
 
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")

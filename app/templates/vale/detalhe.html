@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Vale — {{ employee.name }} — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <a href="{{ url_for('vale.index', mes=mes, ano=ano) }}" class="btn btn-sm btn-outline-secondary me-2">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h1 class="d-inline"><i class="bi bi-person me-2 text-warning"></i>{{ employee.name }}</h1>
+    <p class="mt-1">Vales de {{ meses[mes-1] }}/{{ ano }}</p>
+  </div>
+  <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalVale">
+    <i class="bi bi-plus-circle me-1"></i>Lançar Vale
+  </button>
+</div>
+
+<div class="row g-3">
+  <!-- Filtro -->
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body py-2">
+        <form method="get" class="d-flex align-items-center gap-2">
+          <select name="mes" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+            {% for i in range(1, 13) %}
+            <option value="{{ i }}" {% if i == mes %}selected{% endif %}>{{ meses[i-1] }}</option>
+            {% endfor %}
+          </select>
+          <select name="ano" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+            {% for a in range(2024, 2028) %}
+            <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de vales -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">Vales do período</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Data</th>
+              <th>Observação</th>
+              <th class="text-end">Valor</th>
+              <th style="width:48px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in vales %}
+            <tr>
+              <td class="small text-muted">{{ v.date.strftime('%d/%m/%Y') }}</td>
+              <td class="small">{{ v.notes or '—' }}</td>
+              <td class="text-end fw-semibold text-danger">R$ {{ '%.2f'|format(v.amount) }}</td>
+              <td>
+                <form method="post" action="{{ url_for('vale.vale_excluir', vale_id=v.id) }}"
+                      onsubmit="return confirm('Excluir este vale?')">
+                  <button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Nenhum vale neste período.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">Resumo</div>
+      <div class="card-body">
+        <div class="text-center py-2">
+          <div class="text-muted small mb-1">Total de vales em {{ meses[mes-1] }}/{{ ano }}</div>
+          <div class="fw-bold fs-2 text-danger">R$ {{ '%.2f'|format(total) }}</div>
+          <div class="text-muted small mt-1">{{ vales|length }} lançamento(s)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lançar Vale -->
+<div class="modal fade" id="modalVale" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('vale.vale_novo', emp_id=employee.id) }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Lançar Vale — {{ employee.name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Valor (R$) *</label>
+            <input type="text" name="amount" id="valeAmount" class="form-control form-control-lg"
+                   inputmode="decimal" placeholder="0,00" required autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Data *</label>
+            <input type="date" name="date" class="form-control"
+                   value="{{ '%04d-%02d-%02d' % (ano, mes, 1) }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observação (opcional)</label>
+            <input type="text" name="notes" class="form-control" placeholder="Ex: adiantamento semanal">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-warning fw-semibold">Lançar Vale</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('modalVale').addEventListener('shown.bs.modal', function() {
+  document.getElementById('valeAmount').focus();
+});
+</script>
+{% endblock %}
