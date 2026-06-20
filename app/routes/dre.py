@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models.sale import Sale, SaleItem
-from app.models.product import Product
 from app.models.expense import Expense, CATEGORIAS
 from app.models.tenant import Tenant
 from datetime import date, datetime
@@ -54,13 +53,12 @@ def index():
     total_deducoes     = deducao_cancelados + deducao_impostos
     receita_liquida    = receita_bruta - total_deducoes
 
-    # CMV — custo das mercadorias vendidas
-    cmv = 0.0
-    for v in vendas:
-        for item in v.items:
-            produto = Product.query.get(item.product_id) if item.product_id else None
-            custo   = (produto.cost_price or 0) if produto else 0
-            cmv    += custo * item.quantity
+    # CMV — usa custo gravado no momento da venda (histórico fiel)
+    cmv = sum(
+        (item.cost_price or 0) * item.quantity
+        for v in vendas
+        for item in v.items
+    )
 
     lucro_bruto = receita_liquida - cmv
 

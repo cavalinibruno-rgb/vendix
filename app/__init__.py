@@ -70,6 +70,7 @@ def _run_migrations(db):
             created_at TIMESTAMP DEFAULT NOW()
         )""",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price FLOAT DEFAULT 0",
+        "ALTER TABLE sale_items ADD COLUMN IF NOT EXISTS cost_price FLOAT DEFAULT 0",
         """CREATE TABLE IF NOT EXISTS employees (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

@@ -70,20 +70,23 @@ def confirmar():
 
     for i in items:
         qty = float(i['quantity'])
+        pid = i.get('product_id') or None
+        prod = Product.query.filter_by(id=pid, tenant_id=tid()).first() if pid else None
         item = SaleItem(
             sale_id      = sale.id,
-            product_id   = i.get('product_id') or None,
+            product_id   = pid,
             product_name = i['name'],
             unit_price   = float(i['unit_price']),
+            cost_price   = (prod.cost_price or 0) if prod else 0,
             quantity     = qty,
             total        = float(i['unit_price']) * qty,
         )
         db.session.add(item)
 
         # desconta estoque e registra movimentação
-        pid = i.get('product_id')
         if pid:
-            prod = Product.query.filter_by(id=pid, tenant_id=tid()).first()
+            if not prod:
+                prod = Product.query.filter_by(id=pid, tenant_id=tid()).first()
             if prod:
                 deducao = min(int(qty), prod.stock_quantity)
                 prod.stock_quantity = max(0, prod.stock_quantity - int(qty))

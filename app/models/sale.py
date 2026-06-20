@@ -40,5 +40,6 @@ class SaleItem(db.Model):
     product_id  = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
     product_name= db.Column(db.String(128), nullable=False)  # salvo no momento da venda
     unit_price  = db.Column(db.Float, nullable=False)
+    cost_price  = db.Column(db.Float, nullable=True, default=0)  # custo no momento da venda
     quantity    = db.Column(db.Float, nullable=False, default=1)
     total       = db.Column(db.Float, nullable=False)
