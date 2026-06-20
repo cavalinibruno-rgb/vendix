@@ -102,6 +102,11 @@
         <button class="pdv-tab active" data-cat="todas" onclick="filtrarCategoria('todas', this)">Todas</button>
       </div>
 
+      <!-- Abas de marca -->
+      <div class="d-flex pdv-tabs" id="pdvMarcas" style="display:none !important;">
+        <button class="pdv-tab active" data-marca="todas" onclick="filtrarMarca('todas', this)">Todas as marcas</button>
+      </div>
+
       <!-- Grid de produtos -->
       <div class="pdv-grid" id="pdvGrid"></div>
 
@@ -308,9 +313,10 @@ let pgto = null;
 let bairros = [];
 let origem = 'loja';
 
-let todosProds = [];      // cache de todos os produtos
-let catAtual = 'todas';   // categoria selecionada
-let prodModalAtual = null; // produto no modal de adição
+let todosProds = [];
+let catAtual   = 'todas';
+let marcaAtual = 'todas';
+let prodModalAtual = null;
 
 // ── Inicialização ──────────────────────────────────────
 fetch('/clientes/bairros/api').then(r => r.json()).then(d => { bairros = d; preencherBairros(); }).catch(()=>{});
@@ -318,50 +324,65 @@ fetch('/clientes/bairros/api').then(r => r.json()).then(d => { bairros = d; pree
 fetch('/produtos/api/todos').then(r => r.json()).then(lista => {
   todosProds = lista;
   construirAbas(lista);
-  renderGrid('todas');
+  construirMarcas(lista);
+  aplicarFiltros();
 }).catch(()=>{});
 
 function construirAbas(lista) {
   const cats = new Map();
-  lista.forEach(p => {
-    if (p.type_id && !cats.has(p.type_id)) {
-      cats.set(p.type_id, p.type_name);
-    }
-  });
+  lista.forEach(p => { if (p.type_id && !cats.has(p.type_id)) cats.set(p.type_id, p.type_name); });
   const tabs = document.getElementById('pdvTabs');
   cats.forEach((nome, id) => {
     const btn = document.createElement('button');
-    btn.className = 'pdv-tab';
-    btn.dataset.cat = id;
-    btn.textContent = nome;
+    btn.className = 'pdv-tab'; btn.dataset.cat = id; btn.textContent = nome;
     btn.onclick = () => filtrarCategoria(id, btn);
     tabs.appendChild(btn);
   });
 }
 
+function construirMarcas(lista) {
+  const marcas = new Map();
+  lista.forEach(p => { if (p.brand_id && !marcas.has(p.brand_id)) marcas.set(p.brand_id, p.brand_name); });
+  const row = document.getElementById('pdvMarcas');
+  if (!marcas.size) return; // sem marcas, não exibe a linha
+  row.style.removeProperty('display');
+  marcas.forEach((nome, id) => {
+    const btn = document.createElement('button');
+    btn.className = 'pdv-tab'; btn.dataset.marca = id; btn.textContent = nome;
+    btn.onclick = () => filtrarMarca(id, btn);
+    row.appendChild(btn);
+  });
+}
+
 function filtrarCategoria(cat, btnEl) {
   catAtual = cat;
-  document.querySelectorAll('.pdv-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#pdvTabs .pdv-tab').forEach(b => b.classList.remove('active'));
   btnEl.classList.add('active');
-  renderGrid(cat);
+  aplicarFiltros();
+}
+
+function filtrarMarca(marca, btnEl) {
+  marcaAtual = marca;
+  document.querySelectorAll('#pdvMarcas .pdv-tab').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  const q = document.getElementById('produtoSearch').value.trim().toLowerCase();
+  let lista = todosProds;
+  if (catAtual !== 'todas')   lista = lista.filter(p => p.type_id == catAtual);
+  if (marcaAtual !== 'todas') lista = lista.filter(p => p.brand_id == marcaAtual);
+  if (q) lista = lista.filter(p => p.name.toLowerCase().includes(q));
+  renderCards(lista);
 }
 
 // ── Busca em tempo real ─────────────────────────────────
 let searchTimer;
 document.getElementById('produtoSearch').addEventListener('input', function() {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    const q = this.value.trim().toLowerCase();
-    if (!q) { renderGrid(catAtual); return; }
-    const filtrados = todosProds.filter(p => p.name.toLowerCase().includes(q));
-    renderCards(filtrados);
-  }, 200);
+  searchTimer = setTimeout(() => aplicarFiltros(), 200);
 });
-
-function renderGrid(cat) {
-  let lista = cat === 'todas' ? todosProds : todosProds.filter(p => p.type_id == cat);
-  renderCards(lista);
-}
 
 function renderCards(lista) {
   const grid = document.getElementById('pdvGrid');

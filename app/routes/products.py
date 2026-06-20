@@ -189,6 +189,8 @@ def api_todos():
         'has_image': bool(p.image_data),
         'type_id': p.type_id,
         'type_name': p.type.name if p.type else 'Sem categoria',
+        'brand_id': p.brand_id,
+        'brand_name': p.brand.name if p.brand else None,
     } for p in products])
 
 @products_bp.route('/<int:product_id>/imagem')
