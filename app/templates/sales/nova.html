@@ -508,6 +508,7 @@ function confirmarAddProd() {
       unit_price: prodModalAtual.sale_price,
       quantity: qtd,
       total: prodModalAtual.sale_price * qtd,
+      thumbnail: prodModalAtual.thumbnail || null,
     });
   }
   bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAddProd')).hide();
@@ -649,8 +650,12 @@ function renderCarrinho() {
                value="${fmtNum(item.unit_price)}" style="width:70px;"
                oninput="alterarPreco(${idx}, this.value)">`
       : `<span class="text-muted" style="font-size:.75rem;">R$ ${fmtNum(item.unit_price)}</span>`;
+    const thumbHtml = item.thumbnail
+      ? `<img src="${item.thumbnail}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;background:#3a3a3a;" alt="">`
+      : `<div style="width:36px;height:36px;border-radius:4px;background:#3a3a3a;display:flex;align-items:center;justify-content:center;color:#555;font-size:.9rem;"><i class="bi bi-box-seam"></i></div>`;
     tr.innerHTML = `
-      <td class="ps-3" style="max-width:120px;">
+      <td class="ps-2" style="width:44px;">${thumbHtml}</td>
+      <td style="max-width:110px;">
         <div class="fw-semibold small">${item.name}</div>
         <div>${precoCell}</div>
       </td>
