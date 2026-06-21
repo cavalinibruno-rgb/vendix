@@ -255,29 +255,41 @@
 
 {% block scripts %}
 <script>
+function tocarAlarme() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // 3 grupos de bipes: ding-ding-ding com pausa entre grupos
+  const grupos = [
+    [0.00, 880], [0.25, 1100], [0.50, 880],
+    [0.90, 1100], [1.15, 880], [1.40, 1100],
+    [1.80, 880], [2.05, 1100], [2.30, 880],
+  ];
+
+  grupos.forEach(([offset, freq]) => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+    const t = ctx.currentTime + offset;
+    gain.gain.setValueAtTime(0.6, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.start(t);
+    osc.stop(t + 0.22);
+  });
+}
+
 function testarSom() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const freqs = [880, 1100, 880, 1100, 880, 1100];
-    const durBip = 0.18, pause = 0.12, ciclo = durBip + pause;
-    const repeticoes = Math.ceil(3 / ciclo);
-    for (let i = 0; i < repeticoes; i++) {
-      const t = ctx.currentTime + i * ciclo;
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type = 'square';
-      o.frequency.value = freqs[i % freqs.length];
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.3, t + 0.01);
-      g.gain.setValueAtTime(0.3, t + durBip - 0.02);
-      g.gain.linearRampToValueAtTime(0, t + durBip);
-      o.start(t); o.stop(t + durBip);
-    }
-  } catch(e) { alert('Navegador bloqueou o áudio. Clique em qualquer lugar da página primeiro.'); }
-
+    tocarAlarme();
+  } catch(e) {
+    alert('Navegador bloqueou o áudio. Clique em qualquer lugar da página e tente novamente.');
+    return;
+  }
   document.getElementById('toastVendaMsg').innerHTML =
     `<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong> João Silva — R$ 45,90`;
-  bootstrap.Toast.getOrCreateInstance(document.getElementById('toastVenda'), {delay: 5000}).show();
+  bootstrap.Toast.getOrCreateInstance(document.getElementById('toastVenda'), {delay:6000}).show();
 }
 </script>
 {% endblock %}
