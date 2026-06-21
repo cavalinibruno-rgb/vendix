@@ -46,7 +46,7 @@
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
       <div class="text-muted small mb-1">Vendas hoje</div>
-      <div class="fs-2 fw-bold text-primary">{{ qtd_vendas }}</div>
+      <div class="fs-2 fw-bold text-primary" id="dash-qtd">{{ qtd_vendas }}</div>
       <div class="text-muted small">pedidos</div>
     </div>
   </div>
@@ -54,7 +54,7 @@
   <div class="col-6 col-md-3">
     <div class="card text-center py-3">
       <div class="text-muted small mb-1">Total do dia</div>
-      <div class="fs-4 fw-bold text-success">R$ {{ '%.2f'|format(total_geral) }}</div>
+      <div class="fs-4 fw-bold text-success" id="dash-total">R$ {{ '%.2f'|format(total_geral) }}</div>
       <div class="text-muted small">confirmados</div>
     </div>
   </div>

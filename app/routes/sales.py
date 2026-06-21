@@ -135,6 +135,30 @@ def confirmar():
                     ))
 
     db.session.commit()
+
+    # Notifica todos os usuários da mesma loja em tempo real
+    try:
+        from app.socket_instance import socketio
+        from datetime import date
+        from app.models.sale import Sale as SaleModel
+        hoje = date.today()
+        from datetime import datetime as dt
+        inicio = dt.combine(hoje, dt.min.time())
+        vendas_hoje = SaleModel.query.filter(
+            SaleModel.tenant_id == tid(),
+            SaleModel.status == 'confirmed',
+            SaleModel.created_at >= inicio,
+        ).count()
+        socketio.emit('nova_venda', {
+            'sale_id':        sale.id,
+            'total':          sale.total,
+            'payment_method': sale.payment_method,
+            'customer':       sale.customer.name if sale.customer else 'Consumidor',
+            'qtd_hoje':       vendas_hoje,
+        }, room=f'tenant_{tid()}')
+    except Exception:
+        pass
+
     return jsonify({'sale_id': sale.id})
 
 @sales_bp.route('/')

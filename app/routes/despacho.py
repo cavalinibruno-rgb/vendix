@@ -68,6 +68,7 @@ def despachar(sale_id):
         import urllib.parse
         wa_url = f'whatsapp://send?phone={phone}&text={urllib.parse.quote(msg)}'
 
+    _emit_entregas(tid())
     return jsonify({'ok': True, 'wa_url': wa_url, 'sale_id': sale.id})
 
 @despacho_bp.route('/<int:sale_id>/concluir', methods=['POST'])
@@ -76,4 +77,17 @@ def concluir(sale_id):
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
     sale.delivered_at = datetime.now()
     db.session.commit()
+    _emit_entregas(tid())
     return jsonify({'ok': True, 'sale_id': sale.id})
+
+
+def _emit_entregas(tenant_id):
+    try:
+        from app.socket_instance import socketio
+        base = Sale.query.filter_by(tenant_id=tenant_id, status='confirmed', delivery_mode='entrega')
+        pendentes = base.filter(Sale.dispatched_at == None).count()
+        retorno   = base.filter(Sale.dispatched_at != None, Sale.delivered_at == None).count()
+        socketio.emit('entregas_update', {'pendentes': pendentes, 'retorno': retorno},
+                      room=f'tenant_{tenant_id}')
+    except Exception:
+        pass

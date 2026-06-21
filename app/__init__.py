@@ -16,6 +16,8 @@ except AttributeError:
 db = SQLAlchemy()
 login_manager = LoginManager()
 
+from app.socket_instance import socketio  # noqa: E402
+
 def _run_migrations(db):
     """Adiciona colunas novas em tabelas existentes sem quebrar dados."""
     migrations = [
@@ -144,6 +146,7 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Faça login para acessar.'
+    socketio.init_app(app, async_mode='eventlet', cors_allowed_origins='*', logger=False, engineio_logger=False)
 
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dashboard_bp
@@ -201,5 +204,6 @@ def create_app():
         _run_migrations(db)
         from app.seed import seed_master
         seed_master()
+        import app.socket_events  # noqa: F401 — registra handlers do SocketIO
 
     return app
