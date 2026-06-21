@@ -174,6 +174,33 @@ def detalhe(sale_id):
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
     return render_template('sales/detalhe.html', sale=sale)
 
+@sales_bp.route('/<int:sale_id>/comprovante')
+@login_required
+def comprovante(sale_id):
+    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    autoprint = request.args.get('autoprint', '0') == '1'
+    store_name = current_user.tenant.store_name
+
+    # monta mapa de componentes para combos
+    combo_map = {}
+    for item in sale.items:
+        if item.product_id:
+            ci_list = ComboItem.query.filter_by(combo_id=item.product_id).all()
+            if ci_list:
+                entries = []
+                for ci in ci_list:
+                    comp = Product.query.filter_by(id=ci.component_id, tenant_id=tid()).first()
+                    if comp:
+                        entries.append(type('C', (), {'name': comp.name, 'quantity': ci.quantity})())
+                combo_map[item.product_id] = entries
+
+    return render_template('sales/receipt.html',
+        sale=sale,
+        store_name=store_name,
+        combo_map=combo_map,
+        autoprint=autoprint,
+    )
+
 @sales_bp.route('/<int:sale_id>/cancelar', methods=['POST'])
 @login_required
 def cancelar(sale_id):

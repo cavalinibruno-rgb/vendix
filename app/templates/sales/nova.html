@@ -779,7 +779,10 @@ function finalizarVenda() {
   })
   .then(r => r.json())
   .then(d => {
-    if (d.sale_id) window.location.href = `/vendas/${d.sale_id}`;
+    if (d.sale_id) {
+      window.open(`/vendas/${d.sale_id}/comprovante?autoprint=1`, '_blank');
+      window.location.href = `/vendas/${d.sale_id}`;
+    }
     else aviso('Erro: ' + (d.error || 'desconhecido'));
   })
   .catch(() => aviso('Erro ao finalizar venda.'));

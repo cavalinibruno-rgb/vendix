@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprovante #{{ sale.id }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 10px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .ticket {
+      background: #fff;
+      width: 80mm;
+      padding: 4mm 5mm 6mm;
+      font-size: 10pt;
+      line-height: 1.45;
+      color: #000;
+      font-weight: 600;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    @media print {
+      @page { size: 80mm auto; margin: 0; }
+      body { background: none; padding: 0; display: block; }
+      .ticket {
+        width: 100%;
+        padding: 3mm 4mm 4mm;
+        color: #000 !important;
+        font-weight: 600 !important;
+        display: block;
+        page-break-after: always;
+        break-after: page;
+      }
+      * {
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print { display: none !important; }
+    }
+
+    .center  { text-align: center; }
+    .right   { text-align: right; }
+    .bold    { font-weight: bold; }
+    .small   { font-size: 8pt; }
+    .large   { font-size: 13pt; }
+
+    .divider {
+      border: none;
+      border-top: 1px dashed #000;
+      margin: 3mm 0;
+    }
+    .divider-solid {
+      border: none;
+      border-top: 1px solid #000;
+      margin: 3mm 0;
+    }
+
+    .header { text-align: center; margin-bottom: 2mm; }
+    .store-name {
+      font-size: 16pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .store-sub {
+      font-size: 9pt;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .order-box {
+      border: 2px solid #000;
+      text-align: center;
+      padding: 2mm 0;
+      margin: 3mm 0;
+    }
+    .order-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; }
+    .order-number { font-size: 36pt; font-weight: bold; line-height: 1.1; }
+
+    .retirada-box {
+      text-align: center;
+      padding: 2mm;
+      margin: 3mm 0;
+      font-size: 11pt;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+    }
+
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      margin: 1mm 0;
+    }
+    .item-name  { flex: 1; }
+    .item-qty   { width: 20mm; text-align: center; }
+    .item-total { width: 18mm; text-align: right; white-space: nowrap; }
+
+    .items-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 1mm;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 1mm 0;
+    }
+    .total-final {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14pt;
+      font-weight: bold;
+      margin: 2mm 0 1mm;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 8pt;
+      margin-top: 4mm;
+      line-height: 1.6;
+    }
+
+    /* Segundo ticket */
+    .ticket-cliente {
+      background: #fff;
+      width: 80mm;
+      padding: 4mm 5mm 6mm;
+      font-size: 10pt;
+      line-height: 1.45;
+      color: #000;
+      font-weight: 600;
+      page-break-before: always;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @media print {
+      .ticket-cliente {
+        width: 100%;
+        padding: 3mm 4mm 4mm;
+        color: #000 !important;
+        font-weight: 600 !important;
+        display: block;
+        page-break-before: always;
+        break-before: page;
+      }
+    }
+
+    .cli-item-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      margin: 2mm 0;
+      font-size: 11pt;
+      font-weight: bold;
+    }
+    .cli-item-name { flex: 1; }
+    .cli-item-qty  { width: 16mm; text-align: center; }
+
+    .print-btn {
+      display: block;
+      width: 80mm;
+      margin: 14px auto 6px;
+      padding: 10px;
+      background: #1a1a2e;
+      color: #c9a84c;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+    .print-btn:hover { background: #2d2d4e; }
+
+    .back-btn {
+      display: block;
+      width: 80mm;
+      margin: 0 auto 20px;
+      padding: 8px;
+      background: transparent;
+      color: #555;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+    .back-btn:hover { background: #eee; }
+  </style>
+</head>
+<body>
+
+<!-- TICKET PDV -->
+<div class="ticket">
+
+  <!-- CABEÇALHO -->
+  {% set parts = store_name.split(' ', 1) %}
+  <div class="header">
+    <div class="store-name">{{ parts[0] }}</div>
+    {% if parts|length > 1 %}
+    <div class="store-sub">&#9830; {{ parts[1] }} &#9830;</div>
+    {% endif %}
+  </div>
+
+  <hr class="divider-solid">
+
+  <!-- NÚMERO DO PEDIDO -->
+  <div class="order-box">
+    <div class="order-label">Pedido N°</div>
+    <div class="order-number">#{{ sale.id }}</div>
+    <div class="small">{{ sale.created_at.strftime('%d/%m/%Y') }} &nbsp;|&nbsp; {{ sale.created_at.strftime('%H:%M') }}</div>
+  </div>
+
+  <!-- MODO DE ENTREGA -->
+  <div class="retirada-box">
+    {% if sale.delivery_mode == 'entrega' %}
+    &#x1F6D2; ENTREGA
+    {% else %}
+    ★ RETIRE NO BALCÃO ★
+    {% endif %}
+  </div>
+
+  <!-- CLIENTE -->
+  {% if sale.customer %}
+  <div style="margin: 2mm 0 1mm;">
+    <span class="small" style="text-transform:uppercase;letter-spacing:.5px">Cliente:</span>
+    <span class="bold"> {{ sale.customer.name }}</span>
+  </div>
+  {% if sale.delivery_mode == 'entrega' %}
+    {% if sale.customer.address %}
+    <div class="small" style="margin: 0 0 1mm;">Rua: <strong>{{ sale.customer.address }}</strong></div>
+    {% endif %}
+    {% if sale.customer.phone %}
+    <div class="small" style="margin: 0 0 1mm;">Tel: {{ sale.customer.phone }}</div>
+    {% endif %}
+  {% endif %}
+  {% endif %}
+
+  <hr class="divider">
+
+  <!-- ITENS -->
+  <div class="items-header">
+    <span style="flex:1">Produto</span>
+    <span style="width:12mm;text-align:center">Qtd</span>
+    <span style="width:18mm;text-align:right">Total</span>
+  </div>
+  <hr class="divider">
+
+  {% for item in sale.items %}
+  <div class="item-row">
+    <span class="item-name">{{ item.product_name }}</span>
+    <span class="item-qty">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</span>
+    <span class="item-total">R${{ '%.2f' | format(item.total) }}</span>
+  </div>
+  {% if item.product_id in combo_map %}
+    {% for comp in combo_map[item.product_id] %}
+    <div style="display:flex;padding-left:3mm;font-size:8pt;line-height:1.4;color:#000;">
+      <span style="flex:1;">&#x2514; {{ comp.name }}</span>
+      <span style="width:20mm;text-align:center;">{{ (comp.quantity * item.quantity)|int }}x</span>
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% endfor %}
+
+  <hr class="divider">
+
+  <!-- TOTAIS -->
+  <div class="totals-row">
+    <span>Subtotal</span>
+    <span>R$ {{ '%.2f' | format(sale.subtotal) }}</span>
+  </div>
+
+  {% if sale.delivery_mode == 'entrega' and sale.delivery_fee and sale.delivery_fee > 0 %}
+  <div class="totals-row">
+    <span>Taxa de Entrega</span>
+    <span>R$ {{ '%.2f' | format(sale.delivery_fee) }}</span>
+  </div>
+  {% endif %}
+
+  <hr class="divider-solid">
+
+  <div class="total-final">
+    <span>TOTAL</span>
+    <span>R$ {{ '%.2f' | format(sale.total) }}</span>
+  </div>
+
+  <!-- PAGAMENTO -->
+  <div class="totals-row bold" style="margin-top:2mm;">
+    <span>Pagamento</span>
+    <span>{{ sale.payment_method | upper }}</span>
+  </div>
+  {% if sale.amount_paid %}
+  <div class="totals-row">
+    <span>Valor pago</span>
+    <span>R$ {{ '%.2f' | format(sale.amount_paid) }}</span>
+  </div>
+  {% endif %}
+  {% if sale.change_amount and sale.change_amount > 0 %}
+  <div class="totals-row bold">
+    <span>Troco</span>
+    <span>R$ {{ '%.2f' | format(sale.change_amount) }}</span>
+  </div>
+  {% endif %}
+
+  {% if sale.notes %}
+  <hr class="divider">
+  <div class="small">
+    <strong>Obs:</strong> {{ sale.notes }}
+  </div>
+  {% endif %}
+
+  <hr class="divider">
+
+  <div class="footer">
+    Obrigado pela preferência!<br>
+    Volte sempre &#9829;<br>
+    <br>
+    <span style="font-size:7pt">{{ sale.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+  </div>
+
+</div><!-- /ticket PDV -->
+
+
+<!-- TICKET CLIENTE -->
+<div class="ticket-cliente">
+
+  {% set parts = store_name.split(' ', 1) %}
+  <div class="header">
+    <div class="store-name">{{ parts[0] }}</div>
+    {% if parts|length > 1 %}
+    <div class="store-sub">&#9830; {{ parts[1] }} &#9830;</div>
+    {% endif %}
+  </div>
+
+  <hr class="divider-solid">
+
+  <div class="order-box">
+    <div class="order-label">Pedido N°</div>
+    <div class="order-number">#{{ sale.id }}</div>
+    <div class="small">{{ sale.created_at.strftime('%d/%m/%Y') }} &nbsp;|&nbsp; {{ sale.created_at.strftime('%H:%M') }}</div>
+  </div>
+
+  <div class="retirada-box">
+    {% if sale.delivery_mode == 'entrega' %}
+    &#x1F6D2; ENTREGA
+    {% else %}
+    ★ RETIRE NO BALCÃO ★
+    {% endif %}
+  </div>
+
+  {% if sale.customer %}
+  <div style="margin:2mm 0 1mm;text-align:center;">
+    <span class="bold" style="font-size:12pt;">{{ sale.customer.name }}</span>
+  </div>
+  {% endif %}
+
+  <hr class="divider">
+
+  <div class="items-header">
+    <span style="flex:1">Produto</span>
+    <span style="width:16mm;text-align:center">Qtd</span>
+  </div>
+  <hr class="divider">
+
+  {% for item in sale.items %}
+  <div class="cli-item-row">
+    <span class="cli-item-name">{{ item.product_name }}</span>
+    <span class="cli-item-qty">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</span>
+  </div>
+  {% if item.product_id in combo_map %}
+    {% for comp in combo_map[item.product_id] %}
+    <div style="display:flex;padding-left:3mm;font-size:8pt;line-height:1.4;">
+      <span style="flex:1;">&#x2514; {{ comp.name }}</span>
+      <span style="width:16mm;text-align:center;">{{ (comp.quantity * item.quantity)|int }}x</span>
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% endfor %}
+
+  <hr class="divider">
+
+  {% if sale.notes %}
+  <div class="small" style="margin-bottom:2mm;">
+    <strong>Obs:</strong> {{ sale.notes }}
+  </div>
+  <hr class="divider">
+  {% endif %}
+
+  <div class="footer">
+    Obrigado pela preferência! &#9829;
+  </div>
+
+</div><!-- /ticket cliente -->
+
+
+<button class="print-btn no-print" onclick="window.print()">
+  &#x1F5A8; &nbsp; Imprimir Comprovante
+</button>
+<a href="{{ url_for('sales.detalhe', sale_id=sale.id) }}" class="back-btn no-print">
+  ← Voltar para a venda
+</a>
+
+<script>
+  {% if autoprint %}
+  window.onload = function() { window.print(); };
+  {% endif %}
+</script>
+
+</body>
+</html>
