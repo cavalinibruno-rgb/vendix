@@ -241,7 +241,7 @@
         <span class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;">{{ entregas_pendentes }}</span>
         {% endif %}
         {% if entregas_retorno > 0 %}
-        <span class="badge rounded-pill ms-1" style="font-size:.65rem;background:#1a2540;color:#7eb8f7;border:1px solid #7eb8f7;">{{ entregas_retorno }}</span>
+        <span class="badge rounded-pill ms-1" style="font-size:.65rem;background:#c9a84c;color:#1a1a2e;">{{ entregas_retorno }}</span>
         {% endif %}
       </a>
       <a href="{{ url_for('sales.index') }}" class="nav-link {% if ep == 'sales.index' %}active{% endif %}">
