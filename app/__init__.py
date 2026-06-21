@@ -175,6 +175,21 @@ def create_app():
     app.register_blueprint(config_bp)
     app.register_blueprint(dre_bp)
 
+    @app.context_processor
+    def inject_nav_badges():
+        from flask_login import current_user
+        badges = {'entregas_pendentes': 0, 'entregas_retorno': 0}
+        try:
+            if current_user.is_authenticated:
+                from app.models.sale import Sale
+                tid = current_user.tenant_id
+                base = Sale.query.filter_by(tenant_id=tid, status='confirmed', delivery_mode='entrega')
+                badges['entregas_pendentes'] = base.filter(Sale.dispatched_at == None).count()
+                badges['entregas_retorno']   = base.filter(Sale.dispatched_at != None, Sale.delivered_at == None).count()
+        except Exception:
+            pass
+        return badges
+
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
