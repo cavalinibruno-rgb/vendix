@@ -117,3 +117,41 @@ def desbloquear():
 def bloquear():
     session.pop('dashboard_desbloqueado', None)
     return redirect(url_for('dashboard.index'))
+
+@dashboard_bp.route('/api/live-stats')
+@login_required
+def live_stats():
+    from flask import jsonify
+    tid = current_user.tenant_id
+    hoje_inicio = datetime.combine(date.today(), datetime.min.time())
+
+    vendas_hoje = Sale.query.filter(
+        Sale.tenant_id == tid,
+        Sale.status == 'confirmed',
+        Sale.created_at >= hoje_inicio,
+    ).all()
+
+    def entra_no_caixa(v):
+        return v.source in ('loja', None) or v.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
+
+    vendas_caixa = [v for v in vendas_hoje if entra_no_caixa(v)]
+    total_geral  = sum(v.total for v in vendas_caixa)
+
+    # Entregas
+    base = Sale.query.filter_by(tenant_id=tid, status='confirmed', delivery_mode='entrega')
+    entregas_pendentes = base.filter(Sale.dispatched_at == None).count()
+    entregas_retorno   = base.filter(Sale.dispatched_at != None, Sale.delivered_at == None).count()
+
+    # Última venda para detectar "nova venda"
+    ultima = Sale.query.filter_by(tenant_id=tid, status='confirmed') \
+                       .order_by(Sale.created_at.desc()).first()
+
+    return jsonify({
+        'qtd_vendas':          len(vendas_caixa),
+        'total_geral':         total_geral,
+        'entregas_pendentes':  entregas_pendentes,
+        'entregas_retorno':    entregas_retorno,
+        'ultima_venda_id':     ultima.id if ultima else None,
+        'ultima_venda_total':  ultima.total if ultima else 0,
+        'ultima_venda_cliente': (ultima.customer.name if ultima and ultima.customer else 'Consumidor') if ultima else '',
+    })

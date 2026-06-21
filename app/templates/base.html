@@ -338,16 +338,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 {% block scripts %}{% endblock %}
 
-<!-- Toast de nova venda -->
+<!-- Toast de notificações -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999">
   <div id="toastVenda" class="toast align-items-center border-0" role="alert" aria-live="assertive">
     <div class="d-flex">
-      <div class="toast-body fw-semibold" id="toastVendaMsg">
-        <i class="bi bi-check-circle-fill text-success me-2"></i> Nova venda!
-      </div>
+      <div class="toast-body fw-semibold" id="toastVendaMsg"></div>
       <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
     </div>
   </div>
@@ -356,74 +353,69 @@
 <script>
 {% if current_user.is_authenticated %}
 (function() {
-  const socket = io({ transports: ['websocket', 'polling'] });
+  let _ultimaVendaId = null;
+  let _entregasPend  = {{ entregas_pendentes }};
+  let _entregasRet   = {{ entregas_retorno }};
 
-  // ── Som de notificação ──────────────────────────────
-  function playBeep(freq, duration) {
+  function playBeep(freq, dur) {
     try {
-      const ctx  = new (window.AudioContext || window.webkitAudioContext)();
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.25, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + duration);
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.25, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      o.start(); o.stop(ctx.currentTime + dur);
     } catch(e) {}
   }
-  function playNovoPedido() {
-    playBeep(880, 0.15);
-    setTimeout(() => playBeep(1100, 0.25), 180);
-  }
+  function playNovoPedido() { playBeep(880, 0.15); setTimeout(() => playBeep(1100, 0.25), 180); }
+  function playEntrega()    { playBeep(660, 0.2); }
 
-  // ── Formatar moeda ──────────────────────────────────
-  function fmt(v) {
-    return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
+  function fmt(v) { return Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
-  // ── Toast helper ───────────────────────────────────
   function showToast(msg) {
-    const el = document.getElementById('toastVenda');
     document.getElementById('toastVendaMsg').innerHTML = msg;
-    bootstrap.Toast.getOrCreateInstance(el, { delay: 5000 }).show();
+    bootstrap.Toast.getOrCreateInstance(document.getElementById('toastVenda'), {delay:5000}).show();
   }
 
-  // ── Nova venda ─────────────────────────────────────
-  socket.on('nova_venda', function(d) {
-    playNovoPedido();
+  function poll() {
+    fetch('/api/live-stats').then(r => r.json()).then(d => {
 
-    const cliente = d.customer || 'Consumidor';
-    showToast(`<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong> ${cliente} — R$ ${fmt(d.total)}`);
+      // ── Nova venda ────────────────────────────────
+      if (_ultimaVendaId !== null && d.ultima_venda_id !== _ultimaVendaId) {
+        playNovoPedido();
+        showToast(`<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong> ${d.ultima_venda_cliente} — R$ ${fmt(d.ultima_venda_total)}`);
+        // Atualiza dashboard se estiver nela
+        const eq = document.getElementById('dash-qtd');
+        const et = document.getElementById('dash-total');
+        if (eq) eq.textContent = d.qtd_vendas;
+        if (et) et.textContent = 'R$ ' + fmt(d.total_geral);
+      }
+      _ultimaVendaId = d.ultima_venda_id;
 
-    // Atualiza contador no dashboard (se estiver na página)
-    const elQtd   = document.getElementById('dash-qtd');
-    const elTotal = document.getElementById('dash-total');
-    if (elQtd)   elQtd.textContent = d.qtd_hoje;
-    if (elTotal) elTotal.textContent = 'R$ ' + fmt(d.total_hoje || parseFloat(elTotal.textContent.replace('R$ ','').replace(',','.')) + d.total);
-  });
+      // ── Badges entregas ───────────────────────────
+      const bP = document.getElementById('badge-entrega-pend');
+      const bR = document.getElementById('badge-entrega-ret');
+      if (bP) { bP.textContent = d.entregas_pendentes; bP.style.display = d.entregas_pendentes > 0 ? '' : 'none'; }
+      if (bR) { bR.textContent = d.entregas_retorno;   bR.style.display = d.entregas_retorno   > 0 ? '' : 'none'; }
 
-  // ── Atualização de entregas ────────────────────────
-  socket.on('entregas_update', function(d) {
-    const bPend = document.getElementById('badge-entrega-pend');
-    const bRet  = document.getElementById('badge-entrega-ret');
+      if (d.entregas_pendentes > _entregasPend) {
+        playEntrega();
+        showToast(`<i class="bi bi-send-fill text-warning me-2"></i><strong>${d.entregas_pendentes}</strong> entrega(s) aguardando despacho`);
+      }
+      _entregasPend = d.entregas_pendentes;
+      _entregasRet  = d.entregas_retorno;
 
-    if (bPend) {
-      bPend.textContent = d.pendentes;
-      bPend.style.display = d.pendentes > 0 ? '' : 'none';
-    }
-    if (bRet) {
-      bRet.textContent = d.retorno;
-      bRet.style.display = d.retorno > 0 ? '' : 'none';
-    }
+    }).catch(() => {});
+  }
 
-    if (d.pendentes > 0) {
-      playBeep(660, 0.2);
-      showToast(`<i class="bi bi-send-fill text-warning me-2"></i><strong>${d.pendentes}</strong> entrega(s) aguardando despacho`);
-    }
-  });
+  // Primeira leitura silenciosa para inicializar _ultimaVendaId
+  fetch('/api/live-stats').then(r => r.json()).then(d => {
+    _ultimaVendaId = d.ultima_venda_id;
+  }).catch(() => {});
+
+  // Polling a cada 10 segundos
+  setInterval(poll, 10000);
 })();
 {% endif %}
 </script>
