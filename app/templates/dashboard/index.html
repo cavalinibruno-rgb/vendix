@@ -256,19 +256,24 @@
 {% block scripts %}
 <script>
 function testarSom() {
-  function playBeep(freq, dur) {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const freqs = [880, 1100, 880, 1100, 880, 1100];
+    const durBip = 0.18, pause = 0.12, ciclo = durBip + pause;
+    const repeticoes = Math.ceil(3 / ciclo);
+    for (let i = 0; i < repeticoes; i++) {
+      const t = ctx.currentTime + i * ciclo;
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
-      o.type = 'sine'; o.frequency.value = freq;
-      g.gain.setValueAtTime(0.25, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-      o.start(); o.stop(ctx.currentTime + dur);
-    } catch(e) { alert('Seu navegador bloqueou o áudio. Clique em qualquer lugar da página primeiro.'); }
-  }
-  playBeep(880, 0.15);
-  setTimeout(() => playBeep(1100, 0.25), 180);
+      o.type = 'square';
+      o.frequency.value = freqs[i % freqs.length];
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.3, t + 0.01);
+      g.gain.setValueAtTime(0.3, t + durBip - 0.02);
+      g.gain.linearRampToValueAtTime(0, t + durBip);
+      o.start(t); o.stop(t + durBip);
+    }
+  } catch(e) { alert('Navegador bloqueou o áudio. Clique em qualquer lugar da página primeiro.'); }
 
   document.getElementById('toastVendaMsg').innerHTML =
     `<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong> João Silva — R$ 45,90`;
