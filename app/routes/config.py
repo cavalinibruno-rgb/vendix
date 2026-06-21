@@ -85,7 +85,7 @@ def criar_cupom():
     if Coupon.query.filter_by(tenant_id=tid(), code=code).first():
         flash(f'Cupom "{code}" já existe.', 'danger')
         return redirect(url_for('config.index') + '#cupons')
-    db.session.add(Coupon(tenant_id=tid(), code=code, type=ctype, amount=amount))
+    db.session.add(Coupon(tenant_id=tid(), code=code, coupon_type=ctype, amount=amount))
     db.session.commit()
     flash(f'Cupom "{code}" criado com sucesso.', 'success')
     return redirect(url_for('config.index') + '#cupons')

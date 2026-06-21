@@ -219,7 +219,7 @@
                 <tr>
                   <td class="fw-bold">{{ c.code }}</td>
                   <td>
-                    {% if c.type == 'percent' %}{{ '%.0f'|format(c.amount) }}%
+                    {% if c.coupon_type == 'percent' %}{{ '%.0f'|format(c.amount) }}%
                     {% else %}R$ {{ '%.2f'|format(c.amount) }}{% endif %}
                   </td>
                   <td>
