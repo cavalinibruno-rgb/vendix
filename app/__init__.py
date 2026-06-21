@@ -191,11 +191,6 @@ def create_app():
             pass
         return badges
 
-    import traceback as _tb
-    @app.errorhandler(Exception)
-    def _debug_error(e):
-        return f'<pre style="padding:20px;font-size:12px">{_tb.format_exc()}</pre>', 500
-
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
