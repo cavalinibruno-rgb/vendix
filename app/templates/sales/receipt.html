@@ -421,10 +421,13 @@
 
 
 <button class="print-btn no-print" onclick="window.print()">
-  &#x1F5A8; &nbsp; Imprimir Comprovante
+  &#x1F5A8; &nbsp; Reimprimir
 </button>
+<a href="{{ url_for('sales.nova') }}" class="print-btn no-print" style="background:#c9a84c;color:#1a1a2e;margin-top:6px;text-decoration:none;display:block;text-align:center;">
+  &#x2795; &nbsp; Nova Venda
+</a>
 <a href="{{ url_for('sales.detalhe', sale_id=sale.id) }}" class="back-btn no-print">
-  ← Voltar para a venda
+  ← Ver detalhes da venda
 </a>
 
 <script>
