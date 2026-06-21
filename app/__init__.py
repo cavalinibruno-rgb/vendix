@@ -146,7 +146,7 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Faça login para acessar.'
-    socketio.init_app(app, async_mode='eventlet', cors_allowed_origins='*', logger=False, engineio_logger=False)
+    socketio.init_app(app, async_mode='threading', cors_allowed_origins='*', logger=False, engineio_logger=False)
 
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dashboard_bp
