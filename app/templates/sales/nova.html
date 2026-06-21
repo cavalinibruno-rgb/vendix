@@ -297,13 +297,10 @@
           <div class="cart-section-header">Desconto</div>
           <div class="cart-section-body">
             <div class="d-flex gap-2 align-items-center">
-              <div class="btn-group btn-group-sm" style="white-space:nowrap;">
-                <button class="btn btn-outline-secondary active" id="btnDescPct" onclick="setDescTipo('percent')">%</button>
-                <button class="btn btn-outline-secondary" id="btnDescVal" onclick="setDescTipo('value')">R$</button>
-              </div>
+              <span class="small text-muted fw-semibold">R$</span>
               <input type="text" id="inputDesconto" class="form-control form-control-sm" inputmode="decimal"
-                     placeholder="0" oninput="calcTotais()" style="max-width:100px;">
-              <span class="small text-muted" id="descontoLabel">–</span>
+                     placeholder="0,00" oninput="calcTotais()" style="max-width:120px;">
+              <span class="small" id="descontoLabel">–</span>
             </div>
           </div>
         </div>
@@ -694,18 +691,9 @@ function renderCarrinho() {
 }
 
 // ── Desconto ──────────────────────────────────────────
-let descontoTipo = 'percent';
-function setDescTipo(tipo) {
-  descontoTipo = tipo;
-  document.getElementById('btnDescPct').className = 'btn btn-' + (tipo === 'percent' ? 'warning' : 'outline-secondary');
-  document.getElementById('btnDescVal').className = 'btn btn-' + (tipo === 'value'   ? 'warning' : 'outline-secondary');
-  calcTotais();
-}
 function getDesconto(subtotal) {
   const v = parseFloat(document.getElementById('inputDesconto').value.replace(',','.')) || 0;
-  if (v <= 0) return 0;
-  if (descontoTipo === 'percent') return Math.min(subtotal * v / 100, subtotal);
-  return Math.min(v, subtotal);
+  return v > 0 ? Math.min(v, subtotal) : 0;
 }
 
 // ── Totais ────────────────────────────────────────────
@@ -821,7 +809,7 @@ function finalizarVenda() {
     amount_paid:    (pgto === 'dinheiro' || pgto === 'entrega_dinheiro')
                     ? (parseFloat(document.getElementById('valorRecebido').value.replace(',','.')) || 0) : null,
     discount:       getDesconto(carrinho.reduce((s,i)=>s+i.total,0)),
-    discount_type:  descontoTipo,
+    discount_type:  'value',
     items: carrinho,
   };
 
