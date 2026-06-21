@@ -297,6 +297,13 @@
   </div>
   {% endif %}
 
+  {% if sale.discount and sale.discount > 0 %}
+  <div class="totals-row">
+    <span>Desconto{% if sale.discount_type == 'percent' %} ({{ '%.0f'|format(sale.discount / sale.subtotal * 100) }}%){% endif %}</span>
+    <span>− R$ {{ '%.2f' | format(sale.discount) }}</span>
+  </div>
+  {% endif %}
+
   <hr class="divider-solid">
 
   <div class="total-final">

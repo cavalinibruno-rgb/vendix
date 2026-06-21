@@ -44,9 +44,20 @@ def confirmar():
     app_name       = data.get('app_name', '') if source == 'app' else None
     amount_paid    = float(data.get('amount_paid', 0) or 0) or None
     items          = data.get('items', [])
+    discount_type  = data.get('discount_type') or None   # 'value' | 'percent' | None
+    discount_input = float(data.get('discount', 0) or 0)
 
     subtotal = sum(float(i['unit_price']) * float(i['quantity']) for i in items)
-    total    = subtotal + (delivery_fee if delivery_mode == 'entrega' else 0)
+
+    if discount_type == 'percent':
+        discount = round(subtotal * discount_input / 100, 2)
+    elif discount_type == 'value':
+        discount = min(discount_input, subtotal)
+    else:
+        discount = 0.0
+
+    total = subtotal - discount + (delivery_fee if delivery_mode == 'entrega' else 0)
+    total = max(total, 0)
 
     caixa = _caixa_aberto()
     cashier = caixa.operator_name if caixa and caixa.operator_name else (current_user.display_name or current_user.username)
@@ -57,6 +68,8 @@ def confirmar():
         delivery_mode  = delivery_mode,
         delivery_fee   = delivery_fee if delivery_mode == 'entrega' else 0,
         subtotal       = subtotal,
+        discount       = discount,
+        discount_type  = discount_type,
         total          = total,
         payment_method = payment_method,
         notes          = notes,

@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 from app import db
 from werkzeug.security import generate_password_hash
+from app.models.coupon import Coupon
 
 config_bp = Blueprint('config', __name__, url_prefix='/configuracoes')
 
@@ -13,6 +14,7 @@ def tid():
 def index():
     tenant = current_user.tenant
     cfg = tenant.get_settings()
+    coupons = Coupon.query.filter_by(tenant_id=tid()).order_by(Coupon.created_at.desc()).all()
 
     if request.method == 'POST':
         cfg['whatsapp_notify'] = 'whatsapp_notify' in request.form
@@ -22,7 +24,7 @@ def index():
         flash('Configurações salvas.', 'success')
         return redirect(url_for('config.index'))
 
-    return render_template('config/index.html', cfg=cfg)
+    return render_template('config/index.html', cfg=cfg, coupons=coupons)
 
 @config_bp.route('/regime-tributario', methods=['POST'])
 @login_required
@@ -65,6 +67,46 @@ def dashboard_operador():
     db.session.commit()
     flash('Configuração salva.', 'success')
     return redirect(url_for('config.index'))
+
+@config_bp.route('/cupons/criar', methods=['POST'])
+@login_required
+def criar_cupom():
+    code   = request.form.get('code', '').strip().upper()
+    ctype  = request.form.get('type', 'percent')
+    amount = request.form.get('amount', '0').replace(',', '.').strip()
+    try:
+        amount = float(amount)
+    except ValueError:
+        flash('Valor inválido.', 'danger')
+        return redirect(url_for('config.index') + '#cupons')
+    if not code:
+        flash('Informe o código do cupom.', 'danger')
+        return redirect(url_for('config.index') + '#cupons')
+    if Coupon.query.filter_by(tenant_id=tid(), code=code).first():
+        flash(f'Cupom "{code}" já existe.', 'danger')
+        return redirect(url_for('config.index') + '#cupons')
+    db.session.add(Coupon(tenant_id=tid(), code=code, type=ctype, amount=amount))
+    db.session.commit()
+    flash(f'Cupom "{code}" criado com sucesso.', 'success')
+    return redirect(url_for('config.index') + '#cupons')
+
+@config_bp.route('/cupons/<int:coupon_id>/toggle', methods=['POST'])
+@login_required
+def toggle_cupom(coupon_id):
+    c = Coupon.query.filter_by(id=coupon_id, tenant_id=tid()).first_or_404()
+    c.active = not c.active
+    db.session.commit()
+    flash(f'Cupom "{c.code}" {"ativado" if c.active else "desativado"}.', 'success')
+    return redirect(url_for('config.index') + '#cupons')
+
+@config_bp.route('/cupons/<int:coupon_id>/excluir', methods=['POST'])
+@login_required
+def excluir_cupom(coupon_id):
+    c = Coupon.query.filter_by(id=coupon_id, tenant_id=tid()).first_or_404()
+    db.session.delete(c)
+    db.session.commit()
+    flash(f'Cupom "{c.code}" excluído.', 'success')
+    return redirect(url_for('config.index') + '#cupons')
 
 @config_bp.route('/alterar-senha', methods=['POST'])
 @login_required

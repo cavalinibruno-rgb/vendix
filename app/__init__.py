@@ -104,6 +104,17 @@ def _run_migrations(db):
             notes TEXT,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount FLOAT DEFAULT 0",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount_type VARCHAR(8)",
+        """CREATE TABLE IF NOT EXISTS coupons (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            code VARCHAR(32) NOT NULL,
+            type VARCHAR(8) NOT NULL,
+            amount FLOAT NOT NULL,
+            active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:
@@ -170,6 +181,7 @@ def create_app():
         from app.models.cash_withdrawal import CashWithdrawal  # noqa: F401
         from app.models.expense import Expense  # noqa: F401
         from app.models.combo import ComboItem  # noqa: F401
+        from app.models.coupon import Coupon  # noqa: F401
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master

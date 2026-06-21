@@ -18,6 +18,8 @@ class Sale(db.Model):
     app_name        = db.Column(db.String(64))                        # iFood, Anotaí, etc.
     amount_paid      = db.Column(db.Float, nullable=True)
     change_amount    = db.Column(db.Float, nullable=True)
+    discount         = db.Column(db.Float, nullable=True, default=0)
+    discount_type    = db.Column(db.String(8), nullable=True)  # 'value' | 'percent'
     dispatched_at     = db.Column(db.DateTime, nullable=True)
     motoboy_id        = db.Column(db.Integer, db.ForeignKey('motoboys.id'), nullable=True)
     motoboy_name      = db.Column(db.String(128), nullable=True)

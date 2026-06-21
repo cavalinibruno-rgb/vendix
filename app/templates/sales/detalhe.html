@@ -55,6 +55,12 @@
               <td class="text-end text-muted">R$ {{ '%.2f'|format(sale.delivery_fee) }}</td>
             </tr>
             {% endif %}
+            {% if sale.discount and sale.discount > 0 %}
+            <tr>
+              <td colspan="3" class="text-end text-muted">Desconto{% if sale.discount_type == 'percent' %} ({{ '%.0f'|format(sale.discount / sale.subtotal * 100) }}%){% endif %}</td>
+              <td class="text-end text-success">− R$ {{ '%.2f'|format(sale.discount) }}</td>
+            </tr>
+            {% endif %}
             <tr class="fw-bold">
               <td colspan="3" class="text-end">Total</td>
               <td class="text-end text-warning fs-5">R$ {{ '%.2f'|format(sale.total) }}</td>

@@ -221,6 +221,10 @@
               <span>Taxa de entrega</span>
               <span>R$ <span id="resumoTaxa">0,00</span></span>
             </div>
+            <div class="d-flex justify-content-between text-muted small mb-1" id="linhaDesconto" style="display:none;">
+              <span>Desconto</span>
+              <span id="resumoDesconto" style="color:#6fcf97;"></span>
+            </div>
             <div class="d-flex justify-content-between fw-bold" style="color:#ddd;">
               <span>Total</span>
               <span class="text-warning fs-5">R$ <span id="resumoTotal">0,00</span></span>
@@ -284,6 +288,22 @@
                   <input type="text" id="taxaEntrega" class="form-control form-control-sm" value="0.00" oninput="calcTotais()">
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desconto -->
+        <div class="cart-section">
+          <div class="cart-section-header">Desconto</div>
+          <div class="cart-section-body">
+            <div class="d-flex gap-2 align-items-center">
+              <div class="btn-group btn-group-sm" style="white-space:nowrap;">
+                <button class="btn btn-outline-secondary active" id="btnDescPct" onclick="setDescTipo('percent')">%</button>
+                <button class="btn btn-outline-secondary" id="btnDescVal" onclick="setDescTipo('value')">R$</button>
+              </div>
+              <input type="text" id="inputDesconto" class="form-control form-control-sm" inputmode="decimal"
+                     placeholder="0" oninput="calcTotais()" style="max-width:100px;">
+              <span class="small text-muted" id="descontoLabel">–</span>
             </div>
           </div>
         </div>
@@ -673,15 +693,46 @@ function renderCarrinho() {
   });
 }
 
+// ── Desconto ──────────────────────────────────────────
+let descontoTipo = 'percent';
+function setDescTipo(tipo) {
+  descontoTipo = tipo;
+  document.getElementById('btnDescPct').className = 'btn btn-' + (tipo === 'percent' ? 'warning' : 'outline-secondary');
+  document.getElementById('btnDescVal').className = 'btn btn-' + (tipo === 'value'   ? 'warning' : 'outline-secondary');
+  calcTotais();
+}
+function getDesconto(subtotal) {
+  const v = parseFloat(document.getElementById('inputDesconto').value.replace(',','.')) || 0;
+  if (v <= 0) return 0;
+  if (descontoTipo === 'percent') return Math.min(subtotal * v / 100, subtotal);
+  return Math.min(v, subtotal);
+}
+
 // ── Totais ────────────────────────────────────────────
 function calcTotais() {
-  const subtotal = carrinho.reduce((s, i) => s + i.total, 0);
-  const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
-  const total = subtotal + taxa;
+  const subtotal  = carrinho.reduce((s, i) => s + i.total, 0);
+  const taxa      = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
+  const desconto  = getDesconto(subtotal);
+  const total     = Math.max(0, subtotal - desconto + taxa);
+
   document.getElementById('resumoSubtotal').textContent = fmtNum(subtotal);
-  document.getElementById('resumoTaxa').textContent = fmtNum(taxa);
-  document.getElementById('resumoTotal').textContent = fmtNum(total);
+  document.getElementById('resumoTaxa').textContent     = fmtNum(taxa);
+  document.getElementById('resumoTotal').textContent    = fmtNum(total);
   document.getElementById('linhaEntrega').style.display = modo === 'entrega' ? 'flex' : 'none';
+
+  // Linha de desconto
+  const linhaDesc  = document.getElementById('linhaDesconto');
+  const lblDesc    = document.getElementById('descontoLabel');
+  const resumoDesc = document.getElementById('resumoDesconto');
+  if (desconto > 0) {
+    if (lblDesc)    { lblDesc.textContent = '− R$ ' + fmtNum(desconto); lblDesc.style.color = '#6fcf97'; }
+    if (resumoDesc)   resumoDesc.textContent = '− R$ ' + fmtNum(desconto);
+    if (linhaDesc)    linhaDesc.style.display = 'flex';
+  } else {
+    if (lblDesc)    { lblDesc.textContent = '–'; lblDesc.style.color = ''; }
+    if (resumoDesc)   resumoDesc.textContent = '';
+    if (linhaDesc)    linhaDesc.style.display = 'none';
+  }
 }
 function renderResumo() { calcTotais(); }
 
@@ -769,6 +820,8 @@ function finalizarVenda() {
     app_name:       origem === 'app' ? document.getElementById('appNome').value.trim() : null,
     amount_paid:    (pgto === 'dinheiro' || pgto === 'entrega_dinheiro')
                     ? (parseFloat(document.getElementById('valorRecebido').value.replace(',','.')) || 0) : null,
+    discount:       getDesconto(carrinho.reduce((s,i)=>s+i.total,0)),
+    discount_type:  descontoTipo,
     items: carrinho,
   };
 
