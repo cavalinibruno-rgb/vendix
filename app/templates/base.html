@@ -357,30 +357,8 @@
   let _entregasPend  = {{ entregas_pendentes }};
   let _entregasRet   = {{ entregas_retorno }};
 
-  function playAlarme(duracaoTotal) {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const freqs = [880, 1100, 880, 1100, 880, 1100];
-      const durBip = 0.18, pause = 0.12;
-      const ciclo = durBip + pause;
-      const repeticoes = Math.ceil(duracaoTotal / ciclo);
-      for (let i = 0; i < repeticoes; i++) {
-        const t = ctx.currentTime + i * ciclo;
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.type = 'square';
-        o.frequency.value = freqs[i % freqs.length];
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.3, t + 0.01);
-        g.gain.setValueAtTime(0.3, t + durBip - 0.02);
-        g.gain.linearRampToValueAtTime(0, t + durBip);
-        o.start(t);
-        o.stop(t + durBip);
-      }
-    } catch(e) {}
-  }
-  function playNovoPedido() { playAlarme(3); }
-  function playEntrega()    { playAlarme(2); }
+  function playNovoPedido() { /* alarme implementado junto com o link de compra */ }
+  function playEntrega()    { /* alarme implementado junto com o link de compra */ }
 
   function fmt(v) { return Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 

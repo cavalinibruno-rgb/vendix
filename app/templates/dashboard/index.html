@@ -8,9 +8,6 @@
     <p class="text-muted mb-0">{{ tenant.store_name }} — {{ now.strftime('%d/%m/%Y') if now else '' }}</p>
   </div>
   <div class="d-flex gap-2 align-items-center">
-  <button class="btn btn-outline-secondary btn-sm" onclick="testarSom()" title="Testar notificação">
-    <i class="bi bi-bell me-1"></i> Testar Som
-  </button>
   {% if caixa %}
   <a href="{{ url_for('cash.fechar', caixa_id=caixa.id) }}" class="btn btn-outline-danger">
     <i class="bi bi-lock me-1"></i> Fechar Caixa
@@ -253,43 +250,4 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-function tocarAlarme() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-  // 3 grupos de bipes: ding-ding-ding com pausa entre grupos
-  const grupos = [
-    [0.00, 880], [0.25, 1100], [0.50, 880],
-    [0.90, 1100], [1.15, 880], [1.40, 1100],
-    [1.80, 880], [2.05, 1100], [2.30, 880],
-  ];
-
-  grupos.forEach(([offset, freq]) => {
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sawtooth';
-    osc.frequency.value = freq;
-    const t = ctx.currentTime + offset;
-    gain.gain.setValueAtTime(0.6, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-    osc.start(t);
-    osc.stop(t + 0.22);
-  });
-}
-
-function testarSom() {
-  try {
-    tocarAlarme();
-  } catch(e) {
-    alert('Navegador bloqueou o áudio. Clique em qualquer lugar da página e tente novamente.');
-    return;
-  }
-  document.getElementById('toastVendaMsg').innerHTML =
-    `<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong> João Silva — R$ 45,90`;
-  bootstrap.Toast.getOrCreateInstance(document.getElementById('toastVenda'), {delay:6000}).show();
-}
-</script>
 {% endblock %}
