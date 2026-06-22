@@ -47,8 +47,13 @@ def api_produtos(slug):
 def foto_produto(slug, produto_id):
     tenant = _get_tenant(slug)
     p = Product.query.filter_by(id=produto_id, tenant_id=tenant.id).first_or_404()
-    data = p.thumbnail_data or p.image_data
-    if not data:
+    import base64
+    if p.thumbnail_data:
+        # thumbnail_data é armazenado como base64 string em bytes
+        data = base64.b64decode(p.thumbnail_data)
+    elif p.image_data:
+        data = bytes(p.image_data)
+    else:
         abort(404)
     mime = p.image_mime or 'image/jpeg'
     resp = make_response(data)
