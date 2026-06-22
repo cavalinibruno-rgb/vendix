@@ -683,8 +683,8 @@ function selecionarCliente(c) {
   }
   if (modo === 'entrega' && c.delivery_fee > 0) {
     document.getElementById('taxaEntrega').value = fmtNum(c.delivery_fee);
-    calcTotais();
   }
+  calcTotais();
 }
 
 function limparCliente() {
@@ -827,6 +827,10 @@ document.getElementById('btnSalvarCliente').addEventListener('click', function()
     document.getElementById('clienteNaoEncontrado').style.display = 'none';
     modalCliente.hide();
     selecionarCliente(c);   // já seleciona o cliente recém-criado na venda
+    // Cliente cadastrado com bairro/endereço => é entrega: ativa o modo e aplica a taxa
+    if (c.neighborhood_id || c.address) {
+      setModo('entrega');
+    }
   })
   .catch(() => { msg.innerHTML = '<span class="text-danger">Erro ao salvar o cliente.</span>'; });
 });
