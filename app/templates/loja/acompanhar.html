@@ -159,6 +159,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
   {% endif %}
 </div>
 
+<div id="dbg" style="text-align:center;font-size:.75rem;color:#999;padding:8px 16px;"></div>
 <a href="/loja/{{ tenant.slug }}" class="btn-voltar">← Voltar ao cardápio</a>
 
 <script>
@@ -225,8 +226,11 @@ if ('Notification' in window && Notification.permission === 'default') {
 function poll() {
   fetch(`/loja/${SLUG}/pedido/${PEDIDO_ID}/status`, {cache: 'no-store'})
     .then(r => r.json())
-    .then(applyStatus)
-    .catch(() => {});
+    .then(d => {
+      document.getElementById('dbg').textContent = 'Status DB: ' + d.status + ' — ' + new Date().toLocaleTimeString();
+      applyStatus(d);
+    })
+    .catch(e => { document.getElementById('dbg').textContent = 'Erro poll: ' + e; });
 }
 
 const pollTimer = setInterval(poll, 8000);
