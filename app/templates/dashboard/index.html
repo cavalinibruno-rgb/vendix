@@ -159,16 +159,16 @@
         <table class="table table-sm table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th>Horário</th>
+              <th class="ps-4">Horário</th>
               <th>Cliente</th>
               <th>Pagamento</th>
-              {% if not modo_restrito %}<th class="text-end">Total</th>{% endif %}
+              {% if not modo_restrito %}<th class="text-end pe-4">Total</th>{% endif %}
             </tr>
           </thead>
           <tbody>
             {% for v in ultimas_vendas %}
             <tr>
-              <td class="small text-muted">{{ v.created_at.strftime('%d/%m %H:%M') }}</td>
+              <td class="small text-muted ps-4">{{ v.created_at.strftime('%d/%m %H:%M') }}</td>
               <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
               <td>
                 {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
@@ -176,7 +176,7 @@
                 {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
                 {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
               </td>
-              {% if not modo_restrito %}<td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>{% endif %}
+              {% if not modo_restrito %}<td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>{% endif %}
             </tr>
             {% endfor %}
           </tbody>

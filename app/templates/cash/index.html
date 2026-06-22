@@ -95,21 +95,21 @@
     <table class="table table-hover mb-0">
       <thead class="table-light">
         <tr>
-          <th>#</th>
+          <th class="ps-4">#</th>
           <th>Operador</th>
           <th>Aberto em</th>
           <th>Fechado em</th>
           <th>Troco inicial</th>
           <th>Valor contado</th>
           <th>Diferença</th>
-          <th></th>
+          <th class="pe-4"></th>
         </tr>
       </thead>
       <tbody>
         {% for c in historico %}
         {% set dif = (c.closing_amount or 0) - (c.opening_amount) %}
         <tr>
-          <td class="text-muted small">{{ c.id }}</td>
+          <td class="text-muted small ps-4">{{ c.id }}</td>
           <td class="small fw-semibold">{{ c.operator_name or (c.opener.display_name if c.opener else '—') }}</td>
           <td class="small">{{ c.opened_at.strftime('%d/%m %H:%M') }}</td>
           <td class="small">{{ c.closed_at.strftime('%d/%m %H:%M') if c.closed_at else '—' }}</td>
@@ -118,7 +118,7 @@
           <td class="{{ 'text-success' if dif >= 0 else 'text-danger' }} fw-semibold">
             {{ '+' if dif >= 0 else '' }}R$ {{ '%.2f'|format(dif) }}
           </td>
-          <td>
+          <td class="pe-4">
             <a href="{{ url_for('cash.resumo', caixa_id=c.id) }}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-eye"></i>
             </a>

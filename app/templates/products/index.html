@@ -60,20 +60,20 @@
     <table class="table table-hover mb-0">
       <thead class="table-light">
         <tr>
-          <th>#</th>
+          <th class="ps-4">#</th>
           <th>Nome</th>
           <th>Categoria</th>
           <th>Marca</th>
           <th>Preço Venda</th>
           <th>Preço Custo</th>
           <th>Estoque</th>
-          <th>Ações</th>
+          <th class="pe-4">Ações</th>
         </tr>
       </thead>
       <tbody>
         {% for p in products %}
         <tr>
-          <td class="text-muted small">{{ p.id }}</td>
+          <td class="text-muted small ps-4">{{ p.id }}</td>
           <td class="fw-semibold">{{ p.name }}</td>
           <td><span class="badge bg-secondary-subtle text-secondary">{{ p.type.name if p.type else '—' }}</span></td>
           <td><span class="badge bg-primary-subtle text-primary">{{ p.brand.name if p.brand else '—' }}</span></td>
@@ -88,7 +88,7 @@
               <span class="badge bg-success">{{ p.stock_quantity }}</span>
             {% endif %}
           </td>
-          <td>
+          <td class="pe-4">
             <div class="d-flex gap-1">
               <a href="{{ url_for('products.editar', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-pencil"></i>

@@ -49,7 +49,7 @@
         <table class="table table-sm table-hover mb-0 align-middle">
           <thead class="table-light sticky-top">
             <tr>
-              <th style="width:40px;"></th>
+              <th class="ps-4" style="width:48px;"></th>
               <th>Produto</th>
               <th>Tipo</th>
               <th class="text-center">
@@ -62,7 +62,7 @@
                   {% else %}<i class="bi bi-arrow-down-up ms-1 text-muted"></i>{% endif %}
                 </a>
               </th>
-              <th class="text-end">Preço</th>
+              <th class="text-end pe-4">Preço</th>
             </tr>
           </thead>
           <tbody>
@@ -70,7 +70,7 @@
             {% set zerado  = p.stock_quantity <= 0 %}
             {% set baixo   = p.stock_quantity > 0 and p.stock_quantity <= p.min_stock %}
             <tr>
-              <td class="ps-3">
+              <td class="ps-4">
                 {% if p.image_data %}
                 <img src="{{ url_for('products.imagem', product_id=p.id) }}"
                      style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
@@ -95,7 +95,7 @@
                   <span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>{{ p.stock_quantity }}</span>
                 {% endif %}
               </td>
-              <td class="text-end small text-muted">R$ {{ '%.2f'|format(p.sale_price) }}</td>
+              <td class="text-end small text-muted pe-4">R$ {{ '%.2f'|format(p.sale_price) }}</td>
             </tr>
             {% else %}
             <tr><td colspan="5" class="text-center text-muted py-4">Nenhum produto encontrado.</td></tr>

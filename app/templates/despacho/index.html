@@ -29,19 +29,19 @@
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
         <tr>
-          <th>#</th>
+          <th class="ps-4">#</th>
           <th>Horário</th>
           <th>Cliente</th>
           <th>Endereço</th>
           <th class="text-end">Total</th>
           <th style="width:210px;">Motoboy</th>
-          <th></th>
+          <th class="pe-4"></th>
         </tr>
       </thead>
       <tbody>
         {% for v in pendentes %}
         <tr id="row-pend-{{ v.id }}">
-          <td class="text-muted small">#{{ v.id }}</td>
+          <td class="text-muted small ps-4">#{{ v.id }}</td>
           <td class="small text-nowrap">{{ v.created_at.strftime('%H:%M') }}</td>
           <td class="fw-semibold">{{ v.customer.name if v.customer else '—' }}</td>
           <td class="small text-muted">{{ v.notes or '—' }}</td>
@@ -54,7 +54,7 @@
               {% endfor %}
             </select>
           </td>
-          <td>
+          <td class="pe-4">
             <button class="btn btn-success btn-sm fw-semibold" onclick="despachar({{ v.id }})">
               <i class="bi bi-send me-1"></i>Despachar
             </button>
@@ -84,23 +84,23 @@
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
         <tr>
-          <th>#</th>
+          <th class="ps-4">#</th>
           <th>Despachado às</th>
           <th>Cliente</th>
           <th>Motoboy</th>
           <th class="text-end">Total</th>
-          <th></th>
+          <th class="pe-4"></th>
         </tr>
       </thead>
       <tbody id="tbodyEmRota">
         {% for v in em_rota %}
         <tr id="row-rota-{{ v.id }}">
-          <td class="text-muted small">#{{ v.id }}</td>
+          <td class="text-muted small ps-4">#{{ v.id }}</td>
           <td class="small text-nowrap">{{ v.dispatched_at.strftime('%H:%M') }}</td>
           <td class="fw-semibold">{{ v.customer.name if v.customer else '—' }}</td>
           <td><span class="badge bg-secondary">{{ v.motoboy_name or '—' }}</span></td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
-          <td>
+          <td class="pe-4">
             <button class="btn btn-primary btn-sm fw-semibold" onclick="concluir({{ v.id }})">
               <i class="bi bi-check2-circle me-1"></i>Concluir
             </button>

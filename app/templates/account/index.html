@@ -16,19 +16,19 @@
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
         <tr>
-          <th>Cliente</th>
+          <th class="ps-4">Cliente</th>
           <th>Telefone</th>
           <th class="text-end">Saldo devedor</th>
-          <th></th>
+          <th class="pe-4"></th>
         </tr>
       </thead>
       <tbody>
         {% for d in devedores %}
         <tr>
-          <td class="fw-semibold">{{ d.customer.name }}</td>
+          <td class="fw-semibold ps-4">{{ d.customer.name }}</td>
           <td class="text-muted small">{{ d.customer.phone or '—' }}</td>
           <td class="text-end text-danger fw-bold fs-5">R$ {{ '%.2f'|format(d.saldo) }}</td>
-          <td class="text-end">
+          <td class="text-end pe-4">
             <a href="{{ url_for('account.detalhe', customer_id=d.customer.id) }}"
                class="btn btn-sm btn-outline-primary">
               Ver / Receber
@@ -39,11 +39,11 @@
       </tbody>
       <tfoot class="table-light">
         <tr>
-          <td colspan="2" class="fw-semibold">Total em aberto</td>
+          <td colspan="2" class="fw-semibold ps-4">Total em aberto</td>
           <td class="text-end text-danger fw-bold">
             R$ {{ '%.2f'|format(devedores|sum(attribute='saldo')) }}
           </td>
-          <td></td>
+          <td class="pe-4"></td>
         </tr>
       </tfoot>
     </table>

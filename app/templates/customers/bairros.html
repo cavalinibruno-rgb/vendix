@@ -44,17 +44,17 @@
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th>Nome</th>
+              <th class="ps-4">Nome</th>
               <th>Taxa de Entrega</th>
-              <th class="text-end">Ações</th>
+              <th class="text-end pe-4">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for n in neighborhoods %}
             <tr>
-              <td class="fw-semibold">{{ n.name }}</td>
+              <td class="fw-semibold ps-4">{{ n.name }}</td>
               <td>R$ {{ '%.2f'|format(n.delivery_fee) }}</td>
-              <td class="text-end">
+              <td class="text-end pe-4">
                 <button class="btn btn-sm btn-outline-secondary me-1"
                   onclick="openEdit({{ n.id }}, '{{ n.name }}', {{ n.delivery_fee }})">
                   <i class="bi bi-pencil"></i>

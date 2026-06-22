@@ -34,20 +34,20 @@
     <table class="table table-hover mb-0">
       <thead class="table-light">
         <tr>
-          <th>#</th>
+          <th class="ps-4">#</th>
           <th>Cliente</th>
           <th>Itens</th>
           <th>Pagamento</th>
           <th>Entrega</th>
           {% if not modo_restrito %}<th class="text-end">Total</th>{% endif %}
           <th>Horário</th>
-          <th></th>
+          <th class="pe-4"></th>
         </tr>
       </thead>
       <tbody>
         {% for s in sales %}
         <tr>
-          <td class="text-muted small">{{ s.id }}</td>
+          <td class="text-muted small ps-4">{{ s.id }}</td>
           <td>{{ s.customer.name if s.customer else '—' }}</td>
           <td class="text-muted small">{{ s.items|length }} item(s)</td>
           <td>
@@ -64,7 +64,7 @@
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(s.total) }}</td>
           {% endif %}
           <td class="text-muted small">{{ s.created_at.strftime('%H:%M') }}</td>
-          <td>
+          <td class="pe-4">
             <a href="{{ url_for('sales.detalhe', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-eye"></i>
             </a>

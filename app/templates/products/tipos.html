@@ -37,19 +37,19 @@
         <table class="table table-hover mb-0">
           <thead class="table-light">
             <tr>
-              <th>#</th>
+              <th class="ps-4">#</th>
               <th>Nome</th>
               <th>Produtos</th>
-              <th>Ações</th>
+              <th class="pe-4">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for t in types %}
             <tr>
-              <td class="text-muted small">{{ t.id }}</td>
+              <td class="text-muted small ps-4">{{ t.id }}</td>
               <td class="fw-semibold">{{ t.name }}</td>
               <td><span class="badge bg-secondary">{{ t.products|length }}</span></td>
-              <td>
+              <td class="pe-4">
                 <form method="post" action="{{ url_for('products.tipo_excluir', tipo_id=t.id) }}"
                       data-confirm='Excluir categoria {{ t.name }}?'>
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
