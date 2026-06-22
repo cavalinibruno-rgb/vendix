@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Vendix{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    /* ── Variáveis de tema ── */
+    :root {
+      --bg-body:        #f4f6fa;
+      --bg-card:        #ffffff;
+      --bg-topbar:      #ffffff;
+      --bg-card-header: #ffffff;
+      --border-card:    #f0f2f5;
+      --border-topbar:  #e5e7eb;
+      --text-main:      #1a1a2e;
+      --text-muted:     #6b7280;
+      --text-header:    #374151;
+      --input-bg:       #ffffff;
+      --input-border:   #dee2e6;
+      --input-color:    #212529;
+      --table-color:    #212529;
+      --table-border:   #dee2e6;
+      --table-stripe:   rgba(0,0,0,.03);
+    }
+    [data-theme="dark"] {
+      --bg-body:        #0f0f14;
+      --bg-card:        #1a1a2e;
+      --bg-topbar:      #1a1a2e;
+      --bg-card-header: #222238;
+      --border-card:    #2d2d4e;
+      --border-topbar:  #2d2d4e;
+      --text-main:      #e5e7eb;
+      --text-muted:     #9ba8b5;
+      --text-header:    #d1d5db;
+      --input-bg:       #2a2a40;
+      --input-border:   #3d3d5e;
+      --input-color:    #e5e7eb;
+      --table-color:    #d1d5db;
+      --table-border:   #2d2d4e;
+      --table-stripe:   rgba(255,255,255,.03);
+    }
+
+    body { background: var(--bg-body); font-family: 'Segoe UI', sans-serif; color: var(--text-main); transition: background .2s, color .2s; }
+
+    /* Bootstrap overrides para tema escuro */
+    [data-theme="dark"] .form-control,
+    [data-theme="dark"] .form-select,
+    [data-theme="dark"] .input-group-text {
+      background-color: var(--input-bg);
+      border-color: var(--input-border);
+      color: var(--input-color);
+    }
+    [data-theme="dark"] .form-control::placeholder { color: #666; }
+    [data-theme="dark"] .form-control:focus,
+    [data-theme="dark"] .form-select:focus {
+      background-color: var(--input-bg);
+      border-color: #c9a84c;
+      color: var(--input-color);
+      box-shadow: none;
+    }
+    [data-theme="dark"] .form-select option { background: var(--input-bg); }
+    [data-theme="dark"] .table { color: var(--table-color); border-color: var(--table-border); }
+    [data-theme="dark"] .table > :not(caption) > * > * { background-color: transparent; border-bottom-color: var(--table-border); color: var(--table-color); }
+    [data-theme="dark"] .table-hover > tbody > tr:hover > * { background-color: rgba(255,255,255,.04); }
+    [data-theme="dark"] .table-light { background-color: #22223a !important; color: #d1d5db; }
+    [data-theme="dark"] .table-light th, [data-theme="dark"] .table-light td { background-color: #22223a; color: #d1d5db; }
+    [data-theme="dark"] .modal-content { background: #1a1a2e; border: 1px solid #2d2d4e; color: var(--text-main); }
+    [data-theme="dark"] .modal-header { border-bottom-color: #2d2d4e; }
+    [data-theme="dark"] .modal-footer { border-top-color: #2d2d4e; }
+    [data-theme="dark"] .list-group-item { background-color: #222238; border-color: #2d2d4e; color: var(--text-main); }
+    [data-theme="dark"] .list-group-item:hover { background-color: #2a2a45; }
+    [data-theme="dark"] .alert-success { background: #1a2e1a; border-color: #2d4e2d; color: #6fcf97; }
+    [data-theme="dark"] .alert-danger  { background: #2e1a1a; border-color: #4e2d2d; color: #eb5757; }
+    [data-theme="dark"] .alert-warning { background: #2e2a1a; border-color: #4e432d; color: #f2994a; }
+    [data-theme="dark"] .badge.bg-success-subtle { background: #1a2e1a !important; color: #6fcf97 !important; }
+    [data-theme="dark"] .text-muted { color: var(--text-muted) !important; }
+    [data-theme="dark"] .page-header h1 { color: var(--text-main); }
+    [data-theme="dark"] .page-header p  { color: var(--text-muted); }
+    [data-theme="dark"] .btn-outline-secondary { border-color: #3d3d5e; color: #9ba8b5; }
+    [data-theme="dark"] .btn-outline-secondary:hover { background: #2a2a40; color: #fff; border-color: #5a5a7e; }
+    [data-theme="dark"] .btn-close { filter: invert(1); }
+    [data-theme="dark"] select option { background: #1a1a2e; }
+
+    /* Cores de texto no tema escuro */
+    [data-theme="dark"] .text-primary  { color: #7eb8f7 !important; }
+    [data-theme="dark"] .text-success  { color: #6fcf97 !important; }
+    [data-theme="dark"] .text-info     { color: #56ccf2 !important; }
+    [data-theme="dark"] .text-danger   { color: #eb5757 !important; }
+    [data-theme="dark"] .text-warning  { color: #c9a84c !important; }
+    [data-theme="dark"] .text-dark     { color: #e5e7eb !important; }
+
+    /* Badges */
+    #badge-entrega-pend, #badge-entrega-ret { color: #1a1a2e !important; }
+    [data-theme="dark"] .bg-primary-subtle { background: #1a2540 !important; }
+    [data-theme="dark"] .text-primary.bg-primary-subtle { color: #7eb8f7 !important; }
+
+    /* Botões outline */
+    [data-theme="dark"] .btn-outline-primary  { border-color: #7eb8f7; color: #7eb8f7; }
+    [data-theme="dark"] .btn-outline-primary:hover { background: #1a2540; color: #7eb8f7; }
+    [data-theme="dark"] .btn-outline-success  { border-color: #6fcf97; color: #6fcf97; }
+    [data-theme="dark"] .btn-outline-success:hover { background: #1a2e1a; color: #6fcf97; }
+    [data-theme="dark"] .btn-outline-danger   { border-color: #eb5757; color: #eb5757; }
+    [data-theme="dark"] .btn-outline-danger:hover { background: #2e1a1a; color: #eb5757; }
+
+    /* Cards de acesso rápido no dashboard */
+    [data-theme="dark"] .card .text-muted { color: #9ba8b5 !important; }
+
+    /* Inputs de busca e select em listas */
+    [data-theme="dark"] .form-check-label { color: var(--text-main); }
+    [data-theme="dark"] .form-check-input { background-color: #2a2a40; border-color: #3d3d5e; }
+    [data-theme="dark"] .bg-light { background-color: #22223a !important; color: var(--text-main); }
+    [data-theme="dark"] .alert-secondary { background: #22223a; border-color: #3d3d5e; color: #d1d5db; }
+    [data-theme="dark"] .alert-secondary .btn-outline-secondary {
+      border-color: #c9a84c; color: #c9a84c;
+    }
+    [data-theme="dark"] .alert-secondary .btn-outline-secondary:hover {
+      background: #c9a84c; color: #1a1a2e;
+    }
+    /* Garante que todo texto dentro de cards herde a cor correta */
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .card *:not(.text-warning):not(.text-success):not(.text-danger):not(.text-info):not(.text-muted):not(.badge):not(.btn):not(i) {
+      color: inherit;
+    }
+    [data-theme="dark"] .card { color: var(--text-main); }
+    [data-theme="dark"] .fw-bold:not([class*="text-"]) { color: var(--text-main); }
+
+    .sidebar {
+      width: 240px; height: 100vh; background: linear-gradient(180deg,#1a1a2e,#2d2d4e);
+      position: fixed; top: 0; left: 0; z-index: 100; padding: 0;
+      transition: width .2s ease; overflow: hidden;
+    }
+    .sidebar.collapsed { width: 60px; }
+    .sidebar-brand {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #3d3d5e;
+      color: #c9a84c;
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      display: flex; align-items: center; justify-content: space-between; white-space: nowrap;
+    }
+    .sidebar-brand span { color: #fff; }
+    .sidebar-brand .btn-collapse {
+      background: none; border: none; color: #9ba8b5; cursor: pointer;
+      padding: 0; font-size: 1rem; flex-shrink: 0; line-height: 1;
+    }
+    .sidebar-brand .btn-collapse:hover { color: #fff; }
+    .sidebar.collapsed .sidebar-brand { padding: 20px 0 16px; justify-content: center; }
+    .sidebar.collapsed .sidebar-brand .brand-text { display: none; }
+    .sidebar .nav-section {
+      padding: 10px 24px 4px; font-size: .7rem; font-weight: 700;
+      letter-spacing: .08em; color: #c9a84c; text-transform: uppercase; white-space: nowrap;
+    }
+    .sidebar.collapsed .nav-section { display: none; }
+    .sidebar .nav-link {
+      color: #9ba8b5; padding: 6px 24px; display: flex; align-items: center; gap: 10px;
+      font-size: .9rem; border-left: 3px solid transparent; transition: all .15s; white-space: nowrap;
+    }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active {
+      color: #fff; background: rgba(201,168,76,.12); border-left-color: #c9a84c;
+    }
+    .sidebar .nav-link i { font-size: 1.1rem; width: 20px; flex-shrink: 0; }
+    .sidebar .nav-link .nav-label { transition: opacity .15s; }
+    .sidebar.collapsed .nav-link { padding: 10px 0; justify-content: center; border-left: none; border-right: 3px solid transparent; }
+    .sidebar.collapsed .nav-link:hover, .sidebar.collapsed .nav-link.active { border-left: none; border-right-color: #c9a84c; }
+    .sidebar.collapsed .nav-label { display: none; }
+    .sidebar.collapsed .nav-link { position: relative; }
+    .sidebar { display: flex; flex-direction: column; }
+    .sidebar nav { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .sidebar nav::-webkit-scrollbar { width: 4px; }
+    .sidebar nav::-webkit-scrollbar-thumb { background: #3d3d5e; border-radius: 2px; }
+    .sidebar .sidebar-footer { position: static !important; width: 100% !important; bottom: auto !important; white-space: nowrap; border-top: 1px solid #3d3d5e; padding: 16px 24px; flex-shrink: 0; }
+    .sidebar.collapsed .sidebar-footer .footer-name { display: none; }
+    .sidebar.collapsed .sidebar-footer .nav-link { padding: 6px 0; justify-content: center; }
+
+    .main-content { margin-left: 240px; padding: 28px 32px; min-height: 100vh; transition: margin-left .2s ease; }
+    .main-content.collapsed { margin-left: 60px; }
+    .topbar { margin-left: 240px; background: var(--bg-topbar); border-bottom: 1px solid var(--border-topbar);
+      padding: 10px 32px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+      position: sticky; top: 0; z-index: 99; transition: margin-left .2s ease, background .2s; }
+    .topbar.collapsed { margin-left: 60px; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-main); margin: 0; }
+    .page-header p  { color: var(--text-muted); margin: 4px 0 0; font-size: .9rem; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); background: var(--bg-card); overflow: hidden; }
+    .card-header { background: var(--bg-card-header); border-bottom: 1px solid var(--border-card); border-radius: 12px 12px 0 0 !important; padding: 14px 20px; font-weight: 600; color: var(--text-header); }
+    .card-body { color: var(--text-main); }
+    .card-footer { background: var(--bg-card-header); border-top: 1px solid var(--border-card); color: var(--text-main); }
+    .modal-content { border-radius: 12px; overflow: hidden; }
+    .modal-content .table:last-child tbody:last-child tr:last-child td { border-bottom: none; }
+    .flash-messages { margin-bottom: 16px; }
+    /* Botão de tema */
+    .btn-theme { background: none; border: 1px solid var(--border-topbar); border-radius: 8px;
+      color: var(--text-muted); padding: 4px 10px; cursor: pointer; font-size: .95rem;
+      transition: background .15s, color .15s; }
+    .btn-theme:hover { background: var(--border-card); color: var(--text-main); }
+  </style>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vendix">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-text" style="color:#c9a84c;">Ven<span style="color:#fff;">dix</span></span>
+    <button class="btn-collapse" onclick="toggleSidebar()" title="Recolher menu">
+      <i class="bi bi-list fs-4" id="collapseIcon"></i>
+    </button>
+  </div>
+  <nav class="mt-2">
+    {% if current_user.is_authenticated and current_user.is_master %}
+      <a href="{{ url_for('master.dashboard') }}" class="nav-link {% if request.endpoint == 'master.dashboard' %}active{% endif %}">
+        <i class="bi bi-grid"></i><span class="nav-label"> Painel Master</span>
+      </a>
+      <a href="{{ url_for('master.tenant_novo') }}" class="nav-link {% if request.endpoint == 'master.tenant_novo' %}active{% endif %}">
+        <i class="bi bi-plus-circle"></i><span class="nav-label"> Nova Loja</span>
+      </a>
+    {% elif current_user.is_authenticated %}
+      {% set ep = request.endpoint %}
+
+      <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if ep == 'dashboard.index' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i><span class="nav-label"> Dashboard</span>
+      </a>
+      <a href="{{ url_for('cash.index') }}" class="nav-link {% if 'cash' in ep %}active{% endif %}">
+        <i class="bi bi-cash-stack"></i><span class="nav-label"> Caixa</span>
+      </a>
+
+      <div class="nav-section">Operações</div>
+      <a href="{{ url_for('sales.nova') }}" class="nav-link {% if ep == 'sales.nova' %}active{% endif %}">
+        <i class="bi bi-cart-plus"></i><span class="nav-label"> Nova Venda</span>
+      </a>
+      <a href="{{ url_for('entregas.index') }}" class="nav-link {% if 'entregas' in ep %}active{% endif %}">
+        <i class="bi bi-send"></i><span class="nav-label"> Entregas</span>
+        <span id="badge-entrega-pend" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;color:#1a1a2e;{% if entregas_pendentes == 0 %}display:none{% endif %}">{{ entregas_pendentes }}</span>
+        <span id="badge-entrega-ret" class="badge rounded-pill ms-1" style="font-size:.65rem;background:#c9a84c;color:#1a1a2e;{% if entregas_retorno == 0 %}display:none{% endif %}">{{ entregas_retorno }}</span>
+      </a>
+      <a href="{{ url_for('pedidos_online.index') }}" class="nav-link {% if 'pedidos_online' in ep %}active{% endif %}">
+        <i class="bi bi-phone"></i><span class="nav-label"> Pedidos Online</span>
+        <span id="badge-pedidos-online" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;display:none;"></span>
+      </a>
+      <a href="{{ url_for('sales.index') }}" class="nav-link {% if ep == 'sales.index' %}active{% endif %}">
+        <i class="bi bi-receipt"></i><span class="nav-label"> Vendas</span>
+      </a>
+      <a href="{{ url_for('stock.index') }}" class="nav-link {% if 'stock' in ep %}active{% endif %}">
+        <i class="bi bi-boxes"></i><span class="nav-label"> Estoque</span>
+      </a>
+      <a href="{{ url_for('account.index') }}" class="nav-link {% if 'account' in ep %}active{% endif %}">
+        <i class="bi bi-person-lines-fill"></i><span class="nav-label"> Fiado</span>
+      </a>
+      <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in ep %}active{% endif %}">
+        <i class="bi bi-phone"></i><span class="nav-label"> Apps</span>
+      </a>
+      <a href="{{ url_for('sales.cancelamentos') }}" class="nav-link {% if ep == 'sales.cancelamentos' %}active{% endif %}">
+        <i class="bi bi-x-circle"></i><span class="nav-label"> Cancelamentos</span>
+      </a>
+
+      <div class="nav-section">Cadastro</div>
+      <a href="{{ url_for('customers.index') }}" class="nav-link {% if ep in ('customers.index','customers.novo','customers.editar') %}active{% endif %}">
+        <i class="bi bi-people"></i><span class="nav-label"> Clientes</span>
+      </a>
+      <a href="{{ url_for('customers.bairros') }}" class="nav-link {% if ep == 'customers.bairros' %}active{% endif %}">
+        <i class="bi bi-geo-alt"></i><span class="nav-label"> Bairros</span>
+      </a>
+      <a href="{{ url_for('products.index') }}" class="nav-link {% if ep in ('products.index','products.novo','products.editar') %}active{% endif %}">
+        <i class="bi bi-box-seam"></i><span class="nav-label"> Produtos</span>
+      </a>
+      <a href="{{ url_for('products.tipos') }}" class="nav-link {% if ep == 'products.tipos' %}active{% endif %}">
+        <i class="bi bi-tags"></i><span class="nav-label"> Categorias</span>
+      </a>
+      <a href="{{ url_for('products.marcas') }}" class="nav-link {% if ep == 'products.marcas' %}active{% endif %}">
+        <i class="bi bi-bookmark-star"></i><span class="nav-label"> Marcas</span>
+      </a>
+      <a href="{{ url_for('vale.index') }}" class="nav-link {% if 'vale' in ep %}active{% endif %}">
+        <i class="bi bi-people"></i><span class="nav-label"> Funcionários</span>
+      </a>
+
+      <div class="nav-section">Sistema</div>
+      <a href="{{ url_for('dre.index') }}" class="nav-link {% if 'dre' in ep %}active{% endif %}">
+        <i class="bi bi-graph-up-arrow"></i><span class="nav-label"> DRE</span>
+      </a>
+      <a href="{{ url_for('config.index') }}" class="nav-link {% if 'config' in ep %}active{% endif %}">
+        <i class="bi bi-gear"></i><span class="nav-label"> Configurações</span>
+      </a>
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer" style="position:absolute;bottom:0;width:100%;padding:16px 24px;border-top:1px solid #3d3d5e;">
+    {% if current_user.is_authenticated %}
+    <div class="footer-name" style="color:#9ba8b5;font-size:.8rem;margin-bottom:8px;white-space:nowrap;overflow:hidden;">{{ current_user.display_name or current_user.username }}</div>
+    <a href="{{ url_for('auth.logout') }}" class="nav-link" style="padding:6px 0;">
+      <i class="bi bi-box-arrow-left"></i><span class="nav-label"> Sair</span>
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="topbar" id="topbar">
+  {% if current_user.is_authenticated and not current_user.is_master %}
+    {% set tenant = current_user.tenant %}
+    {% if tenant %}
+    <span class="badge bg-success-subtle text-success">{{ tenant.store_name }}</span>
+    {% if tenant.expires_at %}
+    <span class="text-muted small">Vence: {{ tenant.expires_at.strftime('%d/%m/%Y') }}</span>
+    {% endif %}
+    {% endif %}
+  {% endif %}
+  <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Alternar tema">
+    <i class="bi bi-moon-fill" id="themeIcon"></i>
+  </button>
+</div>
+
+<div class="main-content" id="mainContent">
+  <div class="flash-messages">
+    {% for cat, msg in get_flashed_messages(with_categories=true) %}
+    <div class="alert alert-{{ 'danger' if cat == 'danger' else 'success' if cat == 'success' else 'warning' }} alert-dismissible fade show" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% block content %}{% endblock %}
+</div>
+
+<!-- Modal confirmação global -->
+<div class="modal fade" id="modalConfirm" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body py-4 text-center">
+        <p class="mb-0 fw-semibold" id="confirmMsg"></p>
+      </div>
+      <div class="modal-footer justify-content-center border-0 pt-0">
+        <button id="btnConfirmOk" class="btn btn-danger fw-semibold px-4">Confirmar</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+
+<!-- Modal: Novo Pedido Online -->
+<div class="modal fade" id="modalNovoPedido" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-body p-4">
+        <div class="text-center mb-3">
+          <div style="font-size:2rem;margin-bottom:4px;">🛵</div>
+          <h5 class="fw-bold mb-0">Novo Pedido Online!</h5>
+        </div>
+
+        <!-- Cliente e endereço -->
+        <div class="mb-2">
+          <div class="fw-bold" id="modalPedidoNome">—</div>
+          <div class="text-muted small" id="modalPedidoTel"></div>
+          <div class="text-muted small" id="modalPedidoEnd"></div>
+        </div>
+
+        <!-- Itens -->
+        <div id="modalPedidoItens" class="border-top border-bottom py-2 mb-2" style="font-size:.85rem;max-height:160px;overflow-y:auto;"></div>
+
+        <!-- Total -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-muted small" id="modalPedidoPgto"></span>
+          <span class="fs-5 fw-bold text-warning" id="modalPedidoTotal">R$ 0,00</span>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button class="btn btn-warning fw-bold" onclick="aceitarPedidoModal()">
+            <i class="bi bi-check-lg me-1"></i>Aceitar agora
+          </button>
+          <button class="btn btn-outline-danger fw-semibold" onclick="recusarPedidoModal()">
+            <i class="bi bi-x-lg me-1"></i>Recusar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="verPedidosOnline()">
+            Ver todos os pedidos
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Motivo recusa (do modal principal) -->
+<div class="modal fade" id="modalRecusaRapida" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-3">
+        <div class="fw-bold mb-2"><i class="bi bi-x-circle text-danger me-1"></i>Motivo da recusa</div>
+        <input type="text" id="inputRecusaRapida" class="form-control form-control-sm mb-3"
+               placeholder="Ex: produto em falta (opcional)">
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger btn-sm fw-bold" onclick="confirmarRecusaModal()">Confirmar recusa</button>
+          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast de notificações -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toastVenda" class="toast align-items-center" role="alert"
+       aria-live="assertive" style="background:#1a1a2e;border:2px solid #c9a84c;">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toastVendaMsg" style="color:#fff;"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+{% if current_user.is_authenticated %}
+(function() {
+  let _ultimaVendaId    = null;
+  let _entregasPend     = {{ entregas_pendentes }};
+  let _entregasRet      = {{ entregas_retorno }};
+  let _pedidosPend      = 0;
+  let _ultimoPedidoId   = null;
+  let _alarmInterval    = null;
+  let _audioCtx         = null;
+
+  // ── Alarme (sawtooth loop, 880/1100 Hz) ──────────────────────────────
+  function getAudioCtx() {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return _audioCtx;
+  }
+
+  function _beep(freq, dur) {
+    try {
+      const ctx  = getAudioCtx();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type      = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.6, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + dur);
+    } catch(e) {}
+  }
+
+  function startAlarm() {
+    if (_alarmInterval) return;
+    let t = 0;
+    _alarmInterval = setInterval(() => {
+      _beep(t % 2 === 0 ? 880 : 1100, 0.35);
+      t++;
+    }, 500);
+  }
+
+  function stopAlarm() {
+    if (_alarmInterval) { clearInterval(_alarmInterval); _alarmInterval = null; }
+  }
+
+  function fmt(v) { return Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function showToast(msg) {
+    document.getElementById('toastVendaMsg').innerHTML = msg;
+    bootstrap.Toast.getOrCreateInstance(document.getElementById('toastVenda'), {delay:5000}).show();
+  }
+
+  // ── Modal de novo pedido online ───────────────────────────────────────
+  const PGTO_LABELS = {'entrega_dinheiro':'💵 Dinheiro na entrega','entrega_cartao':'💳 Cartão na entrega','entrega_pix':'📱 Pix na entrega'};
+
+  function showPedidoModal(d) {
+    document.getElementById('modalPedidoNome').textContent  = d.ultimo_pedido_nome || '—';
+    document.getElementById('modalPedidoTel').textContent   = d.ultimo_pedido_tel  || '';
+    document.getElementById('modalPedidoEnd').textContent   = d.ultimo_pedido_end  || '';
+    document.getElementById('modalPedidoTotal').textContent = 'R$ ' + fmt(d.ultimo_pedido_total || 0);
+    document.getElementById('modalPedidoPgto').textContent  = PGTO_LABELS[d.ultimo_pedido_pgto] || '';
+    const itens = d.ultimo_pedido_itens || [];
+    document.getElementById('modalPedidoItens').innerHTML = itens.map(i =>
+      `<div class="d-flex justify-content-between py-1">
+        <span>${i.name} ×${parseInt(i.quantity)}</span>
+        <span class="fw-semibold">R$ ${fmt(i.total)}</span>
+       </div>`
+    ).join('');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNovoPedido')).show();
+  }
+
+  function aceitarPedidoModal() {
+    if (!_ultimoPedidoId) return;
+    fetch(`/pedidos-online/${_ultimoPedidoId}/aceitar`, {method:'POST',headers:{'Content-Type':'application/json'}})
+      .then(r => {
+        if (!r.ok) return r.text().then(t => { throw new Error(t); });
+        return r.json();
+      })
+      .then(d => {
+        if (d.ok) {
+          stopAlarm();
+          bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
+          // Impressão do comprovante
+          if (d.sale_id) {
+            const url = `${location.origin}/vendas/${d.sale_id}/comprovante?autoprint=1`;
+            if (window.electronAPI) {
+              window.electronAPI.printSilent(url); // silenciosa via Electron
+            } else {
+              window.open(url, '_blank');
+            }
+          }
+          // Se estiver na página de Entregas, recarrega para mostrar o novo pedido
+          if (window.location.pathname.startsWith('/entregas')) {
+            setTimeout(() => window.location.reload(), 300);
+          }
+        } else {
+          alert('Erro ao aceitar: ' + (d.error || 'desconhecido'));
+        }
+      })
+      .catch(e => alert('Erro ao aceitar pedido: ' + e.message));
+  }
+
+  function recusarPedidoModal() {
+    document.getElementById('inputRecusaRapida').value = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecusaRapida')).show();
+  }
+
+  function confirmarRecusaModal() {
+    if (!_ultimoPedidoId) return;
+    const motivo = document.getElementById('inputRecusaRapida').value.trim();
+    fetch(`/pedidos-online/${_ultimoPedidoId}/recusar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({reason: motivo}),
+    })
+    .then(r => r.json())
+    .then(() => {
+      stopAlarm();
+      bootstrap.Modal.getInstance(document.getElementById('modalRecusaRapida')).hide();
+      bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
+    })
+    .catch(() => {});
+  }
+
+  function verPedidosOnline() {
+    stopAlarm();
+    bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido'))?.hide();
+    window.location.href = '/pedidos-online/';
+  }
+
+  function poll() {
+    fetch('/api/live-stats').then(r => r.json()).then(d => {
+
+      // ── Nova venda ────────────────────────────────
+      if (_ultimaVendaId !== null && d.ultima_venda_id !== _ultimaVendaId) {
+        showToast(`<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong> ${d.ultima_venda_cliente} — R$ ${fmt(d.ultima_venda_total)}`);
+        const eq = document.getElementById('dash-qtd');
+        const et = document.getElementById('dash-total');
+        if (eq) eq.textContent = d.qtd_vendas;
+        if (et) et.textContent = 'R$ ' + fmt(d.total_geral);
+      }
+      _ultimaVendaId = d.ultima_venda_id;
+
+      // ── Badges entregas ───────────────────────────
+      const bP = document.getElementById('badge-entrega-pend');
+      const bR = document.getElementById('badge-entrega-ret');
+      if (bP) { bP.textContent = d.entregas_pendentes; bP.style.display = d.entregas_pendentes > 0 ? '' : 'none'; }
+      if (bR) { bR.textContent = d.entregas_retorno;   bR.style.display = d.entregas_retorno   > 0 ? '' : 'none'; }
+
+      if (d.entregas_pendentes > _entregasPend) {
+        showToast(`<i class="bi bi-send-fill text-warning me-2"></i><strong>${d.entregas_pendentes}</strong> entrega(s) aguardando despacho`);
+      }
+      _entregasPend = d.entregas_pendentes;
+      _entregasRet  = d.entregas_retorno;
+
+      // ── Pedidos online ────────────────────────────
+      const bPO = document.getElementById('badge-pedidos-online');
+      if (bPO) { bPO.textContent = d.pedidos_pendentes; bPO.style.display = (d.pedidos_pendentes||0) > 0 ? '' : 'none'; }
+
+      if ((d.pedidos_pendentes || 0) > _pedidosPend || (d.ultimo_pedido_id && d.ultimo_pedido_id !== _ultimoPedidoId)) {
+        _ultimoPedidoId = d.ultimo_pedido_id;
+        startAlarm();
+        showPedidoModal(d);
+      }
+
+      if ((d.pedidos_pendentes || 0) === 0) stopAlarm();
+      _pedidosPend = d.pedidos_pendentes || 0;
+
+    }).catch(() => {});
+  }
+
+  // Primeira leitura silenciosa para inicializar
+  fetch('/api/live-stats').then(r => r.json()).then(d => {
+    _ultimaVendaId  = d.ultima_venda_id;
+    _pedidosPend    = d.pedidos_pendentes || 0;
+    _ultimoPedidoId = d.ultimo_pedido_id;
+    const bPO = document.getElementById('badge-pedidos-online');
+    if (bPO && _pedidosPend > 0) { bPO.textContent = _pedidosPend; bPO.style.display = ''; }
+  }).catch(() => {});
+
+  // Polling a cada 10 segundos
+  setInterval(poll, 10000);
+
+  // Expõe funções do modal para uso no onclick do HTML
+  window.aceitarPedidoModal  = aceitarPedidoModal;
+  window.recusarPedidoModal  = recusarPedidoModal;
+  window.confirmarRecusaModal = confirmarRecusaModal;
+  window.verPedidosOnline    = verPedidosOnline;
+})();
+{% endif %}
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js');
+  }
+
+  // ── Confirmação global (substitui confirm() no Electron) ──
+  let _formPendente = null;
+  document.addEventListener('submit', function(e) {
+    const msg = e.target.dataset.confirm;
+    if (msg && !e.target.dataset.confirmado) {
+      e.preventDefault();
+      _formPendente = e.target;
+      document.getElementById('confirmMsg').textContent = msg;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirm')).show();
+    }
+  });
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-confirm-click]');
+    if (btn && !btn.dataset.confirmado) {
+      e.preventDefault(); e.stopPropagation();
+      _formPendente = btn;
+      document.getElementById('confirmMsg').textContent = btn.dataset.confirmClick;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirm')).show();
+    }
+  });
+  document.getElementById('btnConfirmOk').addEventListener('click', function() {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirm')).hide();
+    if (!_formPendente) return;
+    _formPendente.dataset.confirmado = '1';
+    if (_formPendente.tagName === 'FORM') _formPendente.submit();
+    else _formPendente.click();
+    _formPendente = null;
+  });
+
+  // ── Menu colapsável ──────────────────────────────────
+  const sidebar     = document.getElementById('sidebar');
+  const topbar      = document.getElementById('topbar');
+  const mainContent = document.getElementById('mainContent');
+  const icon        = document.getElementById('collapseIcon');
+
+  function applyCollapse(collapsed) {
+    sidebar.classList.toggle('collapsed', collapsed);
+    topbar.classList.toggle('collapsed', collapsed);
+    mainContent.classList.toggle('collapsed', collapsed);
+    icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-reverse';
+  }
+
+  function toggleSidebar() {
+    const collapsed = !sidebar.classList.contains('collapsed');
+    localStorage.setItem('sidebarCollapsed', collapsed);
+    applyCollapse(collapsed);
+  }
+
+  // Restaura estado salvo
+  applyCollapse(localStorage.getItem('sidebarCollapsed') === 'true');
+
+  // Aplica layout flex no sidebar apenas no navegador (não no Electron)
+  if (!navigator.userAgent.includes('Electron')) {
+    document.getElementById('sidebar').classList.add('browser-mode');
+  }
+
+  // ── Tema claro / escuro ──────────────────────────────
+  function applyTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+  }
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = !isDark;
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+    applyTheme(next);
+  }
+  // Aplica tema salvo imediatamente
+  applyTheme(localStorage.getItem('theme') === 'dark');
+</script>
+<script>
+  // Evita flash de tema errado: aplica antes do render
+  (function(){ applyTheme(localStorage.getItem('theme') === 'dark'); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-speedometer2 me-2 text-warning"></i>Dashboard</h1>
+    <p class="text-muted mb-0">{{ tenant.store_name }} — {{ now.strftime('%d/%m/%Y') if now else '' }}</p>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+  {% if caixa %}
+  <a href="{{ url_for('cash.fechar', caixa_id=caixa.id) }}" class="btn btn-outline-danger">
+    <i class="bi bi-lock me-1"></i> Fechar Caixa
+  </a>
+  {% else %}
+  <a href="{{ url_for('cash.index') }}" class="btn btn-outline-success">
+    <i class="bi bi-unlock me-1"></i> Abrir Caixa
+  </a>
+  {% endif %}
+  </div>
+</div>
+
+<!-- Status do caixa -->
+{% if caixa %}
+<div class="alert alert-success py-2 mb-4">
+  <i class="bi bi-unlock-fill me-2"></i>
+  Caixa aberto desde <strong>{{ caixa.opened_at.strftime('%H:%M') }}</strong>
+  — Troco inicial: <strong>R$ {{ '%.2f'|format(caixa.opening_amount) }}</strong>
+</div>
+{% else %}
+<div class="alert alert-warning py-2 mb-4">
+  <i class="bi bi-lock-fill me-2"></i>
+  Caixa fechado.
+  <a href="{{ url_for('cash.index') }}" class="alert-link">Abrir caixa</a>
+</div>
+{% endif %}
+
+<!-- Cards de totais do dia -->
+{% if not desbloqueado %}
+<div class="alert alert-secondary d-flex align-items-center justify-content-between py-2 mb-4">
+  <span><i class="bi bi-eye-slash me-2"></i>Informações ocultas — caixa fechado.</span>
+  <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalDesbloquear">
+    <i class="bi bi-key me-1"></i> Ver informações
+  </button>
+</div>
+{% else %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="text-muted small mb-1">Vendas hoje</div>
+      <div class="fs-2 fw-bold text-primary" id="dash-qtd">{{ qtd_vendas }}</div>
+      <div class="text-muted small">pedidos</div>
+    </div>
+  </div>
+  {% if not modo_restrito %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="text-muted small mb-1">Total do dia</div>
+      <div class="fs-4 fw-bold text-success" id="dash-total">R$ {{ '%.2f'|format(total_geral) }}</div>
+      <div class="text-muted small">confirmados</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="text-muted small mb-1">Em dinheiro</div>
+      <div class="fs-4 fw-bold text-success">R$ {{ '%.2f'|format(total_dinheiro) }}</div>
+      <div class="text-muted small"><i class="bi bi-cash"></i> Dinheiro</div>
+    </div>
+  </div>
+  {% endif %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="text-muted small mb-1">Conta (fiado)</div>
+      <div class="fs-4 fw-bold text-warning">R$ {{ '%.2f'|format(total_conta) }}</div>
+      <div class="text-muted small"><i class="bi bi-person-lines-fill"></i> A receber</div>
+    </div>
+  </div>
+  {% if not modo_restrito %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="text-muted small mb-1">Ticket médio hoje</div>
+      <div class="fs-4 fw-bold text-primary">R$ {{ '%.2f'|format(ticket_dia) }}</div>
+      <div class="text-muted small">por pedido</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="text-muted small mb-1">Ticket médio mensal</div>
+      <div class="fs-4 fw-bold text-primary">R$ {{ '%.2f'|format(ticket_mensal) }}</div>
+      <div class="text-muted small">mês atual</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="text-muted small mb-1">Ticket médio geral</div>
+      <div class="fs-4 fw-bold text-primary">R$ {{ '%.2f'|format(ticket_geral) }}</div>
+      <div class="text-muted small">histórico</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Detalhamento por pagamento -->
+{% if desbloqueado %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Formas de Pagamento — Hoje</div>
+      <div class="card-body">
+        {% if total_geral > 0 %}
+        <table class="table mb-0">
+          <tbody>
+            <tr>
+              <td><i class="bi bi-cash me-2 text-success"></i>Dinheiro</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_dinheiro) }}</td>{% endif %}
+              <td class="text-end text-muted small">{{ '%.0f'|format(total_dinheiro / total_geral * 100) }}%</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-credit-card me-2 text-primary"></i>Cartão</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_cartao) }}</td>{% endif %}
+              <td class="text-end text-muted small">{{ '%.0f'|format(total_cartao / total_geral * 100) }}%</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-qr-code me-2 text-info"></i>Pix</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_pix) }}</td>{% endif %}
+              <td class="text-end text-muted small">{{ '%.0f'|format(total_pix / total_geral * 100) }}%</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-person-lines-fill me-2 text-warning"></i>Conta</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_conta) }}</td>{% endif %}
+              <td class="text-end text-muted small">{{ '%.0f'|format(total_conta / total_geral * 100) }}%</td>
+            </tr>
+            {% if not modo_restrito %}
+            <tr class="table-light fw-semibold">
+              <td>Total</td>
+              <td class="text-end">R$ {{ '%.2f'|format(total_geral) }}</td>
+              <td class="text-end text-muted small">100%</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center mb-0 py-3">Nenhuma venda registrada hoje.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Estoque baixo -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Estoque Baixo</span>
+        {% if estoque_baixo %}
+        <span class="badge bg-danger">{{ estoque_baixo|length }}</span>
+        {% endif %}
+      </div>
+      <div class="card-body p-0" style="max-height:340px;overflow-y:auto;">
+        {% if estoque_baixo %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Produto</th>
+              <th class="text-center">Estoque</th>
+              <th class="text-center pe-4">Mínimo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in estoque_baixo %}
+            <tr>
+              <td class="small fw-semibold ps-4">{{ p.name }}</td>
+              <td class="text-center">
+                {% if p.stock_quantity <= 0 %}
+                <span class="badge bg-danger">{{ p.stock_quantity }}</span>
+                {% else %}
+                <span class="badge bg-warning" style="color:#1a1a2e">{{ p.stock_quantity }}</span>
+                {% endif %}
+              </td>
+              <td class="text-center text-muted small pe-4">{{ p.min_stock }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center mb-0 py-4">
+          <i class="bi bi-check-circle text-success me-1"></i>Estoque em dia.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Últimas vendas -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Últimas Vendas</span>
+        <a href="{{ url_for('sales.index') }}" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+      </div>
+      <div class="card-body p-0">
+        {% if ultimas_vendas %}
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">Horário</th>
+              <th>Cliente</th>
+              <th>Pagamento</th>
+              {% if not modo_restrito %}<th class="text-end pe-4">Total</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in ultimas_vendas %}
+            <tr>
+              <td class="small text-muted ps-4">{{ v.created_at.strftime('%d/%m %H:%M') }}</td>
+              <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
+              <td>
+                {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
+                {% elif v.payment_method == 'cartao' %}<span class="badge bg-primary">Cartão</span>
+                {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
+                {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
+              </td>
+              {% if not modo_restrito %}<td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>{% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center mb-0 py-3">Nenhuma venda ainda.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}{# desbloqueado #}
+
+<!-- Modal senha dono -->
+<div class="modal fade" id="modalDesbloquear" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-key me-2"></i>Senha do Dono</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('dashboard.desbloquear') }}">
+        <div class="modal-body">
+          {% if senha_erro %}
+          <div class="alert alert-danger py-1 small">Senha incorreta.</div>
+          {% endif %}
+          <input type="password" name="senha" class="form-control" placeholder="Senha" autofocus required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary w-100">Confirmar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if desbloqueado and not caixa %}
+<div class="mb-3 text-end">
+  <a href="{{ url_for('dashboard.bloquear') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-eye-slash me-1"></i> Ocultar informações
+  </a>
+</div>
+{% endif %}
+
+<!-- Atalhos -->
+<div class="row g-3">
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('sales.nova') }}" class="card p-3 text-center text-decoration-none h-100">
+      <i class="bi bi-cart-plus fs-2 text-warning mb-1"></i>
+      <div class="fw-semibold small">Nova Venda</div>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('cash.index') }}" class="card p-3 text-center text-decoration-none h-100">
+      <i class="bi bi-cash-stack fs-2 text-success mb-1"></i>
+      <div class="fw-semibold small">Caixa</div>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('customers.index') }}" class="card p-3 text-center text-decoration-none h-100">
+      <i class="bi bi-people fs-2 text-primary mb-1"></i>
+      <div class="fw-semibold small">Clientes</div>
+    </a>
+  </div>
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('products.index') }}" class="card p-3 text-center text-decoration-none h-100">
+      <i class="bi bi-box-seam fs-2 text-info mb-1"></i>
+      <div class="fw-semibold small">Produtos</div>
+    </a>
+  </div>
+</div>
+{% endblock %}

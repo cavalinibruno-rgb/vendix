@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Categorias — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-tags me-2 text-warning"></i>Categorias</h1>
+    <p>Categorias para organizar seu catálogo</p>
+  </div>
+  <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Voltar
+  </a>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-plus-circle me-2 text-warning"></i>Nova Categoria</div>
+      <div class="card-body p-4">
+        <form method="post" action="{{ url_for('products.tipo_novo') }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome da Categoria</label>
+            <input type="text" name="name" class="form-control" placeholder="Ex: Bebidas, Salgados..." required autofocus>
+          </div>
+          <button type="submit" class="btn btn-warning fw-semibold w-100">
+            <i class="bi bi-plus-circle me-2"></i>Adicionar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-list-ul me-2 text-warning"></i>Categorias Cadastradas</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-4">#</th>
+              <th>Nome</th>
+              <th>Produtos</th>
+              <th class="pe-4">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in types %}
+            <tr>
+              <td class="text-muted small ps-4">{{ t.id }}</td>
+              <td class="fw-semibold">{{ t.name }}</td>
+              <td><span class="badge bg-secondary">{{ t.products|length }}</span></td>
+              <td class="pe-4">
+                <form method="post" action="{{ url_for('products.tipo_excluir', tipo_id=t.id) }}"
+                      data-confirm='Excluir categoria {{ t.name }}?'>
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Nenhuma categoria cadastrada ainda.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

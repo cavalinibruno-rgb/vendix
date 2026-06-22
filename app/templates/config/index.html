@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% block title %}Configurações — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-gear me-2 text-warning"></i>Configurações</h1>
+  <p class="text-muted">Personalize o comportamento do sistema</p>
+</div>
+
+<!-- ── Link da Loja ── -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card border-warning" style="border-width:2px!important;">
+      <div class="card-header py-2" style="background:rgba(201,168,76,.12);">
+        <i class="bi bi-shop me-2 text-warning"></i><strong>Link do Cardápio Online</strong>
+      </div>
+      <div class="card-body p-3">
+        <p class="text-muted small mb-3">Compartilhe este link com seus clientes para que possam fazer pedidos pelo celular.</p>
+
+        {% set link_loja = 'https://' ~ tenant.slug ~ '.vendixapp.com.br' %}
+
+        <div class="input-group mb-2">
+          <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
+          <input type="text" class="form-control fw-semibold" id="inputLinkLoja"
+                 value="{{ link_loja }}" readonly
+                 style="background:var(--input-bg);color:var(--input-color);">
+          <button class="btn btn-warning fw-bold" onclick="copiarLink()" id="btnCopiar">
+            <i class="bi bi-copy me-1"></i>Copiar
+          </button>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <a href="{{ link_loja }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Abrir cardápio
+          </a>
+          <a href="https://wa.me/?text={{ ('Faça seu pedido: ' ~ link_loja) | urlencode }}"
+             target="_blank" class="btn btn-success btn-sm">
+            <i class="bi bi-whatsapp me-1"></i>Enviar pelo WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3" id="regime">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2"><i class="bi bi-receipt-cutoff me-2 text-warning"></i>Regime Tributário</div>
+      <div class="card-body p-3">
+        <form method="post" action="{{ url_for('config.regime_tributario') }}">
+          <div class="row g-2 align-items-start">
+
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small mb-1">Regime</label>
+              <div class="d-flex flex-column gap-1">
+                {% for val, label in [('mei','MEI'),('simples','Simples Nacional'),('presumido','Lucro Presumido'),('real','Lucro Real')] %}
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="radio" name="regime_tributario"
+                         id="reg_{{ val }}" value="{{ val }}"
+                         {% if cfg.get('regime_tributario','simples') == val %}checked{% endif %}
+                         onchange="mostrarCampos()">
+                  <label class="form-check-label small" for="reg_{{ val }}">{{ label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- MEI -->
+            <div class="col-md-9" id="campos_mei" style="display:none">
+              <label class="form-label fw-semibold small mb-1">Valor fixo do DAS mensal (R$)</label>
+              <input type="number" name="das_mei" class="form-control form-control-sm" style="max-width:200px"
+                     step="0.01" value="{{ cfg.get('das_mei', 0) }}" placeholder="Ex: 80.00">
+              <div class="text-muted small mt-1">O DAS não incide por venda — é lançado como despesa fixa no resultado.</div>
+            </div>
+
+            <!-- Simples Nacional -->
+            <div class="col-md-9" id="campos_simples" style="display:none">
+              <label class="form-label fw-semibold small mb-1">Alíquota Efetiva (%)</label>
+              <input type="number" name="aliquota_simples" class="form-control form-control-sm" style="max-width:200px"
+                     step="0.01" value="{{ cfg.get('aliquota_simples', 0) }}" placeholder="Ex: 6.00">
+              <div class="text-muted small mt-1">Consulte o PGDAS ou seu contador para a alíquota efetiva do seu CNPJ.</div>
+            </div>
+
+            <!-- Lucro Presumido / Real -->
+            <div class="col-md-9" id="campos_presumido" style="display:none">
+              <div class="row g-2">
+                {% for campo, label, exemplo in [
+                  ('aliq_pis',   'PIS (%)',   '0.65'),
+                  ('aliq_cofins','COFINS (%)','3.00'),
+                  ('aliq_iss',   'ISS (%)',   '2.00'),
+                  ('aliq_icms',  'ICMS (%)',  '12.00'),
+                  ('aliq_irpj',  'IRPJ (%)',  '1.20'),
+                  ('aliq_csll',  'CSLL (%)',  '1.08'),
+                ] %}
+                <div class="col-6 col-md-2">
+                  <label class="form-label fw-semibold small mb-1">{{ label }}</label>
+                  <input type="number" name="{{ campo }}" class="form-control form-control-sm"
+                         step="0.01" value="{{ cfg.get(campo, 0) }}" placeholder="{{ exemplo }}">
+                </div>
+                {% endfor %}
+              </div>
+              <div class="text-muted small mt-1">Deixe zerado os tributos que não se aplicam. IRPJ e CSLL são estimativas mensais.</div>
+            </div>
+
+          </div>
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold mt-2">
+            <i class="bi bi-floppy me-1"></i>Salvar Regime
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- COLUNA ESQUERDA -->
+  <div class="col-lg-6 d-flex flex-column gap-4">
+
+    <!-- Dashboard do Operador -->
+    <div class="card">
+      <div class="card-header py-2"><i class="bi bi-eye-slash me-2 text-secondary"></i>Dashboard do Operador</div>
+      <div class="card-body p-3">
+        <form method="post" action="{{ url_for('config.dashboard_operador') }}">
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="dashboard_operador_restrito" id="swDash"
+                   {% if cfg.get('dashboard_operador_restrito') %}checked{% endif %}>
+            <label class="form-check-label fw-semibold small" for="swDash">
+              Restringir dashboard para operadores de caixa
+            </label>
+          </div>
+          <div class="text-muted small mb-2">
+            Quando ativo, enquanto um <strong>operador de caixa</strong> tiver o caixa aberto, a dashboard ocultará:
+            <ul class="mb-0 mt-1">
+              <li>Total do dia e valor em dinheiro</li>
+              <li>Valores nas formas de pagamento (exibe só %)</li>
+              <li>Coluna de valor nas últimas vendas</li>
+            </ul>
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Senha do lojista <span class="text-danger">*</span></label>
+            <input type="password" name="owner_password" class="form-control form-control-sm"
+                   placeholder="Confirme sua senha para salvar" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold">
+            <i class="bi bi-floppy me-1"></i>Salvar
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Alterar Senha -->
+    <div class="card" id="seguranca">
+      <div class="card-header py-2"><i class="bi bi-lock me-2 text-warning"></i>Segurança — Alterar Senha</div>
+      <div class="card-body p-3">
+        <form method="post" action="{{ url_for('config.alterar_senha') }}">
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Senha atual</label>
+            <input type="password" name="senha_atual" class="form-control form-control-sm" required placeholder="Digite sua senha atual">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Nova senha</label>
+            <input type="password" name="nova_senha" class="form-control form-control-sm" required placeholder="Mínimo 4 caracteres">
+          </div>
+          <div class="mb-2">
+            <label class="form-label fw-semibold small mb-1">Confirmar nova senha</label>
+            <input type="password" name="confirmar_senha" class="form-control form-control-sm" required placeholder="Repita a nova senha">
+          </div>
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold mt-1">
+            <i class="bi bi-floppy me-1"></i>Alterar Senha
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- COLUNA DIREITA -->
+  <div class="col-lg-6 d-flex flex-column gap-4">
+    <div class="card">
+      <div class="card-header py-2"><i class="bi bi-whatsapp me-2 text-success"></i>Notificação WhatsApp</div>
+      <div class="card-body p-3">
+        <form method="post">
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="whatsapp_notify" id="swWA"
+                   {% if cfg.get('whatsapp_notify') %}checked{% endif %}>
+            <label class="form-check-label fw-semibold small" for="swWA">
+              Enviar mensagem ao despachar entrega
+            </label>
+          </div>
+          <div class="text-muted small mb-2">
+            Ao clicar em <strong>Despachar</strong>, o WhatsApp abre automaticamente com a mensagem abaixo pronta para enviar ao cliente.
+          </div>
+          <label class="form-label fw-semibold small mb-1">Mensagem</label>
+          <textarea name="whatsapp_msg" class="form-control form-control-sm" rows="4" placeholder="Olá {cliente}! Seu pedido saiu para entrega com o motoboy {motoboy}. Em breve chegará até você!">{{ cfg.get('whatsapp_msg', '') }}</textarea>
+          <div class="text-muted small mt-1">
+            Variáveis: <code>{cliente}</code> <code>{motoboy}</code> <code>{itens}</code> <code>{pagamento}</code> <code>{total}</code>
+          </div>
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold mt-2">
+            <i class="bi bi-floppy me-1"></i>Salvar configurações
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cupons de Desconto -->
+    <div class="card" id="cupons">
+      <div class="card-header py-2"><i class="bi bi-ticket-perforated me-2 text-warning"></i>Cupons de Desconto</div>
+      <div class="card-body p-3">
+        <p class="text-muted small mb-2">Crie cupons para clientes usarem no link de compra.</p>
+        <form method="post" action="{{ url_for('config.criar_cupom') }}">
+          <div class="row g-2 align-items-end">
+            <div class="col-5">
+              <label class="form-label fw-semibold small mb-1">Código</label>
+              <input type="text" name="code" class="form-control form-control-sm text-uppercase"
+                     placeholder="Ex: PROMO10" required maxlength="32" style="text-transform:uppercase">
+            </div>
+            <div class="col-3">
+              <label class="form-label fw-semibold small mb-1">Tipo</label>
+              <select name="type" class="form-select form-select-sm">
+                <option value="percent">%</option>
+                <option value="value">R$</option>
+              </select>
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold small mb-1">Valor</label>
+              <input type="text" name="amount" class="form-control form-control-sm" inputmode="decimal" placeholder="10" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold mt-2">
+            <i class="bi bi-plus-lg me-1"></i>Criar Cupom
+          </button>
+        </form>
+
+        <!-- Lista de cupons -->
+        {% if coupons %}
+        <table class="table table-sm mb-0 mt-3">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Desconto</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in coupons %}
+            <tr>
+              <td class="fw-bold">{{ c.code }}</td>
+              <td>
+                {% if c.coupon_type == 'percent' %}{{ '%.0f'|format(c.amount) }}%
+                {% else %}R$ {{ '%.2f'|format(c.amount) }}{% endif %}
+              </td>
+              <td>
+                {% if c.active %}
+                <span class="badge bg-success">Ativo</span>
+                {% else %}
+                <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-end" style="white-space:nowrap;">
+                <form method="post" action="{{ url_for('config.toggle_cupom', coupon_id=c.id) }}" class="d-inline">
+                  <button class="btn btn-sm btn-outline-secondary py-0">
+                    {{ 'Desativar' if c.active else 'Ativar' }}
+                  </button>
+                </form>
+                <form method="post" action="{{ url_for('config.excluir_cupom', coupon_id=c.id) }}" class="d-inline"
+                      onsubmit="return confirm('Excluir cupom {{ c.code }}?')">
+                  <button class="btn btn-sm btn-outline-danger py-0"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted small mt-3 mb-0">Nenhum cupom cadastrado.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mostrarCampos() {
+  const regime = document.querySelector('input[name="regime_tributario"]:checked')?.value;
+  document.getElementById('campos_mei').style.display       = regime === 'mei'      ? '' : 'none';
+  document.getElementById('campos_simples').style.display   = regime === 'simples'  ? '' : 'none';
+  document.getElementById('campos_presumido').style.display = (regime === 'presumido' || regime === 'real') ? '' : 'none';
+}
+mostrarCampos();
+
+function copiarLink() {
+  const input = document.getElementById('inputLinkLoja');
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = document.getElementById('btnCopiar');
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copiado!';
+    btn.classList.replace('btn-warning', 'btn-success');
+    setTimeout(() => {
+      btn.innerHTML = '<i class="bi bi-copy me-1"></i>Copiar';
+      btn.classList.replace('btn-success', 'btn-warning');
+    }, 2000);
+  }).catch(() => {
+    input.select();
+    document.execCommand('copy');
+  });
+}
+</script>
+{% endblock %}

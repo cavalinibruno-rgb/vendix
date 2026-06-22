@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}Entregas — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-send me-2 text-warning"></i>Entregas</h1>
+    <p class="text-muted">Controle de despacho e conclusão de entregas</p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    {% if cfg.get('whatsapp_notify') %}
+    <span class="badge bg-success"><i class="bi bi-whatsapp me-1"></i>WhatsApp ativo</span>
+    {% endif %}
+    <a href="{{ url_for('entregas.relatorio_motoboys') }}" class="btn btn-outline-warning btn-sm fw-semibold">
+      <i class="bi bi-person-badge me-1"></i>Relatório Motoboys
+    </a>
+  </div>
+</div>
+
+<!-- Aguardando Despacho -->
+<div class="card mb-4">
+  <div class="card-header fw-semibold d-flex align-items-center gap-2">
+    <span>Aguardando Despacho</span>
+    {% if pendentes %}
+    <span class="badge bg-danger">{{ pendentes|length }}</span>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">#</th>
+          <th>Horário</th>
+          <th>Cliente</th>
+          <th>Endereço</th>
+          <th class="text-end">Total</th>
+          <th style="width:210px;">Motoboy</th>
+          <th class="pe-4"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in pendentes %}
+        <tr id="row-pend-{{ v.id }}">
+          <td class="text-muted small ps-4">#{{ v.id }}</td>
+          <td class="small text-nowrap">{{ v.created_at.strftime('%H:%M') }}</td>
+          <td class="fw-semibold">{{ v.customer.name if v.customer else '—' }}</td>
+          <td class="small text-muted">{{ v.notes or '—' }}</td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+          <td>
+            <select class="form-select form-select-sm" id="motoboy-{{ v.id }}">
+              <option value="">— Selecionar —</option>
+              {% for m in motoboys %}
+              <option value="{{ m.id }}">{{ m.name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="pe-4">
+            <button class="btn btn-success btn-sm fw-semibold" onclick="despachar({{ v.id }})">
+              <i class="bi bi-send me-1"></i>Despachar
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">
+            <i class="bi bi-check-circle me-1 text-success"></i>Nenhuma entrega aguardando despacho.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Em Rota -->
+<div class="card mb-4">
+  <div class="card-header fw-semibold d-flex align-items-center gap-2">
+    <span>Em Rota — Aguardando Retorno</span>
+    {% if em_rota %}
+    <span class="badge bg-warning text-dark">{{ em_rota|length }}</span>
+    {% endif %}
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">#</th>
+          <th>Despachado às</th>
+          <th>Cliente</th>
+          <th>Motoboy</th>
+          <th class="text-end">Total</th>
+          <th class="pe-4"></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyEmRota">
+        {% for v in em_rota %}
+        <tr id="row-rota-{{ v.id }}">
+          <td class="text-muted small ps-4">#{{ v.id }}</td>
+          <td class="small text-nowrap">{{ v.dispatched_at.strftime('%H:%M') }}</td>
+          <td class="fw-semibold">{{ v.customer.name if v.customer else '—' }}</td>
+          <td><span class="badge bg-secondary">{{ v.motoboy_name or '—' }}</span></td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+          <td class="pe-4">
+            <button class="btn btn-primary btn-sm fw-semibold" onclick="concluir({{ v.id }})">
+              <i class="bi bi-check2-circle me-1"></i>Concluir
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr id="row-rota-vazio">
+          <td colspan="6" class="text-center text-muted py-4">
+            <i class="bi bi-bicycle me-1"></i>Nenhuma entrega em rota no momento.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Concluídas recentes -->
+<div class="card">
+  <div class="card-header fw-semibold">Entregas Concluídas (recentes)</div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">#</th>
+          <th>Concluída às</th>
+          <th>Cliente</th>
+          <th>Motoboy</th>
+          <th class="text-end pe-4">Total</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyConcluidas">
+        {% for v in concluidas %}
+        <tr>
+          <td class="text-muted small ps-4">#{{ v.id }}</td>
+          <td class="small text-nowrap text-success">{{ v.delivered_at.strftime('%d/%m %H:%M') }}</td>
+          <td>{{ v.customer.name if v.customer else '—' }}</td>
+          <td><span class="badge bg-success">{{ v.motoboy_name or '—' }}</span></td>
+          <td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma entrega concluída ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function despachar(saleId) {
+  const motoboyId = document.getElementById('motoboy-' + saleId).value;
+  const body = new URLSearchParams({ motoboy_id: motoboyId });
+
+  fetch(`/entregas/${saleId}/despachar`, { method: 'POST', body })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) return;
+      if (d.wa_url) window.open(d.wa_url, '_blank');
+      location.reload();
+    })
+    .catch(() => alert('Erro ao despachar.'));
+}
+
+function concluir(saleId) {
+  fetch(`/entregas/${saleId}/concluir`, { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.ok) return;
+      location.reload();
+    })
+    .catch(() => alert('Erro ao concluir entrega.'));
+}
+</script>
+{% endblock %}

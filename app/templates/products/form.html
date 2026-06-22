@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if product else 'Novo' }} Produto — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-box-seam me-2 text-warning"></i>{{ 'Editar' if product else 'Novo' }} Produto</h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-box-seam me-2 text-warning"></i>Dados do Produto</div>
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome do Produto *</label>
+            <input type="text" name="name" class="form-control"
+                   value="{{ product.name if product else '' }}" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Categoria</label>
+            <select name="type_id" id="typeSelect" class="form-select">
+              <option value="">— Sem categoria —</option>
+              {% for t in types %}
+              <option value="{{ t.id }}"
+                data-name="{{ t.name | lower }}"
+                {% if product and product.type_id == t.id %}selected{% endif %}>
+                {{ t.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Marca</label>
+            <select name="brand_id" class="form-select">
+              <option value="">— Sem marca —</option>
+              {% for b in brands %}
+              <option value="{{ b.id }}" {% if product and product.brand_id == b.id %}selected{% endif %}>
+                {{ b.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Preço de Venda (R$)</label>
+              <input type="number" name="sale_price" class="form-control"
+                     value="{{ '%.2f' | format(product.sale_price) if product else '0.00' }}"
+                     min="0" step="0.01">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Preço de Custo (R$)</label>
+              <input type="number" name="cost_price" class="form-control"
+                     value="{{ '%.2f' | format(product.cost_price) if product else '0.00' }}"
+                     min="0" step="0.01">
+            </div>
+          </div>
+          <!-- SEÇÃO COMBO (aparece quando categoria tem "combo" no nome) -->
+          <div id="comboSection" style="display:none;" class="mb-3">
+            <div class="card border-warning">
+              <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2 py-2">
+                <i class="bi bi-gift text-warning"></i>
+                <span class="fw-semibold">Composição do Combo</span>
+              </div>
+              <div class="card-body p-3">
+                <div class="alert alert-info small py-2 mb-3">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Combos não têm estoque próprio — o estoque é deduzido dos produtos componentes a cada venda.
+                </div>
+                <div class="input-group mb-2">
+                  <input type="text" id="comboSearch" class="form-control form-control-sm"
+                         placeholder="Buscar produto para adicionar...">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="comboSearchBtn">
+                    <i class="bi bi-search"></i>
+                  </button>
+                </div>
+                <div id="comboSearchResults" class="list-group mb-3" style="display:none;max-height:180px;overflow-y:auto;"></div>
+                <div id="comboComponentsList">
+                  <p class="text-muted small text-center mb-0" id="comboEmptyMsg">Nenhum componente adicionado ainda.</p>
+                </div>
+                <input type="hidden" name="combo_components" id="comboComponentsInput" value="[]">
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mb-3" id="stockFields">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Estoque Atual</label>
+              <input type="number" name="stock_quantity" class="form-control"
+                     value="{{ product.stock_quantity if product else '0' }}" min="0">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Estoque Mínimo</label>
+              <input type="number" name="min_stock" class="form-control"
+                     value="{{ product.min_stock if product else '0' }}" min="0">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Foto do Produto</label>
+            {% if product and product.image_data %}
+            <div class="mb-2">
+              <img src="{{ url_for('products.imagem', product_id=product.id) }}"
+                   alt="{{ product.name }}" class="rounded"
+                   style="max-height:140px;max-width:100%;object-fit:contain;border:1px solid #e5e7eb;padding:4px;">
+              <div class="text-muted small mt-1">Envie uma nova foto para substituir.</div>
+            </div>
+            {% endif %}
+            <input type="file" name="imagem" class="form-control" accept="image/*">
+            <div class="form-text">JPG, PNG ou WebP. Recomendado: fundo branco, quadrada.</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Descrição</label>
+            <textarea name="description" class="form-control" rows="2"
+                      placeholder="Descrição opcional...">{{ product.description if product else '' }}</textarea>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            <button type="submit" class="btn btn-warning fw-semibold flex-grow-1">
+              <i class="bi bi-check-circle me-2"></i>{{ 'Salvar Alterações' if product else 'Cadastrar Produto' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const typeSelect    = document.getElementById('typeSelect');
+const comboSection  = document.getElementById('comboSection');
+const stockFields   = document.getElementById('stockFields');
+const comboInput    = document.getElementById('comboComponentsInput');
+const comboList     = document.getElementById('comboComponentsList');
+const searchBox     = document.getElementById('comboSearch');
+const searchResults = document.getElementById('comboSearchResults');
+
+let comboComponents = {{ existing_components | tojson if existing_components is defined else '[]' }};
+let searchMap = {};
+let searchTimeout;
+
+function isCombo() {
+  const opt = typeSelect.options[typeSelect.selectedIndex];
+  return opt && opt.dataset.name && opt.dataset.name.includes('combo');
+}
+function toggleCombo() {
+  const combo = isCombo();
+  comboSection.style.display = combo ? '' : 'none';
+  stockFields.style.display  = combo ? 'none' : '';
+}
+function renderComponents() {
+  comboInput.value = JSON.stringify(comboComponents);
+  if (!comboComponents.length) {
+    comboList.innerHTML = '<p class="text-muted small text-center mb-0">Nenhum componente adicionado ainda.</p>';
+    return;
+  }
+  comboList.innerHTML = comboComponents.map((c, i) => `
+    <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:#f8f9fa;">
+      <span class="flex-grow-1 fw-semibold small">${c.name}</span>
+      <div class="input-group" style="width:110px;">
+        <button type="button" class="btn btn-outline-secondary btn-sm px-2" onclick="changeQty(${i},-1)">−</button>
+        <input type="number" class="form-control form-control-sm text-center" value="${c.quantity}" min="1"
+          onchange="setQty(${i},this.value)" style="width:42px;">
+        <button type="button" class="btn btn-outline-secondary btn-sm px-2" onclick="changeQty(${i},1)">+</button>
+      </div>
+      <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeComp(${i})">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  `).join('');
+}
+function updateCost() {
+  if (!isCombo()) return;
+  const total = comboComponents.reduce((s, c) => s + (parseFloat(c.cost_price) || 0) * c.quantity, 0);
+  document.querySelector('input[name="cost_price"]').value = total.toFixed(2);
+}
+function changeQty(i, d) { comboComponents[i].quantity = Math.max(1, comboComponents[i].quantity + d); renderComponents(); updateCost(); }
+function setQty(i, v)    { comboComponents[i].quantity = Math.max(1, parseInt(v) || 1); renderComponents(); updateCost(); }
+function removeComp(i)   { comboComponents.splice(i, 1); renderComponents(); updateCost(); }
+function addComponent(p) {
+  {% if product %}if (p.id === {{ product.id }}) { alert('Não é possível adicionar o próprio combo.'); return; }{% endif %}
+  const ex = comboComponents.find(c => c.product_id === p.id);
+  if (ex) { ex.quantity++; } else {
+    comboComponents.push({product_id: p.id, name: p.name, quantity: 1, cost_price: parseFloat(p.cost_price) || 0});
+  }
+  renderComponents(); updateCost();
+  searchBox.value = ''; searchResults.style.display = 'none';
+}
+searchBox.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  if (q.length < 1) { searchResults.style.display = 'none'; return; }
+  searchTimeout = setTimeout(() => {
+    fetch(`/produtos/api/buscar?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.length) { searchResults.style.display = 'none'; return; }
+        searchMap = {};
+        data.forEach(p => searchMap[p.id] = p);
+        searchResults.innerHTML = data.map(p =>
+          `<button type="button" class="list-group-item list-group-item-action small"
+            onclick="addComponent(searchMap[${p.id}])">
+            <strong>${p.name}</strong>
+            <span class="text-muted ms-2">Estoque: ${p.stock_quantity}</span>
+          </button>`
+        ).join('');
+        searchResults.style.display = '';
+      });
+  }, 250);
+});
+document.getElementById('comboSearchBtn').addEventListener('click', () => searchBox.dispatchEvent(new Event('input')));
+document.addEventListener('click', e => {
+  if (!searchBox.contains(e.target) && !searchResults.contains(e.target)) searchResults.style.display = 'none';
+});
+typeSelect.addEventListener('change', () => { toggleCombo(); updateCost(); });
+toggleCombo();
+renderComponents();
+updateCost();
+</script>
+{% endblock %}

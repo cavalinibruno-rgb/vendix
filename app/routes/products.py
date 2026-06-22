@@ -1,0 +1,332 @@
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
+from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
+from PIL import Image
+import io
+import json
+from app import db
+from app.models.product import Product, ProductType, Brand
+from app.models.combo import ComboItem
+
+products_bp = Blueprint('products', __name__, url_prefix='/produtos')
+
+def tenant_id():
+    return current_user.tenant_id
+
+def _comprimir_imagem(file_storage, max_size=(600, 600), quality=75):
+    """Redimensiona e comprime imagem para JPEG. Retorna (bytes, mime)."""
+    img = Image.open(file_storage)
+    if img.mode not in ('RGB', 'L'):
+        img = img.convert('RGB')
+    img.thumbnail(max_size, Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=quality, optimize=True)
+    return buf.getvalue(), 'image/jpeg'
+
+def _gerar_thumbnail(image_bytes, size=(80, 80), quality=55):
+    """Gera miniatura ultra-compacta para embutir em JSON como base64."""
+    img = Image.open(io.BytesIO(image_bytes))
+    if img.mode not in ('RGB', 'L'):
+        img = img.convert('RGB')
+    img.thumbnail(size, Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=quality, optimize=True)
+    import base64
+    return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
+
+@products_bp.route('/')
+@login_required
+def index():
+    types  = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    tipo_id  = request.args.get('tipo', type=int)
+    marca_id = request.args.get('marca', type=int)
+    query = Product.query.filter_by(tenant_id=tenant_id())
+    if tipo_id:
+        query = query.filter_by(type_id=tipo_id)
+    if marca_id:
+        query = query.filter_by(brand_id=marca_id)
+    products = query.order_by(Product.name).all()
+    return render_template('products/index.html', products=products, types=types, brands=brands,
+                           tipo_id=tipo_id, marca_id=marca_id)
+
+@products_bp.route('/novo', methods=['GET', 'POST'])
+@login_required
+def novo():
+    types  = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    if request.method == 'POST':
+        name        = request.form.get('name', '').strip()
+        type_id     = request.form.get('type_id') or None
+        brand_id    = request.form.get('brand_id') or None
+        sale_price  = float(request.form.get('sale_price', 0) or 0)
+        cost_price  = float(request.form.get('cost_price', 0) or 0)
+        stock       = int(request.form.get('stock_quantity', 0) or 0)
+        min_stock   = int(request.form.get('min_stock', 0) or 0)
+        description = request.form.get('description', '').strip()
+
+        if not name:
+            flash('Nome do produto é obrigatório.', 'danger')
+            return render_template('products/form.html', types=types, brands=brands)
+
+        combo_json = request.form.get('combo_components', '[]')
+        try:
+            combo_components = json.loads(combo_json)
+        except Exception:
+            combo_components = []
+        is_combo = len(combo_components) > 0
+        if is_combo:
+            stock = 0
+
+        product = Product(
+            tenant_id=tenant_id(),
+            type_id=type_id,
+            brand_id=brand_id,
+            name=name,
+            description=description,
+            sale_price=sale_price,
+            cost_price=cost_price,
+            stock_quantity=stock,
+            min_stock=min_stock,
+        )
+        db.session.add(product)
+        db.session.flush()
+        foto = request.files.get('imagem')
+        if foto and foto.filename:
+            product.image_data, product.image_mime = _comprimir_imagem(foto)
+            product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
+
+        for comp in combo_components:
+            ci = ComboItem(combo_id=product.id,
+                           component_id=int(comp['product_id']),
+                           quantity=float(comp['quantity']))
+            db.session.add(ci)
+
+        db.session.commit()
+        flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
+        return redirect(url_for('products.index'))
+
+    return render_template('products/form.html', types=types, brands=brands, product=None)
+
+@products_bp.route('/<int:product_id>/editar', methods=['GET', 'POST'])
+@login_required
+def editar(product_id):
+    product = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
+    types   = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    brands  = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    if request.method == 'POST':
+        product.name           = request.form.get('name', '').strip()
+        product.type_id        = request.form.get('type_id') or None
+        product.brand_id       = request.form.get('brand_id') or None
+        product.sale_price     = float(request.form.get('sale_price', 0) or 0)
+        product.cost_price     = float(request.form.get('cost_price', 0) or 0)
+        product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
+        product.min_stock      = int(request.form.get('min_stock', 0) or 0)
+        product.description    = request.form.get('description', '').strip()
+        foto = request.files.get('imagem')
+        if foto and foto.filename:
+            product.image_data, product.image_mime = _comprimir_imagem(foto)
+            product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
+
+        combo_json = request.form.get('combo_components', '[]')
+        try:
+            combo_components = json.loads(combo_json)
+        except Exception:
+            combo_components = []
+        ComboItem.query.filter_by(combo_id=product.id).delete()
+        for comp in combo_components:
+            ci = ComboItem(combo_id=product.id,
+                           component_id=int(comp['product_id']),
+                           quantity=float(comp['quantity']))
+            db.session.add(ci)
+        if combo_components:
+            product.stock_quantity = 0
+
+        db.session.commit()
+        flash('Produto atualizado com sucesso!', 'success')
+        return redirect(url_for('products.index'))
+
+    existing_components = [
+        {'product_id': ci.component_id, 'name': ci.component.name,
+         'quantity': ci.quantity, 'cost_price': ci.component.cost_price or 0}
+        for ci in product.combo_items
+    ]
+    return render_template('products/form.html', types=types, brands=brands, product=product,
+                           existing_components=existing_components)
+
+@products_bp.route('/<int:product_id>/excluir', methods=['POST'])
+@login_required
+def excluir(product_id):
+    product = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
+    db.session.delete(product)
+    db.session.commit()
+    flash('Produto removido.', 'success')
+    return redirect(url_for('products.index'))
+
+# ── Tipos ─────────────────────────────────────────────
+@products_bp.route('/tipos')
+@login_required
+def tipos():
+    types = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    return render_template('products/tipos.html', types=types)
+
+@products_bp.route('/tipos/novo', methods=['POST'])
+@login_required
+def tipo_novo():
+    name = request.form.get('name', '').strip()
+    if name:
+        t = ProductType(tenant_id=tenant_id(), name=name)
+        db.session.add(t)
+        db.session.commit()
+        flash(f'Categoria "{name}" criada!', 'success')
+    return redirect(url_for('products.tipos'))
+
+@products_bp.route('/tipos/<int:tipo_id>/excluir', methods=['POST'])
+@login_required
+def tipo_excluir(tipo_id):
+    t = ProductType.query.filter_by(id=tipo_id, tenant_id=tenant_id()).first_or_404()
+    db.session.delete(t)
+    db.session.commit()
+    flash('Categoria removida.', 'success')
+    return redirect(url_for('products.tipos'))
+
+# ── Marcas ────────────────────────────────────────────
+@products_bp.route('/marcas')
+@login_required
+def marcas():
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    return render_template('products/marcas.html', brands=brands)
+
+@products_bp.route('/marcas/nova', methods=['POST'])
+@login_required
+def marca_nova():
+    name = request.form.get('name', '').strip()
+    if name:
+        b = Brand(tenant_id=tenant_id(), name=name)
+        db.session.add(b)
+        db.session.commit()
+        flash(f'Marca "{name}" criada!', 'success')
+    return redirect(url_for('products.marcas'))
+
+@products_bp.route('/marcas/<int:brand_id>/excluir', methods=['POST'])
+@login_required
+def marca_excluir(brand_id):
+    b = Brand.query.filter_by(id=brand_id, tenant_id=tenant_id()).first_or_404()
+    db.session.delete(b)
+    db.session.commit()
+    flash('Marca removida.', 'success')
+    return redirect(url_for('products.marcas'))
+
+# ── API busca produtos ────────────────────────────────
+def _cols():
+    """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
+    return [Product.id, Product.name, Product.sale_price, Product.stock_quantity,
+            Product.type_id, Product.brand_id,
+            (Product.image_data != None).label('has_image')]
+
+@products_bp.route('/api/buscar')
+@login_required
+def api_buscar():
+    q        = request.args.get('q', '')
+    tipo_id  = request.args.get('tipo', type=int)
+    marca_id = request.args.get('marca', type=int)
+    query = (db.session.query(*_cols())
+             .filter(Product.tenant_id == tenant_id(), Product.active == True))
+    if q:       query = query.filter(Product.name.ilike(f'%{q}%'))
+    if tipo_id: query = query.filter(Product.type_id == tipo_id)
+    if marca_id:query = query.filter(Product.brand_id == marca_id)
+    rows = query.limit(20).all()
+
+    tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+    marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
+
+    cost_map = {p.id: p.cost_price for p in Product.query.filter(
+        Product.id.in_([r.id for r in rows]), Product.tenant_id == tenant_id()
+    ).with_entities(Product.id, Product.cost_price).all()}
+
+    return jsonify([{
+        'id': r.id, 'name': r.name,
+        'sale_price': r.sale_price,
+        'cost_price': cost_map.get(r.id, 0) or 0,
+        'stock_quantity': r.stock_quantity,
+        'has_image': bool(r.has_image),
+        'type': tipos.get(r.type_id, ''),
+        'type_id': r.type_id,
+        'brand': marcas.get(r.brand_id, ''),
+    } for r in rows])
+
+@products_bp.route('/api/todos')
+@login_required
+def api_todos():
+    rows = (db.session.query(*_cols())
+            .filter(Product.tenant_id == tenant_id(), Product.active == True)
+            .order_by(Product.name).all())
+
+    tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+    marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
+
+    # Busca thumbnails (BYTEA) apenas dos produtos que têm imagem
+    ids_com_img = [r.id for r in rows if r.has_image]
+    thumbs = {}
+    if ids_com_img:
+        for p in Product.query.filter(Product.id.in_(ids_com_img)).with_entities(Product.id, Product.thumbnail_data, Product.image_data).all():
+            if p.thumbnail_data:
+                thumbs[p.id] = p.thumbnail_data.decode()
+            elif p.image_data:
+                # thumbnail ainda não gerado — gera on-the-fly e salva
+                t = _gerar_thumbnail(p.image_data)
+                thumbs[p.id] = t
+                Product.query.filter_by(id=p.id).update({'thumbnail_data': t.encode()})
+        db.session.commit()
+
+    return jsonify([{
+        'id': r.id, 'name': r.name,
+        'sale_price': r.sale_price,
+        'stock_quantity': r.stock_quantity,
+        'thumbnail': thumbs.get(r.id),
+        'type_id': r.type_id,
+        'type_name': tipos.get(r.type_id, 'Sem categoria'),
+        'brand_id': r.brand_id,
+        'brand_name': marcas.get(r.brand_id),
+    } for r in rows])
+
+@products_bp.route('/<int:product_id>/imagem')
+def imagem(product_id):
+    product = Product.query.filter_by(id=product_id).first_or_404()
+    if not product.image_data:
+        return '', 404
+    resp = Response(product.image_data, mimetype='image/jpeg')
+    resp.headers['Cache-Control'] = 'public, max-age=604800'  # 7 dias
+    return resp
+
+@products_bp.route('/admin/recomprimir-imagens', methods=['POST'])
+@login_required
+def recomprimir_imagens():
+    produtos = Product.query.filter(
+        Product.tenant_id == tenant_id(),
+        Product.image_data != None
+    ).all()
+    count = 0
+    for p in produtos:
+        try:
+            dados, mime = _comprimir_imagem(io.BytesIO(p.image_data))
+            p.image_data = dados
+            p.image_mime = mime
+            count += 1
+        except Exception:
+            pass
+    db.session.commit()
+    flash(f'{count} imagem(ns) recomprimida(s) com sucesso.', 'success')
+    return redirect(url_for('products.index'))
+
+@products_bp.route('/api/categorias')
+@login_required
+def api_categorias():
+    types = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    return jsonify([{'id': t.id, 'name': t.name} for t in types])
+
+@products_bp.route('/api/marcas')
+@login_required
+def api_marcas():
+    brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    return jsonify([{'id': b.id, 'name': b.name} for b in brands])

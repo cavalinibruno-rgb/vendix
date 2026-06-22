@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Fechar Caixa – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center gap-3">
+  <a href="{{ url_for('cash.index') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <h1 class="mb-0"><i class="bi bi-lock me-2"></i>Fechar Caixa</h1>
+</div>
+
+{% if em_rota > 0 %}
+<div class="alert alert-danger d-flex align-items-center gap-3 mb-4">
+  <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+  <div>
+    <strong>Não é possível fechar o caixa.</strong>
+    Há <strong>{{ em_rota }} entrega(s)</strong> ainda em rota. Conclua todas as entregas antes de fechar.
+    <a href="{{ url_for('entregas.index') }}" class="btn btn-sm btn-danger ms-3">
+      <i class="bi bi-send me-1"></i>Ver Entregas
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<form method="post">
+  <div class="row g-4">
+
+    <!-- Loja -->
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold"><i class="bi bi-shop me-2 text-warning"></i>Loja</div>
+        <div class="card-body">
+          {% set campos_loja = [
+            ('loja_dinheiro', 'bi-cash',              'text-success', 'Dinheiro'),
+            ('loja_cartao',   'bi-credit-card',        'text-primary', 'Cartão'),
+            ('loja_pix',      'bi-qr-code',            'text-info',    'Pix'),
+            ('loja_conta',    'bi-person-lines-fill',  'text-warning', 'Conta (fiado)'),
+          ] %}
+          {% for name, icon, color, label in campos_loja %}
+          <div class="mb-3">
+            <label class="form-label"><i class="bi {{ icon }} me-1 {{ color }}"></i>{{ label }}</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" name="{{ name }}" id="{{ name }}" class="form-control campo-valor"
+                     value="0,00" inputmode="decimal" autocomplete="off"
+                     onfocus="if(this.value==='0,00')this.value=''"
+                     onblur="if(this.value==='')this.value='0,00'"
+                     oninput="calcTotal()">
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- App -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header fw-semibold"><i class="bi bi-phone me-2 text-secondary"></i>App</div>
+        <div class="card-body">
+          {% set campos_app = [
+            ('app_dinheiro', 'bi-cash',         'text-success', 'Dinheiro'),
+            ('app_cartao',   'bi-credit-card',   'text-primary', 'Cartão'),
+            ('app_pix',      'bi-qr-code',       'text-info',    'Pix'),
+          ] %}
+          {% for name, icon, color, label in campos_app %}
+          <div class="mb-3">
+            <label class="form-label"><i class="bi {{ icon }} me-1 {{ color }}"></i>{{ label }}</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" name="{{ name }}" id="{{ name }}" class="form-control campo-valor"
+                     value="0,00" inputmode="decimal" autocomplete="off"
+                     onfocus="if(this.value==='0,00')this.value=''"
+                     onblur="if(this.value==='')this.value='0,00'"
+                     oninput="calcTotal()">
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Total informado -->
+      <div class="card mt-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center fs-5 fw-bold">
+            <span>Total informado</span>
+            <span id="totalInformado" class="text-warning">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Retiradas -->
+      {% if retiradas %}
+      <div class="card mt-3 border-warning">
+        <div class="card-header fw-semibold d-flex justify-content-between">
+          <span><i class="bi bi-cash-coin me-2 text-warning"></i>Retiradas</span>
+          <span class="text-danger fw-bold">- R$ {{ '%.2f'|format(total_retiradas) }}</span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <tbody>
+              {% for r in retiradas %}
+              <tr>
+                <td class="text-muted small">{{ r.created_at.strftime('%H:%M') }}</td>
+                <td>{{ r.motivo }}</td>
+                <td class="text-muted small">{{ r.operator_name }}</td>
+                <td class="text-end text-danger fw-semibold">- R$ {{ '%.2f'|format(r.amount) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Observações -->
+      <div class="card mt-3">
+        <div class="card-body">
+          <label class="form-label">Observações (opcional)</label>
+          <textarea name="notes" class="form-control" rows="2"
+                    placeholder="Observações gerais..."></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-danger w-100 fw-semibold py-2 mt-3">
+        <i class="bi bi-lock-fill me-2"></i>Confirmar Fechamento
+      </button>
+    </div>
+
+  </div>
+</form>
+
+
+<script>
+function parseBR(v) { return parseFloat((v||'0').replace(',','.')) || 0; }
+function fmtBR(v)   { return 'R$ ' + v.toFixed(2).replace('.',','); }
+
+function calcTotal() {
+  const campos = document.querySelectorAll('.campo-valor');
+  let total = 0;
+  campos.forEach(c => total += parseBR(c.value));
+  document.getElementById('totalInformado').textContent = fmtBR(total);
+}
+</script>
+{% endblock %}

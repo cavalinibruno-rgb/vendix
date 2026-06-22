@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+{% block title %}Funcionários — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-people me-2 text-warning"></i>Funcionários</h1>
+    <p>Controle de vales e cadastro de motoboys</p>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalMotoboy">
+      <i class="bi bi-bicycle me-1"></i>Novo Motoboy
+    </button>
+    <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalFuncionario">
+      <i class="bi bi-person-plus me-1"></i>Novo Funcionário
+    </button>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- Vale -->
+  <div class="col-lg-8">
+
+    <!-- Filtro de mês -->
+    <div class="card mb-3">
+      <div class="card-body py-2">
+        <form method="get" class="d-flex align-items-center gap-2">
+          <span class="fw-semibold small text-muted">Vales de:</span>
+          <select name="mes" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+            {% for i in range(1, 13) %}
+            <option value="{{ i }}" {% if i == mes %}selected{% endif %}>{{ meses[i-1] }}</option>
+            {% endfor %}
+          </select>
+          <select name="ano" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+            {% for a in range(2024, 2028) %}
+            <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <!-- Lista de funcionários -->
+    <div class="card">
+      <div class="card-header fw-semibold">Controle de Vales — {{ meses[mes-1] }}/{{ ano }}</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Funcionário</th>
+              <th>Cargo</th>
+              <th class="text-end">Total {{ meses[mes-1] }}/{{ ano }}</th>
+              <th style="width:120px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in employees %}
+            <tr>
+              <td class="fw-semibold">
+                <a href="{{ url_for('vale.funcionario_detalhe', emp_id=e.id, mes=mes, ano=ano) }}" class="text-decoration-none text-dark">
+                  <i class="bi bi-person me-1 text-muted"></i>{{ e.name }}
+                </a>
+              </td>
+              <td>
+                {% if e.role == 'caixa' %}
+                  <span class="badge bg-primary-subtle text-primary">Op. de Caixa</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis">Motoboy</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if totais[e.id] > 0 %}
+                  <span class="fw-bold text-danger">R$ {{ '%.2f'|format(totais[e.id]) }}</span>
+                {% else %}
+                  <span class="text-muted">R$ 0,00</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="d-flex gap-1 justify-content-end">
+                  <a href="{{ url_for('vale.funcionario_detalhe', emp_id=e.id, mes=mes, ano=ano) }}"
+                     class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  {% if e.role == 'caixa' %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          onclick="abrirCredenciais({{ e.id }}, '{{ e.name }}', {{ 'true' if e.username else 'false' }})"
+                          title="Definir acesso">
+                    <i class="bi bi-key{{ '-fill' if e.username else '' }}"></i>
+                  </button>
+                  {% endif %}
+                  <form method="post" action="{{ url_for('vale.funcionario_excluir', emp_id=e.id) }}"
+                        data-confirm='Excluir {{ e.name }} e todos os vales?'>
+                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-4">Nenhum funcionário cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if employees %}
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="2" class="fw-bold">Total Geral</td>
+              <td class="text-end fw-bold text-danger">R$ {{ '%.2f'|format(total_geral) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Motoboys -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header fw-semibold"><i class="bi bi-bicycle me-2"></i>Motoboys</div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th style="width:40px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in motoboys %}
+            <tr>
+              <td class="fw-semibold small">{{ m.name }}</td>
+              <td class="text-muted small">{{ m.phone or '—' }}</td>
+              <td>
+                <form method="post" action="{{ url_for('vale.motoboy_excluir', mid=m.id) }}"
+                      data-confirm="Excluir {{ m.name }}?">
+                  <button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-center text-muted py-4">Nenhum motoboy cadastrado.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Novo Funcionário -->
+<div class="modal fade" id="modalFuncionario" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('vale.funcionario_novo') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Novo Funcionário</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <input type="text" name="name" class="form-control" placeholder="Nome do funcionário" required autofocus>
+          </div>
+          <div>
+            <select name="role" class="form-select" required>
+              <option value="caixa">Op. de Caixa</option>
+              <option value="motoboy">Motoboy</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-warning fw-semibold">Cadastrar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Credenciais Operador -->
+<div class="modal fade" id="modalCredenciais" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" id="formCredenciais">
+        <div class="modal-header py-2">
+          <h6 class="modal-title"><i class="bi bi-key me-1"></i>Acesso do Operador</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3" id="credenciaisInfo"></p>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Usuário *</label>
+            <input type="text" name="username" id="credenciaisUser" class="form-control" required autocomplete="off">
+          </div>
+          <div class="mb-0">
+            <label class="form-label small fw-semibold">Nova senha *</label>
+            <input type="password" name="senha" class="form-control" required placeholder="Mínimo 4 caracteres">
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="submit" class="btn btn-warning fw-semibold">Salvar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Motoboy -->
+<div class="modal fade" id="modalMotoboy" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('vale.motoboy_novo') }}">
+        <div class="modal-header py-2">
+          <h6 class="modal-title">Novo Motoboy</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <input type="text" name="name" class="form-control" placeholder="Nome *" required>
+          </div>
+          <div>
+            <input type="text" name="phone" class="form-control" placeholder="Telefone (com DDD)">
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="submit" class="btn btn-warning fw-semibold">Cadastrar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('modalFuncionario').addEventListener('shown.bs.modal', function() {
+  this.querySelector('input[name=name]').focus();
+});
+document.getElementById('modalMotoboy').addEventListener('shown.bs.modal', function() {
+  this.querySelector('input[name=name]').focus();
+});
+
+function abrirCredenciais(empId, nome, temAcesso) {
+  const form = document.getElementById('formCredenciais');
+  form.action = `/vale/funcionario/${empId}/credenciais`;
+  document.getElementById('credenciaisInfo').textContent = temAcesso
+    ? `Redefinir usuário e senha de "${nome}".`
+    : `Criar usuário e senha para "${nome}" acessar o caixa.`;
+  document.getElementById('credenciaisUser').value = '';
+  form.querySelector('input[name=senha]').value = '';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCredenciais')).show();
+  setTimeout(() => document.getElementById('credenciaisUser').focus(), 300);
+}
+</script>
+{% endblock %}

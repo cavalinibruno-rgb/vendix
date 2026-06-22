@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block title %}Caixa – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-cash-stack me-2"></i>Caixa</h1>
+</div>
+
+{% if caixa %}
+<!-- CAIXA ABERTO -->
+<div class="alert alert-success d-flex align-items-center gap-3">
+  <i class="bi bi-unlock-fill fs-4"></i>
+  <div>
+    <strong>Caixa aberto</strong> desde {{ caixa.opened_at.strftime('%d/%m/%Y às %H:%M') }}
+    — Troco inicial: <strong>R$ {{ '%.2f'|format(caixa.opening_amount) }}</strong>
+    {% if caixa.operator_name %}
+    &nbsp;·&nbsp; Operador: <strong>{{ caixa.operator_name }}</strong>
+    {% endif %}
+  </div>
+  <div class="ms-auto d-flex gap-2">
+    <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalRetirada">
+      <i class="bi bi-cash-coin me-1"></i> Retirada
+    </button>
+    <a href="{{ url_for('cash.fechar', caixa_id=caixa.id) }}" class="btn btn-danger fw-semibold">
+      <i class="bi bi-lock-fill me-1"></i> Fechar Caixa
+    </a>
+  </div>
+</div>
+
+<!-- Retiradas do caixa atual -->
+{% if retiradas %}
+<div class="card mb-4">
+  <div class="card-header fw-semibold d-flex justify-content-between">
+    <span><i class="bi bi-cash-coin me-2 text-warning"></i>Retiradas neste caixa</span>
+    <span class="text-danger fw-bold">- R$ {{ '%.2f'|format(total_retiradas) }}</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-light">
+        <tr><th>Horário</th><th>Motivo</th><th>Operador</th><th class="text-end">Valor</th></tr>
+      </thead>
+      <tbody>
+        {% for r in retiradas %}
+        <tr>
+          <td class="text-muted small">{{ r.created_at.strftime('%H:%M') }}</td>
+          <td>{{ r.motivo }}</td>
+          <td class="text-muted small">{{ r.operator_name }}</td>
+          <td class="text-end text-danger fw-semibold">- R$ {{ '%.2f'|format(r.amount) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% else %}
+<!-- ABRIR CAIXA -->
+<div class="card mb-4" style="max-width:480px;">
+  <div class="card-header fw-semibold">Abrir Caixa</div>
+  <div class="card-body">
+
+    <form method="post" action="{{ url_for('cash.abrir') }}">
+      <input type="hidden" name="modo" value="funcionario">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Usuário</label>
+        <input type="text" name="op_username" class="form-control form-control-lg"
+               placeholder="Digite seu usuário" required autocomplete="username">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Senha</label>
+        <input type="password" name="op_password" class="form-control form-control-lg"
+               placeholder="Digite sua senha" required autocomplete="current-password">
+        <div class="form-text">Operador de caixa ou lojista podem abrir o caixa.</div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Troco inicial (R$)</label>
+        <input type="text" name="opening_amount" class="form-control form-control-lg"
+               value="0.00" onfocus="if(this.value=='0.00')this.value=''"
+               onblur="if(this.value==='')this.value='0.00'">
+      </div>
+      <button class="btn btn-success w-100 fw-semibold py-2">
+        <i class="bi bi-unlock me-2"></i>Abrir Caixa
+      </button>
+    </form>
+
+  </div>
+</div>
+{% endif %}
+
+<!-- HISTÓRICO -->
+{% if historico %}
+<div class="card">
+  <div class="card-header">Histórico de Caixas</div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">#</th>
+          <th>Operador</th>
+          <th>Aberto em</th>
+          <th>Fechado em</th>
+          <th>Troco inicial</th>
+          <th>Valor contado</th>
+          <th>Diferença</th>
+          <th class="pe-4"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in historico %}
+        {% set dif = (c.closing_amount or 0) - (c.opening_amount) %}
+        <tr>
+          <td class="text-muted small ps-4">{{ c.id }}</td>
+          <td class="small fw-semibold">{{ c.operator_name or (c.opener.display_name if c.opener else '—') }}</td>
+          <td class="small">{{ c.opened_at.strftime('%d/%m %H:%M') }}</td>
+          <td class="small">{{ c.closed_at.strftime('%d/%m %H:%M') if c.closed_at else '—' }}</td>
+          <td>R$ {{ '%.2f'|format(c.opening_amount) }}</td>
+          <td>R$ {{ '%.2f'|format(c.closing_amount or 0) }}</td>
+          <td class="{{ 'text-success' if dif >= 0 else 'text-danger' }} fw-semibold">
+            {{ '+' if dif >= 0 else '' }}R$ {{ '%.2f'|format(dif) }}
+          </td>
+          <td class="pe-4">
+            <a href="{{ url_for('cash.resumo', caixa_id=c.id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal Retirada -->
+<div class="modal fade" id="modalRetirada" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-cash-coin me-2 text-warning"></i>Retirada de Caixa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('cash.retirada') }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Valor (R$)</label>
+            <input type="text" name="amount" class="form-control" placeholder="0,00" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Motivo</label>
+            <input type="text" name="motivo" class="form-control" placeholder="Ex: Pagamento de fornecedor" required>
+          </div>
+          <hr>
+          <p class="text-muted small mb-2">Confirme com usuário e senha do operador:</p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Usuário</label>
+            <input type="text" name="op_username" class="form-control" autocomplete="off" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Senha</label>
+            <input type="password" name="op_password" class="form-control" autocomplete="off" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning fw-semibold">
+            <i class="bi bi-cash-coin me-1"></i>Confirmar Retirada
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setModo(modo) {
+  const btnFun = document.querySelector('#tabModo .nav-link:first-child');
+  const btnLoj = document.querySelector('#tabModo .nav-link:last-child');
+  const formFun = document.getElementById('formFuncionario');
+  const formLoj = document.getElementById('formLojista');
+
+  if (modo === 'funcionario' && formFun) {
+    formFun.style.display = '';
+    formLoj.style.display = 'none';
+    btnFun.classList.add('active');
+    btnLoj.classList.remove('active');
+  } else {
+    if (formFun) formFun.style.display = 'none';
+    formLoj.style.display = '';
+    if (btnFun) btnFun.classList.remove('active');
+    btnLoj.classList.add('active');
+  }
+}
+</script>
+{% endblock %}

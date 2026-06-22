@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Conta / Fiado – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-person-lines-fill me-2"></i>Conta / Fiado</h1>
+</div>
+
+{% if devedores %}
+<div class="mb-3" style="max-width:360px;">
+  <div class="input-group">
+    <span class="input-group-text"><i class="bi bi-search"></i></span>
+    <input type="text" id="buscaCliente" class="form-control" placeholder="Buscar cliente por nome…"
+           oninput="filtrarClientes(this.value)" autocomplete="off">
+    <button class="btn btn-outline-secondary" onclick="document.getElementById('buscaCliente').value='';filtrarClientes('');">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-semibold">Clientes com saldo devedor</span>
+    <span class="badge bg-danger fs-6">{{ devedores|length }}</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">Cliente</th>
+          <th>Telefone</th>
+          <th class="text-end">Saldo devedor</th>
+          <th class="pe-4"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in devedores %}
+        <tr class="linha-devedor" data-nome="{{ d.customer.name | lower }}">
+          <td class="fw-semibold ps-4">{{ d.customer.name }}</td>
+          <td class="text-muted small">{{ d.customer.phone or '—' }}</td>
+          <td class="text-end text-danger fw-bold fs-5">R$ {{ '%.2f'|format(d.saldo) }}</td>
+          <td class="text-end pe-4">
+            <a href="{{ url_for('account.detalhe', customer_id=d.customer.id) }}"
+               class="btn btn-sm btn-outline-primary">
+              Ver / Receber
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light">
+        <tr>
+          <td colspan="2" class="fw-semibold ps-4">Total em aberto</td>
+          <td class="text-end text-danger fw-bold">
+            R$ {{ '%.2f'|format(devedores|sum(attribute='saldo')) }}
+          </td>
+          <td class="pe-4"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-success">
+  <i class="bi bi-check-circle-fill me-2"></i>
+  Nenhum cliente com saldo em aberto.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrarClientes(q) {
+  const termo = q.trim().toLowerCase();
+  document.querySelectorAll('.linha-devedor').forEach(tr => {
+    tr.style.display = (!termo || tr.dataset.nome.includes(termo)) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

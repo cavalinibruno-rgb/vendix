@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}Log de Cancelamentos — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-x-circle me-2 text-danger"></i>Log de Cancelamentos</h1>
+    <p class="text-muted">Registro permanente de todas as vendas canceladas — somente leitura</p>
+  </div>
+  <a href="{{ url_for('sales.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Vendas
+  </a>
+</div>
+
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-4 py-2">
+  <i class="bi bi-shield-lock-fill text-warning"></i>
+  <span><strong>Registro protegido:</strong> Este log não pode ser alterado ou excluído. Todas as vendas canceladas ficam arquivadas aqui para auditoria.</span>
+</div>
+
+<!-- Filtro de datas -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-muted small mb-0">De</label>
+        <input type="date" name="de" value="{{ filtro_de }}" class="form-control form-control-sm" style="width:auto;">
+      </div>
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-muted small mb-0">Até</label>
+        <input type="date" name="ate" value="{{ filtro_ate }}" class="form-control form-control-sm" style="width:auto;">
+      </div>
+      <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search me-1"></i>Filtrar</button>
+      {% if filtro_de or filtro_ate %}
+      <a href="{{ url_for('sales.cancelamentos') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+      {% endif %}
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+        <i class="bi bi-printer"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Resumo -->
+{% if vendas %}
+<p class="text-muted small mb-2">
+  <i class="bi bi-info-circle me-1"></i>
+  <strong>{{ vendas|length }} cancelamento(s) encontrado(s)</strong>
+  | Valor total cancelado: <strong class="text-danger">R$ {{ '%.2f'|format(total_cancelado)|replace('.', ',') }}</strong>
+</p>
+{% endif %}
+
+<!-- Tabela -->
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle small">
+      <thead class="table-light">
+        <tr>
+          <th>VENDA ORIG.</th>
+          <th>CLIENTE</th>
+          <th>BAIRRO</th>
+          <th>ITENS CANCELADOS</th>
+          <th class="text-end">TOTAL</th>
+          <th>DATA VENDA</th>
+          <th>CANCELADO EM</th>
+          <th>CANCELADO POR</th>
+          <th>MOTIVO</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vendas %}
+        <tr>
+          <td>
+            <span class="badge bg-danger">#{{ v.id }}</span>
+          </td>
+          <td>{{ v.customer.name if v.customer else 'Consumidor' }}</td>
+          <td>
+            {% if v.customer and v.customer.neighborhood %}
+              {{ v.customer.neighborhood.name }}
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2"
+                    data-bs-toggle="modal" data-bs-target="#modalItens{{ v.id }}">
+              <i class="bi bi-list-ul me-1"></i>Ver itens
+            </button>
+          </td>
+          <td class="text-end fw-semibold text-danger">R$ {{ '%.2f'|format(v.total) }}</td>
+          <td class="text-nowrap">{{ v.created_at.strftime('%d/%m/%Y') }}</td>
+          <td class="text-nowrap">
+            {% if v.cancelled_at %}{{ v.cancelled_at.strftime('%d/%m/%Y %H:%M') }}{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if v.cancelled_by_name %}
+            <span class="text-muted"><i class="bi bi-person-circle me-1"></i>{{ v.cancelled_by_name }}</span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="small text-muted">{{ v.cancel_reason or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center text-muted py-4">
+            <i class="bi bi-inbox me-1"></i>Nenhum cancelamento encontrado.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modais de itens -->
+{% for v in vendas %}
+<div class="modal fade" id="modalItens{{ v.id }}" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">Itens da Venda #{{ v.id }}</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr><th>Produto</th><th class="text-center">Qtd</th><th class="text-end">Total</th></tr>
+          </thead>
+          <tbody>
+            {% for item in v.items %}
+            <tr>
+              <td class="small">{{ item.product_name }}</td>
+              <td class="text-center small">{{ item.quantity|int }}</td>
+              <td class="text-end small">R$ {{ '%.2f'|format(item.total) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

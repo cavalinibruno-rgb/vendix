@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Vendas Apps – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-phone me-2"></i>Vendas Apps</h1>
+  <p class="text-muted">Pedidos recebidos por aplicativos de delivery. Não entram no caixa físico.</p>
+</div>
+
+<!-- Totais por app -->
+<div class="row g-3 mb-4">
+  {% for nome, dados in por_app.items() %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div class="fw-bold mb-1">{{ nome }}</div>
+      <div class="fs-4 fw-bold text-warning">R$ {{ '%.2f'|format(dados.total) }}</div>
+      <div class="text-muted small">{{ dados.qtd }} pedido(s)</div>
+    </div>
+  </div>
+  {% endfor %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3" style="background:var(--bg-card-header)!important;">
+      <div class="text-muted small mb-1">Total geral</div>
+      <div class="fs-4 fw-bold">R$ {{ '%.2f'|format(total_geral) }}</div>
+      <div class="text-muted small">{{ vendas|length }} pedido(s)</div>
+    </div>
+  </div>
+</div>
+
+<!-- Lista de vendas -->
+<div class="card">
+  <div class="card-header fw-semibold d-flex align-items-center justify-content-between">
+    <span>Histórico de Pedidos</span>
+    <form method="get" class="d-flex align-items-center gap-2 mb-0">
+      <input type="date" name="data" value="{{ filtro_data }}"
+             class="form-control form-control-sm" style="width:auto;">
+      <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search"></i></button>
+      {% if filtro_data %}
+      <a href="{{ url_for('apps.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+      {% endif %}
+    </form>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">#</th>
+          <th>Data/Hora</th>
+          <th>App</th>
+          <th>Pagamento</th>
+          <th>Itens</th>
+          <th class="text-end pe-4">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vendas %}
+        <tr>
+          <td class="text-muted small ps-4">{{ v.id }}</td>
+          <td class="small text-nowrap">{{ v.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td><span class="badge bg-primary">{{ v.app_name or '—' }}</span></td>
+          <td>
+            {% if v.payment_method == 'pelo_app' %}<span class="badge bg-primary">Pelo app</span>
+            {% elif v.payment_method == 'entrega_dinheiro' %}<span class="badge bg-success">Entrega – Dinheiro</span>
+            {% elif v.payment_method == 'entrega_cartao' %}<span class="badge bg-secondary">Entrega – Cartão</span>
+            {% elif v.payment_method == 'entrega_pix' %}<span class="badge bg-info text-dark">Entrega – Pix</span>
+            {% else %}<span class="badge bg-warning text-dark">{{ v.payment_method }}</span>{% endif %}
+          </td>
+          <td class="small text-muted">
+            {% for item in v.items %}
+              {{ item.product_name }} ({{ item.quantity|int }}x){% if not loop.last %}, {% endif %}
+            {% endfor %}
+          </td>
+          <td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-3">
+            <i class="bi bi-inbox me-1"></i>
+            Nenhum pedido encontrado{% if filtro_data %} para {{ filtro_data|replace('-','/')|reverse|list|join }}{% endif %}.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

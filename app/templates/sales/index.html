@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Vendas – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1><i class="bi bi-receipt me-2"></i>Vendas</h1>
+    <p class="text-muted mb-0">
+      {% if busca_pedido %}
+      Resultado da busca pelo pedido <strong>#{{ busca_pedido }}</strong>
+      {% else %}
+      {{ sales|length }} venda(s)
+      {% if periodo_um_dia %}em {{ de_fil.strftime('%d/%m/%Y') }}
+      {% else %}de {{ de_fil.strftime('%d/%m/%Y') }} a {{ ate_fil.strftime('%d/%m/%Y') }}{% endif %}
+      {% if not modo_restrito %}<span class="ms-2">— Total: <strong class="text-success">R$ {{ '%.2f'|format(total_periodo) }}</strong></span>{% endif %}
+      {% endif %}
+      {% if modo_restrito %}<span class="badge bg-warning text-dark ms-2"><i class="bi bi-eye-slash me-1"></i>Modo operador</span>{% endif %}
+    </p>
+  </div>
+  <a href="{{ url_for('sales.nova') }}" class="btn btn-warning fw-semibold">
+    <i class="bi bi-plus-lg me-1"></i> Nova Venda
+  </a>
+</div>
+
+<!-- Busca por número do pedido -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">Buscar pedido nº:</label>
+        <input type="number" name="pedido" class="form-control form-control-sm" style="width:140px;"
+               value="{{ busca_pedido }}" placeholder="Ex: 123" min="1">
+      </div>
+      <button type="submit" class="btn btn-sm btn-warning fw-semibold">
+        <i class="bi bi-search me-1"></i>Buscar
+      </button>
+      {% if busca_pedido %}
+      <a href="{{ url_for('sales.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-x-lg me-1"></i>Limpar busca
+      </a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Filtro de período -->
+<div class="card mb-3 {% if busca_pedido %}opacity-50{% endif %}">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">De:</label>
+        <input type="date" name="de" class="form-control form-control-sm" style="width:auto;"
+               value="{{ de_fil.isoformat() }}">
+      </div>
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">Até:</label>
+        <input type="date" name="ate" class="form-control form-control-sm" style="width:auto;"
+               value="{{ ate_fil.isoformat() }}">
+      </div>
+      <button type="submit" class="btn btn-sm btn-warning fw-semibold">
+        <i class="bi bi-search me-1"></i>Filtrar
+      </button>
+      <a href="?de={{ hoje }}&ate={{ hoje }}" class="btn btn-sm btn-outline-secondary">Hoje</a>
+      <a href="?de={{ ontem }}&ate={{ ontem }}" class="btn btn-sm btn-outline-secondary">Ontem</a>
+      <a href="?de={{ inicio_mes }}&ate={{ hoje }}" class="btn btn-sm btn-outline-secondary">Este mês</a>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if sales %}
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">#</th>
+          <th>Cliente</th>
+          <th>Itens</th>
+          <th>Pagamento</th>
+          <th>Entrega</th>
+          {% if not modo_restrito %}<th class="text-end">Total</th>{% endif %}
+          <th>Data / Hora</th>
+          <th class="pe-4"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sales %}
+        <tr>
+          <td class="text-muted small ps-4">{{ s.id }}</td>
+          <td>{{ s.customer.name if s.customer else '—' }}</td>
+          <td class="text-muted small">{{ s.items|length }} item(s)</td>
+          <td>
+            {% set icons = {'dinheiro':'cash','cartao':'credit-card','pix':'qr-code','conta':'person-lines-fill'} %}
+            <i class="bi bi-{{ icons.get(s.payment_method, 'cash') }} me-1"></i>
+            {{ s.payment_method|capitalize }}
+          </td>
+          <td>
+            <span class="badge {{ 'bg-info text-dark' if s.delivery_mode == 'entrega' else 'bg-secondary' }}">
+              {{ 'Entrega' if s.delivery_mode == 'entrega' else 'Retirada' }}
+            </span>
+          </td>
+          {% if not modo_restrito %}
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(s.total) }}</td>
+          {% endif %}
+          <td class="text-muted small text-nowrap">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td class="pe-4">
+            <a href="{{ url_for('sales.detalhe', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-receipt" style="font-size:2.5rem;"></i>
+      <p class="mt-2">
+        {% if busca_pedido %}Nenhum pedido encontrado com o número <strong>#{{ busca_pedido }}</strong>.
+        {% elif periodo_um_dia %}Nenhuma venda em {{ de_fil.strftime('%d/%m/%Y') }}.
+        {% else %}Nenhuma venda de {{ de_fil.strftime('%d/%m/%Y') }} a {{ ate_fil.strftime('%d/%m/%Y') }}.{% endif %}</p>
+      <a href="{{ url_for('sales.nova') }}" class="btn btn-warning btn-sm">Fazer venda</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Passa datas para o template via Jinja (no lugar de date.today() no JS)
+</script>
+{% endblock %}
