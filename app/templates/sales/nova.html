@@ -1070,7 +1070,9 @@ const CASH_METHODS = ['dinheiro', 'entrega_dinheiro'];
 
 function renderCamposCombinados() {
   const campo = document.getElementById('campoCombinados');
-  const selecionados = [...document.querySelectorAll('.pgto-card.active')];
+  // Dinheiro sempre por último
+  const selecionados = [...document.querySelectorAll('.pgto-card.active')]
+    .sort((a, b) => (CASH_METHODS.includes(a.dataset.pgto) ? 1 : 0) - (CASH_METHODS.includes(b.dataset.pgto) ? 1 : 0));
 
   if (!selecionados.length) {
     campo.style.display = 'none';
