@@ -6,7 +6,10 @@
   <div>
     <h1><i class="bi bi-receipt me-2"></i>Vendas</h1>
     <p class="text-muted mb-0">
-      {{ sales|length }} venda(s) em {{ data_fil.strftime('%d/%m/%Y') }}
+      {{ sales|length }} venda(s)
+      {% if periodo_um_dia %}em {{ de_fil.strftime('%d/%m/%Y') }}
+      {% else %}de {{ de_fil.strftime('%d/%m/%Y') }} a {{ ate_fil.strftime('%d/%m/%Y') }}{% endif %}
+      {% if not modo_restrito %}<span class="ms-2">— Total: <strong class="text-success">R$ {{ '%.2f'|format(total_periodo) }}</strong></span>{% endif %}
       {% if modo_restrito %}<span class="badge bg-warning text-dark ms-2"><i class="bi bi-eye-slash me-1"></i>Modo operador</span>{% endif %}
     </p>
   </div>
@@ -15,15 +18,26 @@
   </a>
 </div>
 
-<!-- Filtro de data -->
+<!-- Filtro de período -->
 <div class="card mb-3">
   <div class="card-body py-2">
-    <form method="get" class="d-flex align-items-center gap-2 flex-wrap">
-      <label class="fw-semibold small text-muted mb-0">Data:</label>
-      <input type="date" name="data" class="form-control form-control-sm" style="width:auto;"
-             value="{{ data_fil.isoformat() }}" onchange="this.form.submit()">
-      <a href="?data={{ hoje }}" class="btn btn-sm btn-outline-secondary">Hoje</a>
-      <a href="?data={{ ontem }}" class="btn btn-sm btn-outline-secondary">Ontem</a>
+    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">De:</label>
+        <input type="date" name="de" class="form-control form-control-sm" style="width:auto;"
+               value="{{ de_fil.isoformat() }}">
+      </div>
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">Até:</label>
+        <input type="date" name="ate" class="form-control form-control-sm" style="width:auto;"
+               value="{{ ate_fil.isoformat() }}">
+      </div>
+      <button type="submit" class="btn btn-sm btn-warning fw-semibold">
+        <i class="bi bi-search me-1"></i>Filtrar
+      </button>
+      <a href="?de={{ hoje }}&ate={{ hoje }}" class="btn btn-sm btn-outline-secondary">Hoje</a>
+      <a href="?de={{ ontem }}&ate={{ ontem }}" class="btn btn-sm btn-outline-secondary">Ontem</a>
+      <a href="?de={{ inicio_mes }}&ate={{ hoje }}" class="btn btn-sm btn-outline-secondary">Este mês</a>
     </form>
   </div>
 </div>
@@ -76,7 +90,9 @@
     {% else %}
     <div class="text-center py-5 text-muted">
       <i class="bi bi-receipt" style="font-size:2.5rem;"></i>
-      <p class="mt-2">Nenhuma venda em {{ data_fil.strftime('%d/%m/%Y') }}.</p>
+      <p class="mt-2">Nenhuma venda
+        {% if periodo_um_dia %}em {{ de_fil.strftime('%d/%m/%Y') }}
+        {% else %}de {{ de_fil.strftime('%d/%m/%Y') }} a {{ ate_fil.strftime('%d/%m/%Y') }}{% endif %}.</p>
       <a href="{{ url_for('sales.nova') }}" class="btn btn-warning btn-sm">Fazer venda</a>
     </div>
     {% endif %}

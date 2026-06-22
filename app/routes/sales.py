@@ -143,14 +143,27 @@ def index():
     from datetime import date, datetime
     from app.models.cash import CashRegister
 
-    data_str = request.args.get('data', date.today().isoformat())
-    try:
-        data_fil = date.fromisoformat(data_str)
-    except ValueError:
-        data_fil = date.today()
+    from datetime import timedelta
+    hoje = date.today()
 
-    inicio = datetime.combine(data_fil, datetime.min.time())
-    fim    = datetime.combine(data_fil, datetime.max.time())
+    # Aceita período (de/ate); compatível com o parâmetro antigo 'data'
+    data_legado = request.args.get('data')
+    de_str  = request.args.get('de',  data_legado or hoje.isoformat())
+    ate_str = request.args.get('ate', data_legado or hoje.isoformat())
+    try:
+        de_fil = date.fromisoformat(de_str)
+    except ValueError:
+        de_fil = hoje
+    try:
+        ate_fil = date.fromisoformat(ate_str)
+    except ValueError:
+        ate_fil = hoje
+    # Garante ordem correta
+    if de_fil > ate_fil:
+        de_fil, ate_fil = ate_fil, de_fil
+
+    inicio = datetime.combine(de_fil, datetime.min.time())
+    fim    = datetime.combine(ate_fil, datetime.max.time())
 
     # Modo restrito: config ativa + caixa aberto por funcionário
     tenant = current_user.tenant
@@ -162,7 +175,7 @@ def index():
         caixa.operator_employee_id is not None
     )
 
-    limite = 15 if modo_restrito else 500
+    limite = 15 if modo_restrito else 1000
 
     sales = Sale.query.filter(
         Sale.tenant_id == tid(),
@@ -171,14 +184,20 @@ def index():
         Sale.created_at <= fim,
     ).order_by(Sale.created_at.desc()).limit(limite).all()
 
-    from datetime import timedelta
+    total_periodo = sum(s.total for s in sales)
+    periodo_um_dia = (de_fil == ate_fil)
+
     return render_template('sales/index.html',
         sales=sales,
-        data_fil=data_fil,
+        de_fil=de_fil,
+        ate_fil=ate_fil,
+        periodo_um_dia=periodo_um_dia,
+        total_periodo=total_periodo,
         modo_restrito=modo_restrito,
         limite=limite,
-        hoje=date.today().isoformat(),
-        ontem=(date.today() - timedelta(days=1)).isoformat(),
+        hoje=hoje.isoformat(),
+        ontem=(hoje - timedelta(days=1)).isoformat(),
+        inicio_mes=hoje.replace(day=1).isoformat(),
     )
 
 @sales_bp.route('/<int:sale_id>')
