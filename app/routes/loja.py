@@ -150,10 +150,7 @@ def acompanhar(slug, pedido_id):
 # ── Status polling (cliente) ────────────────────────────
 @loja_bp.route('/<slug>/pedido/<int:pedido_id>/status')
 def pedido_status(slug, pedido_id):
-    from flask import current_app
     tenant = _get_tenant(slug)
-    # Expira a sessão para garantir leitura fresca do banco
-    db.session.expire_all()
     pedido = PedidoOnline.query.filter_by(id=pedido_id, tenant_id=tenant.id).first_or_404()
 
     status = pedido.status

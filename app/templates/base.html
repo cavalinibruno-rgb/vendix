@@ -489,9 +489,19 @@
   function aceitarPedidoModal() {
     if (!_ultimoPedidoId) return;
     fetch(`/pedidos-online/${_ultimoPedidoId}/aceitar`, {method:'POST',headers:{'Content-Type':'application/json'}})
-      .then(r => r.json())
-      .then(() => { stopAlarm(); bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide(); })
-      .catch(() => {});
+      .then(r => {
+        if (!r.ok) return r.text().then(t => { throw new Error(t); });
+        return r.json();
+      })
+      .then(d => {
+        if (d.ok) {
+          stopAlarm();
+          bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
+        } else {
+          alert('Erro ao aceitar: ' + (d.error || 'desconhecido'));
+        }
+      })
+      .catch(e => alert('Erro ao aceitar pedido: ' + e.message));
   }
 
   function recusarPedidoModal() {
