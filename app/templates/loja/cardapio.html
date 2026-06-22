@@ -18,6 +18,15 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 .lh-cart-n{background:#eb5757;color:#fff;border-radius:50%;width:20px;height:20px;
             font-size:.72rem;display:flex;align-items:center;justify-content:center;font-weight:800;}
 
+/* Busca */
+.busca-wrap{background:#fff;padding:10px 14px 8px;}
+.busca-input{width:100%;background:#f2f2f2;border:none;border-radius:24px;
+             padding:10px 16px 10px 40px;font-size:.9rem;color:#333;outline:none;
+             -webkit-appearance:none;}
+.busca-wrap{position:relative;}
+.busca-icon{position:absolute;left:26px;top:50%;transform:translateY(-50%);
+            color:#aaa;font-size:1rem;pointer-events:none;}
+
 /* Categorias */
 .cats{background:#fff;border-bottom:1px solid #e5e5e5;display:flex;overflow-x:auto;
       white-space:nowrap;padding:0 8px;scrollbar-width:none;}
@@ -163,6 +172,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
   </button>
 </div>
 
+<!-- Busca -->
+<div class="busca-wrap">
+  <span class="busca-icon">🔍</span>
+  <input class="busca-input" type="search" id="inputBusca" placeholder="Buscar produto..." oninput="filtrarBusca(this.value)">
+</div>
+
 <!-- Categorias -->
 <div class="cats" id="catTabs">
   <button class="cat active" onclick="filtrarCat(null, this)">Todos</button>
@@ -295,10 +310,25 @@ fetch(`/loja/${SLUG}/produtos`)
       '<p style="color:#999;text-align:center;padding:40px;grid-column:1/-1;">Erro ao carregar cardápio.</p>';
   });
 
+let _catAtiva = null;
+let _busca = '';
+
 function filtrarCat(catId, btn) {
   document.querySelectorAll('.cat').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
-  renderGrid(catId ? todos.filter(p => p.type_id == catId) : todos);
+  _catAtiva = catId;
+  aplicarFiltros();
+}
+
+function filtrarBusca(txt) {
+  _busca = txt.trim().toLowerCase();
+  aplicarFiltros();
+}
+
+function aplicarFiltros() {
+  let lista = _catAtiva ? todos.filter(p => p.type_id == _catAtiva) : todos;
+  if (_busca) lista = lista.filter(p => p.name.toLowerCase().includes(_busca));
+  renderGrid(lista);
 }
 
 function renderGrid(lista) {
