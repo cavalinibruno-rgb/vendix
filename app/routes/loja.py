@@ -28,37 +28,41 @@ def cardapio(slug):
 # ── API pública: lista de produtos ─────────────────────
 @loja_bp.route('/<slug>/produtos')
 def api_produtos(slug):
-    import base64 as _b64
-    from PIL import Image
     tenant   = _get_tenant(slug)
     produtos = Product.query.filter_by(tenant_id=tenant.id, active=True).order_by(Product.name).all()
     out = []
     for p in produtos:
-        thumb = None
-        if p.thumbnail_data:
-            # thumbnail_data guarda a data URL completa: "data:image/jpeg;base64,..."
-            thumb = p.thumbnail_data.decode()
-        elif p.image_data:
-            # Gera thumbnail on-the-fly
-            try:
-                img = Image.open(io.BytesIO(bytes(p.image_data)))
-                if img.mode not in ('RGB', 'L'):
-                    img = img.convert('RGB')
-                img.thumbnail((160, 160), Image.LANCZOS)
-                buf = io.BytesIO()
-                img.save(buf, format='JPEG', quality=60, optimize=True)
-                thumb = 'data:image/jpeg;base64,' + _b64.b64encode(buf.getvalue()).decode()
-            except Exception:
-                thumb = None
+        has_foto = bool(p.image_data)
         out.append({
             'id':        p.id,
             'name':      p.name,
             'price':     p.sale_price,
             'type_id':   p.type_id,
             'type_name': p.type.name if p.type else None,
-            'thumb':     thumb,
+            'thumb':     f'/loja/{slug}/produto/{p.id}/foto' if has_foto else None,
         })
     return jsonify(out)
+
+
+@loja_bp.route('/<slug>/produto/<int:produto_id>/foto')
+def foto_produto(slug, produto_id):
+    tenant = _get_tenant(slug)
+    p = Product.query.filter_by(id=produto_id, tenant_id=tenant.id).first_or_404()
+    if not p.image_data:
+        abort(404)
+    try:
+        img = Image.open(io.BytesIO(bytes(p.image_data)))
+        if img.mode not in ('RGB', 'L'):
+            img = img.convert('RGB')
+        img.thumbnail((480, 480), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=82, optimize=True)
+        resp = make_response(buf.getvalue())
+    except Exception:
+        resp = make_response(bytes(p.image_data))
+    resp.headers['Content-Type'] = 'image/jpeg'
+    resp.headers['Cache-Control'] = 'public, max-age=604800'  # 7 dias
+    return resp
 
 
 # ── Fazer pedido ────────────────────────────────────────
