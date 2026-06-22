@@ -59,6 +59,35 @@
     </form>
   </div>
 </div>
+
+<!-- Modal: cadastrar bairro rapidamente -->
+<div class="modal fade" id="modalBairro" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-geo-alt me-2 text-warning"></i>Cadastrar Bairro</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nome do bairro</label>
+          <input type="text" id="novoBairroNome" class="form-control">
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Taxa de entrega (R$)</label>
+          <input type="text" id="novoBairroTaxa" class="form-control" inputmode="decimal" placeholder="0,00">
+        </div>
+        <div class="form-text" id="modalBairroMsg"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning fw-semibold" id="btnSalvarBairro">
+          <i class="bi bi-check-lg me-1"></i>Salvar bairro
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -122,7 +151,11 @@ function buscarCep() {
           bairroMsg.innerHTML = `<span class="text-success">Bairro "${d.bairro}" selecionado.</span>`;
         } else {
           bairroMsg.innerHTML = `<span class="text-warning">Bairro "${d.bairro}" ainda não cadastrado. `
-            + `<a href="{{ url_for('customers.bairros') }}" target="_blank">Cadastrar bairro</a> para definir a taxa.</span>`;
+            + `<a href="#" id="linkCadBairro">Cadastrar bairro</a> para definir a taxa.</span>`;
+          document.getElementById('linkCadBairro').addEventListener('click', function(e) {
+            e.preventDefault();
+            abrirModalBairro(d.bairro);
+          });
         }
       }
     })
@@ -130,5 +163,54 @@ function buscarCep() {
       cepMsg.innerHTML = '<span class="text-danger">Erro ao consultar o CEP. Tente novamente.</span>';
     });
 }
+
+// ── Cadastro rápido de bairro (modal) ──
+const modalBairro = new bootstrap.Modal(document.getElementById('modalBairro'));
+const modalBairroMsg = document.getElementById('modalBairroMsg');
+
+function abrirModalBairro(nome) {
+  document.getElementById('novoBairroNome').value = nome || '';
+  document.getElementById('novoBairroTaxa').value = '';
+  modalBairroMsg.textContent = '';
+  modalBairro.show();
+}
+
+document.getElementById('btnSalvarBairro').addEventListener('click', function() {
+  const nome = document.getElementById('novoBairroNome').value.trim();
+  const taxa = document.getElementById('novoBairroTaxa').value.replace(',', '.').trim() || '0';
+  if (!nome) {
+    modalBairroMsg.innerHTML = '<span class="text-danger">Informe o nome do bairro.</span>';
+    return;
+  }
+  modalBairroMsg.innerHTML = '<span class="text-muted">Salvando…</span>';
+
+  fetch("{{ url_for('customers.bairro_criar_ajax') }}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: nome, fee: taxa }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) {
+      modalBairroMsg.innerHTML = `<span class="text-danger">${d.error}</span>`;
+      return;
+    }
+    // Adiciona (ou reaproveita) a opção no select e seleciona
+    let opt = [...bairroSel.options].find(o => o.value == d.id);
+    if (!opt) {
+      opt = document.createElement('option');
+      opt.value = d.id;
+      opt.setAttribute('data-fee', d.fee);
+      opt.text = `${d.name} (R$ ${parseFloat(d.fee).toFixed(2)})`;
+      bairroSel.appendChild(opt);
+    }
+    bairroSel.value = d.id;
+    bairroMsg.innerHTML = `<span class="text-success">Bairro "${d.name}" cadastrado e selecionado.</span>`;
+    modalBairro.hide();
+  })
+  .catch(() => {
+    modalBairroMsg.innerHTML = '<span class="text-danger">Erro ao salvar o bairro.</span>';
+  });
+});
 </script>
 {% endblock %}

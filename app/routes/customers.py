@@ -106,6 +106,28 @@ def bairro_novo():
         flash(f'Bairro "{name}" cadastrado!', 'success')
     return redirect(url_for('customers.bairros'))
 
+@customers_bp.route('/bairros/criar-ajax', methods=['POST'])
+@login_required
+def bairro_criar_ajax():
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    try:
+        fee = float(data.get('fee', 0) or 0)
+    except (ValueError, TypeError):
+        fee = 0
+    if not name:
+        return jsonify({'error': 'Nome do bairro é obrigatório.'}), 400
+    # Evita duplicar bairro com mesmo nome
+    existente = Neighborhood.query.filter_by(tenant_id=tid()).filter(
+        db.func.lower(Neighborhood.name) == name.lower()
+    ).first()
+    if existente:
+        return jsonify({'id': existente.id, 'name': existente.name, 'fee': existente.delivery_fee})
+    n = Neighborhood(tenant_id=tid(), name=name, delivery_fee=fee)
+    db.session.add(n)
+    db.session.commit()
+    return jsonify({'id': n.id, 'name': n.name, 'fee': n.delivery_fee})
+
 @customers_bp.route('/bairros/<int:bairro_id>/editar', methods=['POST'])
 @login_required
 def bairro_editar(bairro_id):
