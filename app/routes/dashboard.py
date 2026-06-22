@@ -170,8 +170,15 @@ def live_stats():
         'ultima_venda_id':      ultima.id if ultima else None,
         'ultima_venda_total':   ultima.total if ultima else 0,
         'ultima_venda_cliente': (ultima.customer.name if ultima and ultima.customer else 'Consumidor') if ultima else '',
-        'pedidos_pendentes':    pedidos_pendentes,
-        'ultimo_pedido_id':     ultimo_pedido.id if ultimo_pedido else None,
-        'ultimo_pedido_nome':   ultimo_pedido.cliente_nome if ultimo_pedido else '',
-        'ultimo_pedido_total':  ultimo_pedido.total if ultimo_pedido else 0,
+        'pedidos_pendentes':     pedidos_pendentes,
+        'ultimo_pedido_id':      ultimo_pedido.id if ultimo_pedido else None,
+        'ultimo_pedido_nome':    ultimo_pedido.cliente_nome if ultimo_pedido else '',
+        'ultimo_pedido_tel':     ultimo_pedido.cliente_tel if ultimo_pedido else '',
+        'ultimo_pedido_end':     (
+            (ultimo_pedido.bairro_nome or '') +
+            (' — ' + ultimo_pedido.endereco if ultimo_pedido and ultimo_pedido.endereco else '')
+        ) if ultimo_pedido else '',
+        'ultimo_pedido_total':   ultimo_pedido.total if ultimo_pedido else 0,
+        'ultimo_pedido_itens':   ultimo_pedido.items if ultimo_pedido else [],
+        'ultimo_pedido_pgto':    ultimo_pedido.payment_method if ultimo_pedido else '',
     })

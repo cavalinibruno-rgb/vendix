@@ -347,20 +347,57 @@
 
 <!-- Modal: Novo Pedido Online -->
 <div class="modal fade" id="modalNovoPedido" tabindex="-1" data-bs-backdrop="static">
-  <div class="modal-dialog modal-sm modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
-      <div class="modal-body text-center p-4">
-        <div style="font-size:2.5rem;margin-bottom:8px;">🛵</div>
-        <h5 class="fw-bold mb-1">Novo Pedido Online!</h5>
-        <div class="text-muted small mb-3" id="modalPedidoNome">—</div>
-        <div class="fs-4 fw-bold text-warning mb-4" id="modalPedidoTotal">R$ 0,00</div>
+      <div class="modal-body p-4">
+        <div class="text-center mb-3">
+          <div style="font-size:2rem;margin-bottom:4px;">🛵</div>
+          <h5 class="fw-bold mb-0">Novo Pedido Online!</h5>
+        </div>
+
+        <!-- Cliente e endereço -->
+        <div class="mb-2">
+          <div class="fw-bold" id="modalPedidoNome">—</div>
+          <div class="text-muted small" id="modalPedidoTel"></div>
+          <div class="text-muted small" id="modalPedidoEnd"></div>
+        </div>
+
+        <!-- Itens -->
+        <div id="modalPedidoItens" class="border-top border-bottom py-2 mb-2" style="font-size:.85rem;max-height:160px;overflow-y:auto;"></div>
+
+        <!-- Total -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-muted small" id="modalPedidoPgto"></span>
+          <span class="fs-5 fw-bold text-warning" id="modalPedidoTotal">R$ 0,00</span>
+        </div>
+
         <div class="d-grid gap-2">
           <button class="btn btn-warning fw-bold" onclick="aceitarPedidoModal()">
             <i class="bi bi-check-lg me-1"></i>Aceitar agora
           </button>
-          <button class="btn btn-outline-secondary" onclick="verPedidosOnline()">
+          <button class="btn btn-outline-danger fw-semibold" onclick="recusarPedidoModal()">
+            <i class="bi bi-x-lg me-1"></i>Recusar
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="verPedidosOnline()">
             Ver todos os pedidos
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Motivo recusa (do modal principal) -->
+<div class="modal fade" id="modalRecusaRapida" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-3">
+        <div class="fw-bold mb-2"><i class="bi bi-x-circle text-danger me-1"></i>Motivo da recusa</div>
+        <input type="text" id="inputRecusaRapida" class="form-control form-control-sm mb-3"
+               placeholder="Ex: produto em falta (opcional)">
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger btn-sm fw-bold" onclick="confirmarRecusaModal()">Confirmar recusa</button>
+          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
         </div>
       </div>
     </div>
@@ -431,9 +468,21 @@
   }
 
   // ── Modal de novo pedido online ───────────────────────────────────────
+  const PGTO_LABELS = {'entrega_dinheiro':'💵 Dinheiro na entrega','entrega_cartao':'💳 Cartão na entrega','entrega_pix':'📱 Pix na entrega'};
+
   function showPedidoModal(d) {
-    document.getElementById('modalPedidoNome').textContent  = d.ultimo_pedido_nome  || '—';
+    document.getElementById('modalPedidoNome').textContent  = d.ultimo_pedido_nome || '—';
+    document.getElementById('modalPedidoTel').textContent   = d.ultimo_pedido_tel  || '';
+    document.getElementById('modalPedidoEnd').textContent   = d.ultimo_pedido_end  || '';
     document.getElementById('modalPedidoTotal').textContent = 'R$ ' + fmt(d.ultimo_pedido_total || 0);
+    document.getElementById('modalPedidoPgto').textContent  = PGTO_LABELS[d.ultimo_pedido_pgto] || '';
+    const itens = d.ultimo_pedido_itens || [];
+    document.getElementById('modalPedidoItens').innerHTML = itens.map(i =>
+      `<div class="d-flex justify-content-between py-1">
+        <span>${i.name} ×${parseInt(i.quantity)}</span>
+        <span class="fw-semibold">R$ ${fmt(i.total)}</span>
+       </div>`
+    ).join('');
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNovoPedido')).show();
   }
 
@@ -443,6 +492,27 @@
       .then(r => r.json())
       .then(() => { stopAlarm(); bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide(); })
       .catch(() => {});
+  }
+
+  function recusarPedidoModal() {
+    document.getElementById('inputRecusaRapida').value = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRecusaRapida')).show();
+  }
+
+  function confirmarRecusaModal() {
+    if (!_ultimoPedidoId) return;
+    const motivo = document.getElementById('inputRecusaRapida').value.trim();
+    fetch(`/pedidos-online/${_ultimoPedidoId}/recusar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({reason: motivo}),
+    })
+    .then(r => r.json())
+    .then(() => {
+      stopAlarm();
+      bootstrap.Modal.getInstance(document.getElementById('modalRecusaRapida')).hide();
+      bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
+    })
+    .catch(() => {});
   }
 
   function verPedidosOnline() {
@@ -505,8 +575,10 @@
   setInterval(poll, 10000);
 
   // Expõe funções do modal para uso no onclick do HTML
-  window.aceitarPedidoModal = aceitarPedidoModal;
-  window.verPedidosOnline   = verPedidosOnline;
+  window.aceitarPedidoModal  = aceitarPedidoModal;
+  window.recusarPedidoModal  = recusarPedidoModal;
+  window.confirmarRecusaModal = confirmarRecusaModal;
+  window.verPedidosOnline    = verPedidosOnline;
 })();
 {% endif %}
 </script>
