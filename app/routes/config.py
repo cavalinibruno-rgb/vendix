@@ -24,7 +24,7 @@ def index():
         flash('Configurações salvas.', 'success')
         return redirect(url_for('config.index'))
 
-    return render_template('config/index.html', cfg=cfg, coupons=coupons)
+    return render_template('config/index.html', cfg=cfg, coupons=coupons, tenant=tenant)
 
 @config_bp.route('/regime-tributario', methods=['POST'])
 @login_required
