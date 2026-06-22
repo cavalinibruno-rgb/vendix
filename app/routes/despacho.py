@@ -115,7 +115,7 @@ def relatorio_motoboys():
 
     resumo = sorted(grupos.items(), key=lambda x: x[1]['nome'])
 
-    motoboys = Motoboy.query.filter_by(tenant_id=tid()).order_by(Motoboy.name).all()
+    motoboys = Motoboy.query.filter_by(tenant_id=tid(), active=True).order_by(Motoboy.name).all()
 
     return render_template('despacho/relatorio_motoboys.html',
         resumo=resumo,
