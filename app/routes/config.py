@@ -149,22 +149,28 @@ def geocodificar():
         bairro     = via.get('bairro', '')
         cidade     = via.get('localidade', '')
         uf         = via.get('uf', '')
-        query = f'{logradouro}, {numero}, {bairro}, {cidade}, {uf}, Brasil'
-        nom = _req.get(
-            'https://nominatim.openstreetmap.org/search',
-            params={'q': query, 'format': 'json', 'limit': 1},
-            headers={'User-Agent': 'Vendix/1.0'},
-            timeout=8
-        ).json()
-        if not nom:
-            return jsonify({'error': 'Endereço não encontrado. Tente escrever o endereço completo manualmente.'})
-        return jsonify({
-            'lat':      nom[0]['lat'],
-            'lng':      nom[0]['lon'],
-            'endereco': query,
-        })
+        headers = {'User-Agent': 'Vendix/1.0'}
+        # Tenta do mais específico ao mais amplo
+        queries = [
+            f'{logradouro}, {numero}, {cidade}, {uf}, Brasil',
+            f'{logradouro}, {cidade}, {uf}, Brasil',
+            f'{bairro}, {cidade}, {uf}, Brasil',
+            f'{cidade}, {uf}, Brasil',
+        ]
+        for q in queries:
+            if not q.replace(',','').replace(' ',''):
+                continue
+            nom = _req.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={'q': q, 'format': 'json', 'limit': 1, 'countrycodes': 'br'},
+                headers=headers, timeout=8
+            ).json()
+            if nom:
+                endereco = f'{logradouro}, {numero}, {bairro}, {cidade} - {uf}' if logradouro else q
+                return jsonify({'lat': nom[0]['lat'], 'lng': nom[0]['lon'], 'endereco': endereco})
+        return jsonify({'error': 'Endereço não encontrado automaticamente. Use o campo manual abaixo.'})
     except Exception as e:
-        return jsonify({'error': f'Erro ao buscar endereço: {str(e)}'})
+        return jsonify({'error': f'Erro ao buscar: {str(e)}'})
 
 
 @config_bp.route('/alterar-senha', methods=['POST'])

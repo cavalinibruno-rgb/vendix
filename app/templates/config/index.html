@@ -87,7 +87,16 @@
           </div>
           {% endif %}
 
-          <div id="erroGeo" class="alert alert-danger py-2 small mb-3" style="display:none;"></div>
+          <div id="erroGeo" class="alert alert-danger py-2 small mb-3" style="display:none;">
+            <div id="erroGeoMsg"></div>
+            <div class="mt-2">
+              <label class="fw-semibold small">Ou insira o endereço completo manualmente:</label>
+              <div class="d-flex gap-2 mt-1">
+                <input type="text" id="inputEndManual" class="form-control form-control-sm" placeholder="Ex: Rua das Flores, 100, Centro, Nova Friburgo, RJ, Brasil">
+                <button type="button" class="btn btn-warning btn-sm fw-bold" onclick="buscarManual()" style="white-space:nowrap;">Buscar</button>
+              </div>
+            </div>
+          </div>
 
           <!-- Zonas de entrega -->
           <label class="form-label fw-semibold small mb-1">Zonas de entrega por distância</label>
@@ -382,25 +391,43 @@ function mostrarCampos() {
 }
 mostrarCampos();
 
+function _aplicarGeo(d) {
+  document.getElementById('hiddenLat').value = d.lat;
+  document.getElementById('hiddenLng').value = d.lng;
+  document.getElementById('hiddenEnd').value = d.endereco;
+  document.getElementById('enderecoTexto').innerHTML = '<i class="bi bi-check-circle me-1"></i><strong>Endereço encontrado:</strong> ' + d.endereco;
+  document.getElementById('enderecoResult').style.display = '';
+  document.getElementById('erroGeo').style.display = 'none';
+}
+
 function buscarEndereco() {
   const cep    = document.getElementById('inputCep').value.replace(/\D/g,'');
   const numero = document.getElementById('inputNumero').value.trim();
   const erroEl = document.getElementById('erroGeo');
-  const resEl  = document.getElementById('enderecoResult');
+  document.getElementById('enderecoResult').style.display = 'none';
   erroEl.style.display = 'none';
-  resEl.style.display  = 'none';
-  if (cep.length !== 8) { erroEl.textContent = 'CEP inválido.'; erroEl.style.display = ''; return; }
+  if (cep.length !== 8) { document.getElementById('erroGeoMsg').textContent = 'CEP inválido.'; erroEl.style.display = ''; return; }
   fetch(`/configuracoes/geocodificar?cep=${cep}&numero=${encodeURIComponent(numero)}`)
     .then(r => r.json())
     .then(d => {
-      if (d.error) { erroEl.textContent = d.error; erroEl.style.display = ''; return; }
-      document.getElementById('hiddenLat').value = d.lat;
-      document.getElementById('hiddenLng').value = d.lng;
-      document.getElementById('hiddenEnd').value = d.endereco;
-      document.getElementById('enderecoTexto').innerHTML = '<i class="bi bi-check-circle me-1"></i><strong>Endereço encontrado:</strong> ' + d.endereco;
-      resEl.style.display = '';
+      if (d.error) { document.getElementById('erroGeoMsg').textContent = d.error; erroEl.style.display = ''; return; }
+      _aplicarGeo(d);
     })
-    .catch(() => { erroEl.textContent = 'Erro ao buscar. Tente novamente.'; erroEl.style.display = ''; });
+    .catch(() => { document.getElementById('erroGeoMsg').textContent = 'Erro ao buscar. Tente novamente.'; erroEl.style.display = ''; });
+}
+
+function buscarManual() {
+  const q = document.getElementById('inputEndManual').value.trim();
+  if (!q) return;
+  fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=br`, {
+    headers: {'User-Agent': 'Vendix/1.0'}
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.length) { document.getElementById('erroGeoMsg').textContent = 'Endereço não encontrado. Tente detalhar mais.'; return; }
+    _aplicarGeo({ lat: d[0].lat, lng: d[0].lon, endereco: q });
+  })
+  .catch(() => { document.getElementById('erroGeoMsg').textContent = 'Erro ao buscar manualmente.'; });
 }
 
 function addZona() {
