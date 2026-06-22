@@ -498,6 +498,10 @@
         if (d.ok) {
           stopAlarm();
           bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
+          // Se estiver na página de Entregas, recarrega para mostrar o novo pedido
+          if (window.location.pathname.startsWith('/entregas')) {
+            setTimeout(() => window.location.reload(), 300);
+          }
         } else {
           alert('Erro ao aceitar: ' + (d.error || 'desconhecido'));
         }
