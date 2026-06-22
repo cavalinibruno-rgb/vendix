@@ -49,17 +49,12 @@ def _calcular_impostos(regime, cfg, base):
     total = sum(detalhado.values())
     return detalhado, total, True
 
-@dre_bp.route('/')
-@login_required
-def index():
+def _calcular_dre(inicio_str, fim_str):
+    """Calcula todos os números da DRE para o período. Retorna dict de contexto."""
     tenant = Tenant.query.get(tid())
     cfg    = tenant.get_settings()
     regime = cfg.get('regime_tributario', 'simples')
 
-    # Período — padrão: mês atual
-    hoje = date.today()
-    inicio_str = request.args.get('inicio', hoje.replace(day=1).strftime('%Y-%m-%d'))
-    fim_str    = request.args.get('fim',    hoje.strftime('%Y-%m-%d'))
     inicio = datetime.strptime(inicio_str, '%Y-%m-%d')
     fim    = datetime.strptime(fim_str,    '%Y-%m-%d').replace(hour=23, minute=59, second=59)
 
@@ -123,9 +118,10 @@ def index():
     for d in despesas:
         por_categoria[d.category] = por_categoria.get(d.category, 0) + d.amount
 
-    return render_template('dre/index.html',
+    return dict(
         inicio=inicio_str, fim=fim_str,
         regime=regime, cfg=cfg,
+        store_name=tenant.store_name,
         impostos_detalhado=impostos_detalhado,
         total_impostos=total_impostos,
         reduz_receita=reduz_receita,
@@ -143,6 +139,25 @@ def index():
         categorias=CATEGORIAS,
         qtd_vendas=len(vendas),
     )
+
+@dre_bp.route('/')
+@login_required
+def index():
+    hoje = date.today()
+    inicio_str = request.args.get('inicio', hoje.replace(day=1).strftime('%Y-%m-%d'))
+    fim_str    = request.args.get('fim',    hoje.strftime('%Y-%m-%d'))
+    ctx = _calcular_dre(inicio_str, fim_str)
+    return render_template('dre/index.html', **ctx)
+
+@dre_bp.route('/pdf')
+@login_required
+def pdf():
+    hoje = date.today()
+    inicio_str = request.args.get('inicio', hoje.replace(day=1).strftime('%Y-%m-%d'))
+    fim_str    = request.args.get('fim',    hoje.strftime('%Y-%m-%d'))
+    ctx = _calcular_dre(inicio_str, fim_str)
+    ctx['gerado_em'] = datetime.now()
+    return render_template('dre/relatorio_pdf.html', **ctx)
 
 @dre_bp.route('/despesa/nova', methods=['POST'])
 @login_required

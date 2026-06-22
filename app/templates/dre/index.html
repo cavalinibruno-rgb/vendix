@@ -15,9 +15,15 @@
       </span>
     </p>
   </div>
-  <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalDespesa">
-    <i class="bi bi-plus-circle me-1"></i> Nova Despesa
-  </button>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('dre.pdf', inicio=inicio, fim=fim) }}" target="_blank"
+       class="btn btn-outline-danger fw-semibold">
+      <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
+    </a>
+    <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalDespesa">
+      <i class="bi bi-plus-circle me-1"></i> Nova Despesa
+    </button>
+  </div>
 </div>
 
 <!-- Filtro de período -->

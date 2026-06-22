@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DRE — {{ store_name }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #e8e8ee;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: #1a1a2e;
+      padding: 30px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .folha {
+      background: #fff;
+      width: 210mm;
+      max-width: 100%;
+      padding: 18mm 16mm;
+      box-shadow: 0 4px 24px rgba(0,0,0,.15);
+    }
+
+    /* ── Cabeçalho ── */
+    .doc-header {
+      border-bottom: 3px solid #c9a84c;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .store-name { font-size: 22pt; font-weight: 800; letter-spacing: .5px; }
+    .store-name span { color: #c9a84c; }
+    .doc-title { font-size: 11pt; color: #555; margin-top: 2px; }
+    .doc-meta { text-align: right; font-size: 9pt; color: #555; line-height: 1.6; }
+    .doc-meta strong { color: #1a1a2e; }
+    .regime-badge {
+      display: inline-block;
+      background: #1a1a2e; color: #c9a84c;
+      padding: 2px 10px; border-radius: 4px;
+      font-size: 8pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; margin-top: 4px;
+    }
+
+    /* ── Período destaque ── */
+    .periodo-box {
+      background: #f5f3ec;
+      border: 1px solid #e0d8c0;
+      border-radius: 6px;
+      padding: 8px 14px;
+      margin-bottom: 18px;
+      font-size: 10pt;
+      display: flex; justify-content: space-between;
+    }
+
+    h2.secao {
+      font-size: 11pt;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #1a1a2e;
+      border-left: 4px solid #c9a84c;
+      padding-left: 8px;
+      margin: 22px 0 10px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    .dre-tab td { padding: 7px 4px; border-bottom: 1px solid #eee; }
+    .dre-tab .valor { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .dre-tab .sub { padding-left: 22px; color: #777; font-size: 9pt; }
+    .dre-tab .deduz .valor { color: #c0392b; }
+    .dre-tab .linha-forte td {
+      background: #f5f5f8;
+      font-weight: 700;
+      border-top: 1px solid #ddd;
+      border-bottom: 1px solid #ddd;
+    }
+    .dre-tab .receita .valor { color: #1e7a44; }
+
+    .resultado {
+      margin-top: 4px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13pt; font-weight: 800;
+    }
+    .resultado.lucro    { background: #e6f4ea; color: #1e7a44; border: 1px solid #b5dcc2; }
+    .resultado.prejuizo { background: #fbe9e7; color: #c0392b; border: 1px solid #e8c0ba; }
+
+    .cat-tab td { padding: 6px 4px; border-bottom: 1px solid #eee; }
+    .cat-tab .valor { text-align: right; color: #c0392b; font-weight: 600; white-space: nowrap; }
+    .cat-tab .pct { text-align: right; color: #999; font-size: 9pt; width: 50px; }
+    .cat-tab .total td { font-weight: 700; border-top: 1px solid #ccc; background: #f5f5f8; }
+
+    .desp-tab th {
+      text-align: left; font-size: 8pt; text-transform: uppercase;
+      letter-spacing: .5px; color: #888; padding: 6px 4px;
+      border-bottom: 2px solid #ddd;
+    }
+    .desp-tab td { padding: 6px 4px; border-bottom: 1px solid #f0f0f0; font-size: 9.5pt; }
+    .desp-tab .valor { text-align: right; color: #c0392b; white-space: nowrap; }
+
+    .doc-footer {
+      margin-top: 28px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+      font-size: 8pt;
+      color: #999;
+      display: flex; justify-content: space-between;
+    }
+
+    .grid-2 { display: flex; gap: 28px; }
+    .grid-2 > div { flex: 1; }
+
+    .empty { color: #999; font-style: italic; padding: 10px 0; font-size: 9.5pt; }
+
+    /* ── Botões (não imprimem) ── */
+    .toolbar {
+      width: 210mm; max-width: 100%;
+      margin-bottom: 16px;
+      display: flex; gap: 10px; justify-content: center;
+    }
+    .btn {
+      padding: 10px 22px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-print { background: #c9a84c; color: #1a1a2e; }
+    .btn-print:hover { background: #b8943d; }
+    .btn-back { background: #fff; color: #555; border: 1px solid #ccc; }
+    .btn-back:hover { background: #f3f3f3; }
+
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      body { background: #fff; padding: 0; }
+      .folha { box-shadow: none; width: 100%; padding: 0; }
+      .toolbar { display: none !important; }
+      .secao, .resultado, tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  <a class="btn btn-back" href="{{ url_for('dre.index', inicio=inicio, fim=fim) }}">← Voltar</a>
+</div>
+
+<div class="folha">
+
+  <!-- CABEÇALHO -->
+  {% set parts = store_name.split(' ', 1) %}
+  <div class="doc-header">
+    <div>
+      <div class="store-name">{{ parts[0] }}{% if parts|length > 1 %} <span>{{ parts[1] }}</span>{% endif %}</div>
+      <div class="doc-title">Demonstração do Resultado do Exercício (DRE)</div>
+      <span class="regime-badge">
+        {% if regime == 'mei' %}MEI
+        {% elif regime == 'simples' %}Simples Nacional
+        {% elif regime == 'presumido' %}Lucro Presumido
+        {% elif regime == 'real' %}Lucro Real{% endif %}
+      </span>
+    </div>
+    <div class="doc-meta">
+      <div><strong>{{ qtd_vendas }}</strong> vendas no período</div>
+      <div>Gerado em {{ gerado_em.strftime('%d/%m/%Y %H:%M') }}</div>
+    </div>
+  </div>
+
+  <!-- PERÍODO -->
+  <div class="periodo-box">
+    <span><strong>Período:</strong> {{ inicio[8:10] }}/{{ inicio[5:7] }}/{{ inicio[0:4] }}
+      &nbsp;a&nbsp; {{ fim[8:10] }}/{{ fim[5:7] }}/{{ fim[0:4] }}</span>
+    <span><strong>Receita Bruta:</strong> R$ {{ '%.2f'|format(receita_bruta) }}</span>
+  </div>
+
+  <!-- DEMONSTRATIVO -->
+  <h2 class="secao">Resultado do Período</h2>
+  <table class="dre-tab">
+    <tr class="linha-forte receita">
+      <td>Receita Bruta de Vendas</td>
+      <td class="valor">R$ {{ '%.2f'|format(receita_bruta) }}</td>
+    </tr>
+
+    {% if deducao_cancelados > 0 %}
+    <tr class="deduz">
+      <td class="sub">(−) Cancelamentos / Devoluções</td>
+      <td class="valor">− R$ {{ '%.2f'|format(deducao_cancelados) }}</td>
+    </tr>
+    {% endif %}
+
+    {% if reduz_receita and total_impostos > 0 %}
+    {% for label, valor in impostos_detalhado.items() %}
+    <tr class="deduz">
+      <td class="sub">(−) {{ label }}</td>
+      <td class="valor">− R$ {{ '%.2f'|format(valor) }}</td>
+    </tr>
+    {% endfor %}
+    {% endif %}
+
+    <tr class="linha-forte">
+      <td>Receita Líquida</td>
+      <td class="valor">R$ {{ '%.2f'|format(receita_liquida) }}</td>
+    </tr>
+
+    <tr class="deduz">
+      <td class="sub">(−) CMV — Custo das Mercadorias Vendidas</td>
+      <td class="valor">− R$ {{ '%.2f'|format(cmv) }}</td>
+    </tr>
+
+    <tr class="linha-forte">
+      <td>Lucro Bruto</td>
+      <td class="valor" style="color:{{ '#1e7a44' if lucro_bruto >= 0 else '#c0392b' }}">
+        R$ {{ '%.2f'|format(lucro_bruto) }}
+      </td>
+    </tr>
+
+    <tr class="deduz">
+      <td class="sub">(−) Despesas Operacionais</td>
+      <td class="valor">− R$ {{ '%.2f'|format(total_despesas) }}</td>
+    </tr>
+
+    {% if regime == 'mei' and das_mei > 0 %}
+    <tr class="deduz">
+      <td class="sub">(−) DAS MEI (fixo mensal)</td>
+      <td class="valor">− R$ {{ '%.2f'|format(das_mei) }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <!-- RESULTADO FINAL -->
+  <div class="resultado {{ 'lucro' if resultado_liquido >= 0 else 'prejuizo' }}">
+    <span>{% if resultado_liquido >= 0 %}▲ Lucro Líquido{% else %}▼ Prejuízo{% endif %}</span>
+    <span>R$ {{ '%.2f'|format(resultado_liquido|abs) }}</span>
+  </div>
+
+  <div class="grid-2">
+    <!-- DESPESAS POR CATEGORIA -->
+    <div>
+      <h2 class="secao">Despesas por Categoria</h2>
+      {% if por_categoria %}
+      <table class="cat-tab">
+        {% for cat, val in por_categoria.items()|sort(attribute='1', reverse=True) %}
+        <tr>
+          <td>{{ cat }}</td>
+          <td class="valor">R$ {{ '%.2f'|format(val) }}</td>
+          <td class="pct">{{ '%.0f'|format(val / total_despesas * 100) }}%</td>
+        </tr>
+        {% endfor %}
+        <tr class="total">
+          <td>Total</td>
+          <td class="valor">R$ {{ '%.2f'|format(total_despesas) }}</td>
+          <td class="pct">100%</td>
+        </tr>
+      </table>
+      {% else %}
+      <p class="empty">Nenhuma despesa no período.</p>
+      {% endif %}
+    </div>
+
+    <!-- INDICADORES -->
+    <div>
+      <h2 class="secao">Indicadores</h2>
+      <table class="cat-tab">
+        <tr>
+          <td>Margem Bruta</td>
+          <td class="valor" style="color:#1a1a2e">
+            {{ '%.1f'|format(lucro_bruto / receita_liquida * 100) if receita_liquida else '0.0' }}%
+          </td>
+        </tr>
+        <tr>
+          <td>Margem Líquida</td>
+          <td class="valor" style="color:#1a1a2e">
+            {{ '%.1f'|format(resultado_liquido / receita_bruta * 100) if receita_bruta else '0.0' }}%
+          </td>
+        </tr>
+        <tr>
+          <td>Ticket Médio</td>
+          <td class="valor" style="color:#1a1a2e">
+            R$ {{ '%.2f'|format(receita_bruta / qtd_vendas) if qtd_vendas else '0.00' }}
+          </td>
+        </tr>
+        <tr>
+          <td>CMV sobre Receita</td>
+          <td class="valor" style="color:#1a1a2e">
+            {{ '%.1f'|format(cmv / receita_liquida * 100) if receita_liquida else '0.0' }}%
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- LISTA DE DESPESAS -->
+  {% if despesas %}
+  <h2 class="secao">Despesas do Período</h2>
+  <table class="desp-tab">
+    <thead>
+      <tr>
+        <th style="width:80px">Data</th>
+        <th style="width:130px">Categoria</th>
+        <th>Descrição</th>
+        <th class="valor" style="width:90px">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in despesas %}
+      <tr>
+        <td>{{ d.date.strftime('%d/%m/%Y') }}</td>
+        <td>{{ d.category }}</td>
+        <td>{{ d.description or '—' }}</td>
+        <td class="valor">R$ {{ '%.2f'|format(d.amount) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- RODAPÉ -->
+  <div class="doc-footer">
+    <span>{{ store_name }} — Relatório gerado pelo sistema Vendix</span>
+    <span>{{ gerado_em.strftime('%d/%m/%Y %H:%M') }}</span>
+  </div>
+
+</div>
+
+<script>
+  // Abre o diálogo de impressão automaticamente
+  window.onload = function() { setTimeout(function(){ window.print(); }, 400); };
+</script>
+
+</body>
+</html>
