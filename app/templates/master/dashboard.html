@@ -89,6 +89,10 @@
                 <i class="bi bi-play-circle"></i>
               </button>
               {% endif %}
+              <button class="btn btn-sm btn-outline-danger"
+                onclick="abrirExcluir({{ t.id }}, '{{ t.store_name }}')">
+                <i class="bi bi-trash"></i>
+              </button>
             </div>
           </td>
         </tr>
@@ -97,6 +101,27 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Modal Excluir -->
+<div class="modal fade" id="excluirModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" id="excluirForm">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title text-danger">⚠️ Excluir Loja</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Tem certeza que deseja excluir <strong id="excluirNome"></strong>? Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="submit" class="btn btn-danger fw-semibold">Excluir</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -128,6 +153,11 @@
 
 {% block scripts %}
 <script>
+function abrirExcluir(id, nome) {
+  document.getElementById('excluirForm').action = `/master/tenant/${id}/excluir`;
+  document.getElementById('excluirNome').textContent = nome;
+  new bootstrap.Modal(document.getElementById('excluirModal')).show();
+}
 function abrirAtivar(id, nome) {
   document.getElementById('ativarForm').action = `/master/tenant/${id}/ativar`;
   document.getElementById('ativarNome').textContent = nome;

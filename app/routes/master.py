@@ -91,6 +91,23 @@ def tenant_suspender(tenant_id):
     flash(f'Loja "{tenant.store_name}" suspensa.', 'warning')
     return redirect(url_for('master.dashboard'))
 
+@master_bp.route('/tenant/<int:tenant_id>/excluir', methods=['POST'])
+@login_required
+@master_required
+def tenant_excluir(tenant_id):
+    tenant = Tenant.query.get_or_404(tenant_id)
+    nome = tenant.store_name
+    try:
+        # Remove todos os usuários da loja antes de excluir o tenant
+        User.query.filter_by(tenant_id=tenant.id).delete()
+        db.session.delete(tenant)
+        db.session.commit()
+        flash(f'Loja "{nome}" excluída com sucesso.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir: {str(e)}', 'danger')
+    return redirect(url_for('master.dashboard'))
+
 @master_bp.route('/tenant/<int:tenant_id>/ativar', methods=['POST'])
 @login_required
 @master_required
