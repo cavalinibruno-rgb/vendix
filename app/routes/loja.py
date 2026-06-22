@@ -6,6 +6,7 @@ from app.models.customer import Neighborhood
 from app.models.pedido_online import PedidoOnline
 from app.models.sale import Sale
 import json, io
+from PIL import Image
 
 loja_bp = Blueprint('loja', __name__, url_prefix='/loja')
 
@@ -27,39 +28,37 @@ def cardapio(slug):
 # ── API pública: lista de produtos ─────────────────────
 @loja_bp.route('/<slug>/produtos')
 def api_produtos(slug):
+    import base64 as _b64
+    from PIL import Image
     tenant   = _get_tenant(slug)
     produtos = Product.query.filter_by(tenant_id=tenant.id, active=True).order_by(Product.name).all()
     out = []
     for p in produtos:
-        has_foto = bool(p.thumbnail_data or p.image_data)
+        thumb = None
+        if p.thumbnail_data:
+            # thumbnail_data guarda a data URL completa: "data:image/jpeg;base64,..."
+            thumb = p.thumbnail_data.decode()
+        elif p.image_data:
+            # Gera thumbnail on-the-fly
+            try:
+                img = Image.open(io.BytesIO(bytes(p.image_data)))
+                if img.mode not in ('RGB', 'L'):
+                    img = img.convert('RGB')
+                img.thumbnail((160, 160), Image.LANCZOS)
+                buf = io.BytesIO()
+                img.save(buf, format='JPEG', quality=60, optimize=True)
+                thumb = 'data:image/jpeg;base64,' + _b64.b64encode(buf.getvalue()).decode()
+            except Exception:
+                thumb = None
         out.append({
             'id':        p.id,
             'name':      p.name,
             'price':     p.sale_price,
             'type_id':   p.type_id,
             'type_name': p.type.name if p.type else None,
-            'thumb':     f'/loja/{slug}/produto/{p.id}/foto' if has_foto else None,
+            'thumb':     thumb,
         })
     return jsonify(out)
-
-
-@loja_bp.route('/<slug>/produto/<int:produto_id>/foto')
-def foto_produto(slug, produto_id):
-    tenant = _get_tenant(slug)
-    p = Product.query.filter_by(id=produto_id, tenant_id=tenant.id).first_or_404()
-    import base64
-    if p.thumbnail_data:
-        # thumbnail_data é armazenado como base64 string em bytes
-        data = base64.b64decode(p.thumbnail_data)
-    elif p.image_data:
-        data = bytes(p.image_data)
-    else:
-        abort(404)
-    mime = p.image_mime or 'image/jpeg'
-    resp = make_response(data)
-    resp.headers['Content-Type'] = mime
-    resp.headers['Cache-Control'] = 'public, max-age=86400'
-    return resp
 
 
 # ── Fazer pedido ────────────────────────────────────────
