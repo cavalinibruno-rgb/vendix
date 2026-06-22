@@ -71,6 +71,15 @@ def index():
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
                                .order_by(Sale.created_at.desc()).limit(10).all()
 
+    # Produtos com estoque baixo ou zerado (exclui combos, que não têm estoque próprio)
+    from app.models.product import Product
+    produtos_tenant = Product.query.filter_by(tenant_id=tid, active=True).all()
+    estoque_baixo = [
+        p for p in produtos_tenant
+        if not p.combo_items and p.stock_quantity <= p.min_stock
+    ]
+    estoque_baixo.sort(key=lambda p: p.stock_quantity)
+
     cfg = tenant.get_settings()
     modo_restrito = (
         cfg.get('dashboard_operador_restrito') and
@@ -92,6 +101,7 @@ def index():
         total_geral=total_geral,
         caixa=caixa,
         ultimas_vendas=ultimas_vendas,
+        estoque_baixo=estoque_baixo,
         modo_restrito=modo_restrito,
         desbloqueado=desbloqueado,
         senha_erro=senha_erro,
