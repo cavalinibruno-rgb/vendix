@@ -223,7 +223,7 @@ if ('Notification' in window && Notification.permission === 'default') {
 
 // Polling a cada 8 segundos
 function poll() {
-  fetch(`/loja/${SLUG}/pedido/${PEDIDO_ID}/status`)
+  fetch(`/loja/${SLUG}/pedido/${PEDIDO_ID}/status`, {cache: 'no-store'})
     .then(r => r.json())
     .then(applyStatus)
     .catch(() => {});
