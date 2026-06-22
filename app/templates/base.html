@@ -503,6 +503,10 @@
 
   // Polling a cada 10 segundos
   setInterval(poll, 10000);
+
+  // Expõe funções do modal para uso no onclick do HTML
+  window.aceitarPedidoModal = aceitarPedidoModal;
+  window.verPedidosOnline   = verPedidosOnline;
 })();
 {% endif %}
 </script>
