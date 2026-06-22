@@ -175,8 +175,8 @@ def live_stats():
         'ultimo_pedido_nome':    ultimo_pedido.cliente_nome if ultimo_pedido else '',
         'ultimo_pedido_tel':     ultimo_pedido.cliente_tel if ultimo_pedido else '',
         'ultimo_pedido_end':     (
-            (ultimo_pedido.bairro_nome or '') +
-            (' — ' + ultimo_pedido.endereco if ultimo_pedido and ultimo_pedido.endereco else '')
+            (ultimo_pedido.endereco or '') +
+            (' — ' + ultimo_pedido.bairro_nome if ultimo_pedido and ultimo_pedido.bairro_nome else '')
         ) if ultimo_pedido else '',
         'ultimo_pedido_total':   ultimo_pedido.total if ultimo_pedido else 0,
         'ultimo_pedido_itens':   ultimo_pedido.items if ultimo_pedido else [],
