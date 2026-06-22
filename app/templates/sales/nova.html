@@ -266,6 +266,11 @@
               <button class="btn btn-outline-secondary" onclick="limparCliente()"><i class="bi bi-x"></i></button>
             </div>
             <div id="clienteResultados" class="list-group mb-2" style="display:none;max-height:180px;overflow-y:auto;"></div>
+            <div id="clienteNaoEncontrado" class="mb-2" style="display:none;">
+              <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="abrirModalCliente()">
+                <i class="bi bi-person-plus me-1"></i>Cadastrar novo cliente
+              </button>
+            </div>
             <div id="clienteSelecionado" class="text-success small" style="display:none;">
               <i class="bi bi-check-circle me-1"></i><span id="clienteNome"></span>
             </div>
@@ -395,6 +400,47 @@
       <div class="modal-footer py-2">
         <button class="btn btn-warning fw-semibold w-100" onclick="confirmarAddProd()">
           <i class="bi bi-cart-plus me-1"></i>Adicionar ao Carrinho
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: cadastro rápido de cliente -->
+<div class="modal fade" id="modalCliente" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-plus me-2 text-warning"></i>Cadastrar Cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+          <input type="text" id="novoCliNome" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Telefone</label>
+          <input type="text" id="novoCliTel" class="form-control" placeholder="(00) 00000-0000">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">CEP</label>
+          <input type="text" id="novoCliCep" class="form-control" placeholder="00000-000" maxlength="9" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Bairro</label>
+          <select id="novoCliBairro" class="form-select"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Endereço</label>
+          <input type="text" id="novoCliEndereco" class="form-control" placeholder="Rua, número…">
+        </div>
+        <div class="form-text" id="modalClienteMsg"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning fw-semibold" id="btnSalvarCliente">
+          <i class="bi bi-check-lg me-1"></i>Salvar e selecionar
         </button>
       </div>
     </div>
@@ -580,7 +626,11 @@ let cliTimer;
 document.getElementById('clienteSearch').addEventListener('input', function() {
   clearTimeout(cliTimer);
   const q = this.value.trim();
-  if (q.length < 1) { document.getElementById('clienteResultados').style.display='none'; return; }
+  if (q.length < 1) {
+    document.getElementById('clienteResultados').style.display='none';
+    document.getElementById('clienteNaoEncontrado').style.display='none';
+    return;
+  }
   cliTimer = setTimeout(() => buscarClientes(q), 250);
 });
 
@@ -588,8 +638,14 @@ function buscarClientes(q) {
   fetch(`/clientes/api/buscar?q=${encodeURIComponent(q)}`)
     .then(r => r.json()).then(lista => {
       const el = document.getElementById('clienteResultados');
+      const naoEnc = document.getElementById('clienteNaoEncontrado');
       el.innerHTML = '';
-      if (!lista.length) { el.style.display = 'none'; return; }
+      if (!lista.length) {
+        el.style.display = 'none';
+        naoEnc.style.display = '';   // mostra botão "Cadastrar novo cliente"
+        return;
+      }
+      naoEnc.style.display = 'none';
       lista.forEach(c => {
         const a = document.createElement('a');
         a.href = '#'; a.className = 'list-group-item list-group-item-action';
@@ -627,11 +683,91 @@ function limparCliente() {
   document.getElementById('clienteSearch').value = '';
   document.getElementById('clienteSelecionado').style.display = 'none';
   document.getElementById('clienteResultados').style.display = 'none';
+  document.getElementById('clienteNaoEncontrado').style.display = 'none';
   document.getElementById('taxaEntrega').value = '0.00';
   document.getElementById('bairroSelect').value = '';
   document.getElementById('clienteEndereco').style.display = 'none';
   calcTotais();
 }
+
+// ── Cadastro rápido de cliente (modal sobre a Nova Venda) ──
+function abrirModalCliente() {
+  const termo = document.getElementById('clienteSearch').value.trim();
+  // Detecta se o termo é telefone (maioria dígitos) ou nome
+  const soDigitos = termo.replace(/\D/g, '');
+  const ehTelefone = soDigitos.length >= 8 && soDigitos.length >= termo.length - 4;
+  document.getElementById('novoCliNome').value  = ehTelefone ? '' : termo;
+  document.getElementById('novoCliTel').value   = ehTelefone ? termo : '';
+  document.getElementById('novoCliCep').value   = '';
+  document.getElementById('novoCliEndereco').value = '';
+  document.getElementById('novoCliBairro').value = '';
+  document.getElementById('modalClienteMsg').textContent = '';
+  // Copia as opções de bairro do select principal para o modal
+  const origem = document.getElementById('bairroSelect');
+  const destino = document.getElementById('novoCliBairro');
+  destino.innerHTML = origem.innerHTML;
+  destino.value = '';
+  modalCliente.show();
+  setTimeout(() => document.getElementById('novoCliNome').focus(), 300);
+}
+
+const modalCliente = new bootstrap.Modal(document.getElementById('modalCliente'));
+
+// Máscara de CEP + ViaCEP no modal
+document.getElementById('novoCliCep').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').slice(0, 8);
+  if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5);
+  this.value = v;
+  if (v.replace(/\D/g, '').length === 8) buscarCepModal();
+});
+
+function buscarCepModal() {
+  const cep = document.getElementById('novoCliCep').value.replace(/\D/g, '');
+  if (cep.length !== 8) return;
+  fetch(`https://viacep.com.br/ws/${cep}/json/`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.erro) return;
+      if (d.logradouro) document.getElementById('novoCliEndereco').value = d.logradouro;
+      if (d.bairro) {
+        const sel = document.getElementById('novoCliBairro');
+        const alvo = d.bairro.trim().toLowerCase();
+        for (const opt of sel.options) {
+          const nome = opt.text.split('(')[0].trim().toLowerCase();
+          if (nome === alvo) { sel.value = opt.value; break; }
+        }
+      }
+    }).catch(()=>{});
+}
+
+document.getElementById('btnSalvarCliente').addEventListener('click', function() {
+  const nome = document.getElementById('novoCliNome').value.trim();
+  const msg  = document.getElementById('modalClienteMsg');
+  if (!nome) {
+    msg.innerHTML = '<span class="text-danger">Informe o nome do cliente.</span>';
+    return;
+  }
+  msg.innerHTML = '<span class="text-muted">Salvando…</span>';
+  fetch('/clientes/api/criar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: nome,
+      phone: document.getElementById('novoCliTel').value.trim(),
+      cep: document.getElementById('novoCliCep').value.trim(),
+      address: document.getElementById('novoCliEndereco').value.trim(),
+      neighborhood_id: document.getElementById('novoCliBairro').value || null,
+    }),
+  })
+  .then(r => r.json())
+  .then(c => {
+    if (c.error) { msg.innerHTML = `<span class="text-danger">${c.error}</span>`; return; }
+    document.getElementById('clienteNaoEncontrado').style.display = 'none';
+    modalCliente.hide();
+    selecionarCliente(c);   // já seleciona o cliente recém-criado na venda
+  })
+  .catch(() => { msg.innerHTML = '<span class="text-danger">Erro ao salvar o cliente.</span>'; });
+});
 
 // ── Carrinho ──────────────────────────────────────────
 function removerItem(idx) { carrinho.splice(idx, 1); renderCarrinho(); calcTotais(); }

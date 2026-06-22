@@ -154,6 +154,43 @@ def api_bairros():
     neighborhoods = Neighborhood.query.filter_by(tenant_id=tid()).order_by(Neighborhood.name).all()
     return jsonify([{'id': n.id, 'name': n.name, 'delivery_fee': n.delivery_fee} for n in neighborhoods])
 
+# ── API criar cliente (rápido, na Nova Venda) ─────────
+@customers_bp.route('/api/criar', methods=['POST'])
+@login_required
+def api_criar():
+    data = request.get_json() or {}
+    name  = (data.get('name') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    cep   = (data.get('cep') or '').strip()
+    address = (data.get('address') or '').strip()
+    neighborhood_id = data.get('neighborhood_id') or None
+    if not name:
+        return jsonify({'error': 'Nome é obrigatório.'}), 400
+
+    fee = 0
+    if neighborhood_id:
+        n = Neighborhood.query.filter_by(id=neighborhood_id, tenant_id=tid()).first()
+        if n:
+            fee = n.delivery_fee
+        else:
+            neighborhood_id = None
+
+    c = Customer(
+        tenant_id=tid(), name=name, phone=phone, cep=cep,
+        address=address, neighborhood_id=neighborhood_id, delivery_fee=fee,
+    )
+    db.session.add(c)
+    db.session.commit()
+    return jsonify({
+        'id': c.id,
+        'name': c.name,
+        'phone': c.phone or '',
+        'address': c.address or '',
+        'neighborhood_id': c.neighborhood_id,
+        'neighborhood_name': c.neighborhood.name if c.neighborhood else '',
+        'delivery_fee': c.delivery_fee or 0,
+    })
+
 # ── API busca clientes ────────────────────────────────
 @customers_bp.route('/api/buscar')
 @login_required
