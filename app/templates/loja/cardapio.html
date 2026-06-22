@@ -246,24 +246,33 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
       <div class="sec">
         <div class="sec-label">Endereço de entrega</div>
         {% if tenant.get_settings().get('loja_lat') %}
-        <!-- Modo por distância -->
         <button type="button" id="btnGeo" onclick="usarLocalizacao()"
           style="width:100%;background:#1a1a2e;color:#c9a84c;border:none;border-radius:10px;
                  padding:12px;font-weight:700;font-size:.88rem;cursor:pointer;margin-bottom:8px;">
           📍 Usar minha localização
         </button>
         <div id="geoStatus" style="font-size:.78rem;text-align:center;margin-bottom:8px;color:#888;"></div>
-        {% else %}
-        <!-- Modo por bairro -->
+        {% endif %}
+        <!-- Bairro -->
         <select class="sel" id="bairroSel" onchange="onBairroChange()">
           <option value="">Selecione o bairro *</option>
           {% for b in bairros %}
           <option value="{{ b.id }}" data-fee="{{ b.delivery_fee }}">{{ b.name }}</option>
           {% endfor %}
         </select>
-        {% endif %}
+        <!-- Rua -->
         <input class="inp" style="margin-top:8px;" id="cliEnd" type="text"
-               placeholder="Rua, número, complemento *" autocomplete="street-address">
+               placeholder="Rua *" autocomplete="street-address">
+        <!-- Número e Complemento lado a lado -->
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input class="inp" id="cliNum" type="text" inputmode="numeric"
+                 placeholder="Número *" style="width:40%;">
+          <input class="inp" id="cliComp" type="text"
+                 placeholder="Complemento" style="flex:1;">
+        </div>
+        <!-- Ponto de referência -->
+        <input class="inp" style="margin-top:8px;" id="cliRef" type="text"
+               placeholder="Ponto de referência (opcional)">
       </div>
 
       <!-- Pagamento -->
@@ -518,8 +527,8 @@ function usarLocalizacao() {
                 const rua    = a.road || a.pedestrian || a.footway || '';
                 const numero = a.house_number || '';
                 const bairro = a.suburb || a.neighbourhood || a.quarter || a.city_district || '';
-                const partes = [rua, numero].filter(Boolean).join(', ');
-                if (partes) document.getElementById('cliEnd').value = partes;
+                if (rua)    document.getElementById('cliEnd').value = rua;
+                if (numero) document.getElementById('cliNum').value = numero;
               })
               .catch(() => {});
           }
@@ -628,9 +637,15 @@ function fazerPedido() {
 
   if (!nome) { erroEl.textContent = 'Informe seu nome.'; return; }
   if (!tel)  { erroEl.textContent = 'Informe seu telefone.'; return; }
+  const num  = document.getElementById('cliNum').value.trim();
+  const comp = document.getElementById('cliComp').value.trim();
+  const ref  = document.getElementById('cliRef').value.trim();
+  const endCompleto = [end, num, comp, ref ? `Ref: ${ref}` : ''].filter(Boolean).join(', ');
+
   if (modoGeo && !geoOk) { erroEl.textContent = 'Confirme sua localização antes de continuar.'; return; }
-  if (!modoGeo && !bairroId) { erroEl.textContent = 'Selecione o bairro.'; return; }
-  if (!end)  { erroEl.textContent = 'Informe seu endereço.'; return; }
+  if (!bairroId) { erroEl.textContent = 'Selecione o bairro.'; return; }
+  if (!end)  { erroEl.textContent = 'Informe a rua.'; return; }
+  if (!num)  { erroEl.textContent = 'Informe o número.'; return; }
   if (!carrinho.length) { erroEl.textContent = 'Carrinho vazio.'; return; }
 
   const trocoRaw = document.getElementById('troco').value.replace(',', '.');
@@ -647,7 +662,7 @@ function fazerPedido() {
       cliente_nome:   nome,
       cliente_tel:    tel,
       bairro_id:      bairroId,
-      endereco:       end,
+      endereco:       endCompleto,
       payment_method: pgto,
       troco_para:     troco,
       notes:          document.getElementById('obsInput').value.trim(),
