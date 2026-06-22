@@ -108,6 +108,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 
 /* Itens do carrinho */
 .ci{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5;}
+.ci-thumb{width:44px;height:44px;border-radius:8px;object-fit:contain;background:#f5f5f5;flex-shrink:0;}
+.ci-thumb-ph{width:44px;height:44px;border-radius:8px;background:#f5f5f5;flex-shrink:0;
+             display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#ddd;}
 .ci-name{flex:1;font-size:.85rem;font-weight:600;color:#1a1a2e;}
 .ci-price{font-size:.82rem;color:#888;width:60px;text-align:right;}
 .ci-ctrl{display:flex;align-items:center;gap:6px;}
@@ -396,7 +399,7 @@ function confirmarAddItem() {
   if (!_prodSheet) return;
   const idx = carrinho.findIndex(i => i.id === _prodSheet.id);
   if (idx >= 0) carrinho[idx].qty = _prodSheetQty;
-  else carrinho.push({ id: _prodSheet.id, name: _prodSheet.name, price: _prodSheet.price, qty: _prodSheetQty });
+  else carrinho.push({ id: _prodSheet.id, name: _prodSheet.name, price: _prodSheet.price, qty: _prodSheetQty, thumb: _prodSheet.thumb || null });
   atualizarCartUI();
   fecharProdSheetDireto();
 }
@@ -453,6 +456,9 @@ function renderCartItens() {
   }
   el.innerHTML = carrinho.map(i => `
     <div class="ci">
+      ${i.thumb
+        ? `<img class="ci-thumb" src="${i.thumb}" alt="${i.name}">`
+        : `<div class="ci-thumb-ph">🍽️</div>`}
       <span class="ci-name">${i.name}</span>
       <span class="ci-price">R$ ${fmt(i.price * i.qty)}</span>
       <div class="ci-ctrl">
