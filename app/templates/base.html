@@ -237,7 +237,7 @@
       </a>
       <a href="{{ url_for('entregas.index') }}" class="nav-link {% if 'entregas' in ep %}active{% endif %}">
         <i class="bi bi-send"></i><span class="nav-label"> Entregas</span>
-        <span id="badge-entrega-pend" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;{% if entregas_pendentes == 0 %}display:none{% endif %}">{{ entregas_pendentes }}</span>
+        <span id="badge-entrega-pend" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;color:#1a1a2e;{% if entregas_pendentes == 0 %}display:none{% endif %}">{{ entregas_pendentes }}</span>
         <span id="badge-entrega-ret" class="badge rounded-pill ms-1" style="font-size:.65rem;background:#c9a84c;color:#1a1a2e;{% if entregas_retorno == 0 %}display:none{% endif %}">{{ entregas_retorno }}</span>
       </a>
       <a href="{{ url_for('sales.index') }}" class="nav-link {% if ep == 'sales.index' %}active{% endif %}">
