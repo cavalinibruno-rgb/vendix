@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
-from datetime import datetime
+from datetime import datetime, date, timedelta
+from collections import defaultdict
 from app import db
 from app.models.sale import Sale
 from app.models.motoboy import Motoboy
@@ -77,3 +78,50 @@ def concluir(sale_id):
     sale.delivered_at = datetime.now()
     db.session.commit()
     return jsonify({'ok': True, 'sale_id': sale.id})
+
+@despacho_bp.route('/relatorio-motoboys')
+@login_required
+def relatorio_motoboys():
+    hoje = date.today()
+    de_str  = request.args.get('de',  hoje.isoformat())
+    ate_str = request.args.get('ate', hoje.isoformat())
+    motoboy_filtro = request.args.get('motoboy_id', '', type=str)
+
+    try:
+        de_dt  = datetime.combine(date.fromisoformat(de_str),  datetime.min.time())
+        ate_dt = datetime.combine(date.fromisoformat(ate_str), datetime.max.time())
+    except ValueError:
+        de_dt  = datetime.combine(hoje, datetime.min.time())
+        ate_dt = datetime.combine(hoje, datetime.max.time())
+
+    query = Sale.query.filter(
+        Sale.tenant_id == tid(),
+        Sale.motoboy_id.isnot(None),
+        Sale.dispatched_at >= de_dt,
+        Sale.dispatched_at <= ate_dt,
+    )
+    if motoboy_filtro:
+        query = query.filter(Sale.motoboy_id == int(motoboy_filtro))
+
+    vendas = query.order_by(Sale.dispatched_at.asc()).all()
+
+    # agrupa por motoboy
+    grupos = defaultdict(lambda: {'nome': '', 'entregas': [], 'total_frete': 0.0})
+    for v in vendas:
+        g = grupos[v.motoboy_id]
+        g['nome'] = v.motoboy_name or 'Motoboy'
+        g['entregas'].append(v)
+        g['total_frete'] += (v.delivery_fee or 0)
+
+    resumo = sorted(grupos.items(), key=lambda x: x[1]['nome'])
+
+    motoboys = Motoboy.query.filter_by(tenant_id=tid()).order_by(Motoboy.name).all()
+
+    return render_template('despacho/relatorio_motoboys.html',
+        resumo=resumo,
+        motoboys=motoboys,
+        de_str=de_str,
+        ate_str=ate_str,
+        motoboy_filtro=motoboy_filtro,
+        total_entregas=len(vendas),
+    )

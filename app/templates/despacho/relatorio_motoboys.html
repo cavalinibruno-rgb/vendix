@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% block title %}Relatório de Motoboys — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-person-badge me-2 text-warning"></i>Relatório de Motoboys</h1>
+    <p class="text-muted">Quantidade de entregas por período</p>
+  </div>
+  <a href="{{ url_for('entregas.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Voltar
+  </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+  <div class="card-body p-3">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label fw-semibold small mb-1">De</label>
+        <input type="date" name="de" value="{{ de_str }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-auto">
+        <label class="form-label fw-semibold small mb-1">Até</label>
+        <input type="date" name="ate" value="{{ ate_str }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-auto">
+        <label class="form-label fw-semibold small mb-1">Motoboy</label>
+        <select name="motoboy_id" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          {% for m in motoboys %}
+          <option value="{{ m.id }}" {% if motoboy_filtro == m.id|string %}selected{% endif %}>{{ m.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-warning btn-sm fw-semibold">
+          <i class="bi bi-search me-1"></i>Filtrar
+        </button>
+        <a href="{{ url_for('entregas.relatorio_motoboys') }}" class="btn btn-outline-secondary btn-sm">
+          Hoje
+        </a>
+        <a href="{{ url_for('entregas.relatorio_motoboys', de=(hoje_semana if hoje_semana else de_str), ate=ate_str) }}"
+           onclick="setWeek(event)" class="btn btn-outline-secondary btn-sm" id="btnSemana">
+          Esta semana
+        </a>
+        <a href="{{ url_for('entregas.relatorio_motoboys', de=mes_inicio if mes_inicio else de_str, ate=ate_str) }}"
+           onclick="setMonth(event)" class="btn btn-outline-secondary btn-sm" id="btnMes">
+          Este mês
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Resumo geral -->
+{% if resumo %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center p-3">
+      <div class="fw-bold fs-2 text-warning">{{ total_entregas }}</div>
+      <div class="small text-muted">Total de Entregas</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center p-3">
+      <div class="fw-bold fs-2 text-info">{{ resumo|length }}</div>
+      <div class="small text-muted">Motoboys Ativos</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabela de resumo por motoboy -->
+<div class="card mb-4">
+  <div class="card-header fw-semibold py-2">
+    <i class="bi bi-bar-chart me-2 text-warning"></i>Resumo por Motoboy
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Motoboy</th>
+          <th class="text-center">Entregas</th>
+          <th class="text-end">Taxa Total Cobrada</th>
+          <th class="text-center">Detalhes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mid, g in resumo %}
+        <tr>
+          <td class="fw-semibold">
+            <i class="bi bi-person-circle me-1 text-warning"></i>{{ g.nome }}
+          </td>
+          <td class="text-center">
+            <span class="badge bg-warning text-dark fs-6 px-3">{{ g.entregas|length }}</span>
+          </td>
+          <td class="text-end text-muted small">R$ {{ '%.2f'|format(g.total_frete) }}</td>
+          <td class="text-center">
+            <button class="btn btn-outline-secondary btn-sm"
+                    onclick="toggleDetalhe('detalhe-{{ mid }}')">
+              <i class="bi bi-list-ul"></i>
+            </button>
+          </td>
+        </tr>
+        <!-- Detalhes expandíveis -->
+        <tr id="detalhe-{{ mid }}" style="display:none">
+          <td colspan="4" class="p-0">
+            <div class="bg-body-secondary p-3">
+              <table class="table table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Despachado em</th>
+                    <th class="text-end">Taxa de Entrega</th>
+                    <th class="text-end">Total do Pedido</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for v in g.entregas %}
+                  <tr>
+                    <td>
+                      <a href="{{ url_for('sales.detalhe', sale_id=v.id) }}" class="fw-semibold text-decoration-none">
+                        #{{ v.id }}
+                      </a>
+                    </td>
+                    <td>{{ v.customer.name if v.customer else '—' }}</td>
+                    <td class="small text-muted">
+                      {{ v.dispatched_at.strftime('%d/%m/%Y %H:%M') }}
+                    </td>
+                    <td class="text-end small">R$ {{ '%.2f'|format(v.delivery_fee or 0) }}</td>
+                    <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+    Nenhuma entrega encontrada no período selecionado.
+  </div>
+</div>
+{% endif %}
+
+<script>
+function toggleDetalhe(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+// Atalhos de período
+function setWeek(e) {
+  e.preventDefault();
+  const hoje = new Date();
+  const dow = hoje.getDay();
+  const seg = new Date(hoje); seg.setDate(hoje.getDate() - (dow === 0 ? 6 : dow - 1));
+  document.querySelector('[name=de]').value  = seg.toISOString().slice(0,10);
+  document.querySelector('[name=ate]').value = hoje.toISOString().slice(0,10);
+  document.querySelector('form').submit();
+}
+function setMonth(e) {
+  e.preventDefault();
+  const hoje = new Date();
+  const ini  = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  document.querySelector('[name=de]').value  = ini.toISOString().slice(0,10);
+  document.querySelector('[name=ate]').value = hoje.toISOString().slice(0,10);
+  document.querySelector('form').submit();
+}
+</script>
+{% endblock %}

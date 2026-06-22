@@ -7,9 +7,14 @@
     <h1><i class="bi bi-send me-2 text-warning"></i>Entregas</h1>
     <p class="text-muted">Controle de despacho e conclusão de entregas</p>
   </div>
-  {% if cfg.get('whatsapp_notify') %}
-  <span class="badge bg-success"><i class="bi bi-whatsapp me-1"></i>WhatsApp ativo</span>
-  {% endif %}
+  <div class="d-flex align-items-center gap-2">
+    {% if cfg.get('whatsapp_notify') %}
+    <span class="badge bg-success"><i class="bi bi-whatsapp me-1"></i>WhatsApp ativo</span>
+    {% endif %}
+    <a href="{{ url_for('entregas.relatorio_motoboys') }}" class="btn btn-outline-warning btn-sm fw-semibold">
+      <i class="bi bi-person-badge me-1"></i>Relatório Motoboys
+    </a>
+  </div>
 </div>
 
 <!-- Aguardando Despacho -->
