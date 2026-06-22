@@ -510,6 +510,18 @@ function usarLocalizacao() {
             btn.style.color = '#fff';
             atualizarCartUI();
             renderCartTotais();
+            // Geocodificação reversa para preencher o endereço
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pt-BR`)
+              .then(r => r.json())
+              .then(geo => {
+                const a = geo.address || {};
+                const rua    = a.road || a.pedestrian || a.footway || '';
+                const numero = a.house_number || '';
+                const bairro = a.suburb || a.neighbourhood || a.quarter || a.city_district || '';
+                const partes = [rua, numero].filter(Boolean).join(', ');
+                if (partes) document.getElementById('cliEnd').value = partes;
+              })
+              .catch(() => {});
           }
         })
         .catch(() => {
