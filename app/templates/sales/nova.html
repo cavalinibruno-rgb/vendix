@@ -357,31 +357,48 @@
           <div class="cart-section-header">Forma de Pagamento</div>
           <div class="cart-section-body">
             <div id="pgtoLoja" class="pgto-grid">
-              <div class="pgto-card" data-pgto="dinheiro" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="dinheiro" data-label="Dinheiro" onclick="handlePgtoClick(this)">
                 <i class="bi bi-cash-coin"></i>Dinheiro
               </div>
-              <div class="pgto-card" data-pgto="cartao" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="cartao" data-label="Cartão" onclick="handlePgtoClick(this)">
                 <i class="bi bi-credit-card"></i>Cartão
               </div>
-              <div class="pgto-card" data-pgto="pix" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="pix" data-label="Pix" onclick="handlePgtoClick(this)">
                 <i class="bi bi-qr-code"></i>Pix
               </div>
-              <div class="pgto-card" data-pgto="conta" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="conta" data-label="Conta" onclick="handlePgtoClick(this)">
                 <i class="bi bi-person-lines-fill"></i>Conta
               </div>
             </div>
             <div id="pgtoApp" class="pgto-grid" style="display:none;">
-              <div class="pgto-card" data-pgto="pelo_app" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="pelo_app" data-label="Pelo app" onclick="handlePgtoClick(this)">
                 <i class="bi bi-phone"></i>Pelo app
               </div>
-              <div class="pgto-card" data-pgto="entrega_dinheiro" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="entrega_dinheiro" data-label="Dinheiro" onclick="handlePgtoClick(this)">
                 <i class="bi bi-cash-coin"></i>Dinheiro<span class="pgto-sub">na entrega</span>
               </div>
-              <div class="pgto-card" data-pgto="entrega_cartao" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="entrega_cartao" data-label="Cartão" onclick="handlePgtoClick(this)">
                 <i class="bi bi-credit-card"></i>Cartão<span class="pgto-sub">na entrega</span>
               </div>
-              <div class="pgto-card" data-pgto="entrega_pix" onclick="setPgto(this)">
+              <div class="pgto-card" data-pgto="entrega_pix" data-label="Pix" onclick="handlePgtoClick(this)">
                 <i class="bi bi-qr-code"></i>Pix<span class="pgto-sub">na entrega</span>
+              </div>
+            </div>
+            <!-- Campos de valor por forma (modo combinado) -->
+            <div id="campoCombinados" style="display:none;" class="mt-3"></div>
+            <!-- Resumo do modo combinado -->
+            <div id="painelCombinado" style="display:none;" class="mt-2 px-2 py-2" style="background:#252525;border-radius:8px;font-size:.82rem;">
+              <div class="d-flex justify-content-between mb-1" style="font-size:.82rem;">
+                <span style="color:#aaa;">Total da venda:</span>
+                <span id="combinadoTotal" style="color:#ddd;">R$ 0,00</span>
+              </div>
+              <div class="d-flex justify-content-between mb-1" style="font-size:.82rem;">
+                <span style="color:#aaa;">Alocado:</span>
+                <span id="combinadoAlocado" style="color:#6fcf97;">R$ 0,00</span>
+              </div>
+              <div class="d-flex justify-content-between" style="font-size:.82rem;">
+                <span style="color:#aaa;">Faltando:</span>
+                <span id="combinadoFaltando" style="color:#eb5757;">R$ 0,00</span>
               </div>
             </div>
             <div id="campoTroco" style="display:none;" class="mt-2">
@@ -397,30 +414,6 @@
             <button type="button" class="btn-2formas" id="btnCombinar" onclick="usar2Formas()">
               <i class="bi bi-layers"></i> Combinar Formas de Pagamento
             </button>
-            <!-- Painel de pagamento combinado -->
-            <div id="painelCombinado" style="display:none;" class="mt-2">
-              <div id="listaCombinados"></div>
-              <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1" onclick="adicionarLinhaPgto()">
-                <i class="bi bi-plus-lg me-1"></i>Adicionar forma
-              </button>
-              <div class="mt-2 px-2 py-2" style="background:#252525;border-radius:8px;font-size:.82rem;">
-                <div class="d-flex justify-content-between mb-1">
-                  <span style="color:#aaa;">Total da venda:</span>
-                  <span id="combinadoTotal" style="color:#ddd;">R$ 0,00</span>
-                </div>
-                <div class="d-flex justify-content-between mb-1">
-                  <span style="color:#aaa;">Alocado:</span>
-                  <span id="combinadoAlocado" style="color:#6fcf97;">R$ 0,00</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                  <span style="color:#aaa;">Faltando:</span>
-                  <span id="combinadoFaltando" style="color:#eb5757;">R$ 0,00</span>
-                </div>
-              </div>
-              <button type="button" class="btn btn-link btn-sm text-muted w-100 mt-1" onclick="cancelarCombinado()">
-                Cancelar combinação
-              </button>
-            </div>
           </div>
         </div>
 
@@ -1043,62 +1036,81 @@ function calcTroco() {
 // ── Pagamento combinado ───────────────────────────────
 let modoCombinado = false;
 
+function handlePgtoClick(card) {
+  if (modoCombinado) {
+    card.classList.toggle('active');
+    renderCamposCombinados();
+    calcCombinado();
+  } else {
+    setPgto(card);
+  }
+}
+
 function usar2Formas() {
   if (modoCombinado) { cancelarCombinado(); return; }
   modoCombinado = true;
   pgto = null;
+  // Limpa seleção única e esconde troco
   document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
   document.getElementById('campoTroco').style.display = 'none';
-  document.getElementById('painelCombinado').style.display = '';
   document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-x-lg me-1"></i>Cancelar combinação';
-  // Inicia com 2 linhas
-  const lista = document.getElementById('listaCombinados');
-  lista.innerHTML = '';
-  adicionarLinhaPgto();
-  adicionarLinhaPgto();
   calcCombinado();
 }
 
 function cancelarCombinado() {
   modoCombinado = false;
+  document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('campoCombinados').style.display = 'none';
+  document.getElementById('campoCombinados').innerHTML = '';
   document.getElementById('painelCombinado').style.display = 'none';
-  document.getElementById('listaCombinados').innerHTML = '';
   document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-layers me-1"></i>Combinar Formas de Pagamento';
 }
 
-function adicionarLinhaPgto() {
-  const lista = document.getElementById('listaCombinados');
-  const div = document.createElement('div');
-  div.className = 'd-flex gap-2 align-items-center mb-2 linha-pgto';
-  const isApp = origem === 'app';
-  const opts = isApp
-    ? `<option value="pelo_app">📱 Pelo App</option>
-       <option value="entrega_dinheiro">💵 Dinheiro (entrega)</option>
-       <option value="entrega_cartao">💳 Cartão (entrega)</option>
-       <option value="entrega_pix">☐ Pix (entrega)</option>`
-    : `<option value="dinheiro">💵 Dinheiro</option>
-       <option value="cartao">💳 Cartão</option>
-       <option value="pix">☐ Pix</option>
-       <option value="conta">👤 Conta</option>`;
-  div.innerHTML = `
-    <select class="form-select form-select-sm" style="background:#2d2d2d;border-color:#444;color:#ddd;min-width:0;" onchange="calcCombinado()">${opts}</select>
-    <input type="text" class="form-control form-control-sm text-end" inputmode="decimal" placeholder="0,00"
-           style="width:90px;background:#2d2d2d;border-color:#444;color:#ddd;" oninput="calcCombinado()">
-    <button type="button" class="btn btn-sm btn-link text-danger p-0" style="flex-shrink:0;" onclick="removerLinhaPgto(this)">
-      <i class="bi bi-x-lg"></i>
-    </button>`;
-  lista.appendChild(div);
-  setTimeout(() => div.querySelector('input').focus(), 60);
-}
+function renderCamposCombinados() {
+  const campo = document.getElementById('campoCombinados');
+  const selecionados = [...document.querySelectorAll('.pgto-card.active')];
 
-function removerLinhaPgto(btn) {
-  btn.closest('.linha-pgto').remove();
-  calcCombinado();
+  if (!selecionados.length) {
+    campo.style.display = 'none';
+    campo.innerHTML = '';
+    document.getElementById('painelCombinado').style.display = 'none';
+    return;
+  }
+
+  // Preserva valores já digitados
+  const valoresAntigos = {};
+  campo.querySelectorAll('.campo-pgto-linha').forEach(el => {
+    valoresAntigos[el.dataset.pgto] = el.querySelector('input').value;
+  });
+
+  campo.innerHTML = '';
+  campo.style.display = '';
+  document.getElementById('painelCombinado').style.display = '';
+
+  selecionados.forEach((card, idx) => {
+    const method = card.dataset.pgto;
+    const label  = card.dataset.label || method;
+    const valor  = valoresAntigos[method] || '';
+    const div = document.createElement('div');
+    div.className = 'campo-pgto-linha d-flex align-items-center gap-2 mb-2';
+    div.dataset.pgto = method;
+    div.innerHTML = `
+      <span style="color:#ccc;font-size:.8rem;flex:1;min-width:60px;">${label}</span>
+      <div class="input-group input-group-sm" style="max-width:140px;">
+        <span class="input-group-text" style="background:#2d2d2d;border-color:#444;color:#888;">R$</span>
+        <input type="text" class="form-control" inputmode="decimal" placeholder="0,00"
+               value="${valor}" oninput="calcCombinado()"
+               style="background:#2d2d2d;border-color:#444;color:#ddd;text-align:right;">
+      </div>`;
+    campo.appendChild(div);
+    // Foca no primeiro campo vazio
+    if (idx === 0 && !valor) setTimeout(() => div.querySelector('input').focus(), 60);
+  });
 }
 
 function getLinhasCombinadas() {
-  return [...document.querySelectorAll('.linha-pgto')].map(div => ({
-    method: div.querySelector('select').value,
+  return [...document.querySelectorAll('.campo-pgto-linha')].map(div => ({
+    method: div.dataset.pgto,
     amount: parseFloat(div.querySelector('input').value.replace(',', '.')) || 0,
   }));
 }
@@ -1110,19 +1122,19 @@ function getTotal() {
 }
 
 function calcCombinado() {
-  const total = getTotal();
-  const linhas = getLinhasCombinadas();
+  const total   = getTotal();
+  const linhas  = getLinhasCombinadas();
   const alocado = linhas.reduce((s, l) => s + l.amount, 0);
   const faltando = total - alocado;
-  document.getElementById('combinadoTotal').textContent = 'R$ ' + fmtNum(total);
+  document.getElementById('combinadoTotal').textContent   = 'R$ ' + fmtNum(total);
   document.getElementById('combinadoAlocado').textContent = 'R$ ' + fmtNum(alocado);
   const elFalt = document.getElementById('combinadoFaltando');
-  if (faltando <= 0.005 && alocado > 0) {
+  if (alocado > 0 && faltando <= 0.005) {
     elFalt.textContent = '✓ Valor completo';
     elFalt.style.color = '#6fcf97';
   } else {
     elFalt.textContent = 'R$ ' + fmtNum(Math.max(0, faltando));
-    elFalt.style.color = faltando > 0.005 ? '#eb5757' : '#6fcf97';
+    elFalt.style.color = '#eb5757';
   }
 }
 
