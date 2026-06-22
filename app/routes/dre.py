@@ -149,15 +149,208 @@ def index():
     ctx = _calcular_dre(inicio_str, fim_str)
     return render_template('dre/index.html', **ctx)
 
+def _money(v):
+    """Formata em padrão brasileiro: R$ 1.234,56"""
+    return 'R$ ' + f'{v:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+def _br_date(s):
+    return f'{s[8:10]}/{s[5:7]}/{s[0:4]}'
+
+def _gerar_pdf_dre(ctx):
+    from fpdf import FPDF
+
+    regime_labels = {
+        'mei': 'MEI', 'simples': 'Simples Nacional',
+        'presumido': 'Lucro Presumido', 'real': 'Lucro Real',
+    }
+    store = ctx['store_name']
+    gerado_em = datetime.now()
+
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=18)
+
+    def _footer():
+        pdf.set_y(-15)
+        pdf.set_font('Helvetica', '', 7)
+        pdf.set_text_color(150)
+        pdf.cell(0, 5, f'{store} - Relatorio gerado pelo sistema Vendix', 0, 0, 'L')
+        pdf.cell(0, 5, gerado_em.strftime('%d/%m/%Y %H:%M'), 0, 0, 'R')
+    pdf.footer = _footer
+
+    pdf.add_page()
+    pdf.set_margins(16, 16, 16)
+    W = pdf.w - 32  # largura útil ≈ 178mm
+
+    # ── Cabeçalho ──
+    pdf.set_text_color(26, 26, 46)
+    pdf.set_font('Helvetica', 'B', 20)
+    pdf.cell(0, 10, store, 0, 1, 'L')
+    pdf.set_font('Helvetica', '', 11)
+    pdf.set_text_color(90)
+    pdf.cell(0, 6, 'Demonstracao do Resultado do Exercicio (DRE)', 0, 1, 'L')
+    # Badge regime
+    pdf.set_font('Helvetica', 'B', 8)
+    pdf.set_fill_color(26, 26, 46)
+    pdf.set_text_color(201, 168, 76)
+    label = regime_labels.get(ctx['regime'], '')
+    pdf.cell(pdf.get_string_width(label) + 8, 6, label, 0, 1, 'C', True)
+    # Linha dourada
+    y = pdf.get_y() + 2
+    pdf.set_draw_color(201, 168, 76)
+    pdf.set_line_width(0.8)
+    pdf.line(16, y, 16 + W, y)
+    pdf.ln(6)
+
+    # ── Período ──
+    pdf.set_fill_color(245, 243, 236)
+    pdf.set_draw_color(224, 216, 192)
+    pdf.set_line_width(0.2)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_text_color(40)
+    periodo = f"Periodo: {_br_date(ctx['inicio'])} a {_br_date(ctx['fim'])}"
+    vendas_txt = f"{ctx['qtd_vendas']} vendas"
+    pdf.cell(W * 0.6, 9, '  ' + periodo, 1, 0, 'L', True)
+    pdf.cell(W * 0.4, 9, vendas_txt + '  ', 1, 1, 'R', True)
+    pdf.ln(4)
+
+    # ── Helpers de layout ──
+    def secao(titulo):
+        pdf.ln(3)
+        yy = pdf.get_y()
+        pdf.set_fill_color(201, 168, 76)
+        pdf.rect(16, yy, 1.5, 6, 'F')
+        pdf.set_xy(20, yy)
+        pdf.set_font('Helvetica', 'B', 11)
+        pdf.set_text_color(26, 26, 46)
+        pdf.cell(0, 6, titulo, 0, 1)
+        pdf.ln(1)
+
+    def row(label, value, strong=False, sub=False, vcolor=(26, 26, 46)):
+        fill = strong
+        if strong:
+            pdf.set_fill_color(245, 245, 248)
+            pdf.set_font('Helvetica', 'B', 10)
+            pdf.set_text_color(26, 26, 46)
+        else:
+            pdf.set_font('Helvetica', '', 9 if sub else 10)
+            pdf.set_text_color(115, 115, 115) if sub else pdf.set_text_color(40, 40, 40)
+        lw = W - 45
+        label_txt = ('     ' + label) if sub else label
+        pdf.cell(lw, 7, label_txt, 0, 0, 'L', fill)
+        pdf.set_text_color(*vcolor)
+        pdf.cell(45, 7, value, 0, 1, 'R', fill)
+
+    RED = (192, 57, 43)
+    GREEN = (30, 122, 68)
+
+    # ── DEMONSTRATIVO ──
+    secao('Resultado do Periodo')
+    row('Receita Bruta de Vendas', _money(ctx['receita_bruta']), strong=True, vcolor=GREEN)
+    if ctx['deducao_cancelados'] > 0:
+        row('(-) Cancelamentos / Devolucoes', '- ' + _money(ctx['deducao_cancelados']), sub=True, vcolor=RED)
+    if ctx['reduz_receita'] and ctx['total_impostos'] > 0:
+        for lab, val in ctx['impostos_detalhado'].items():
+            row('(-) ' + lab, '- ' + _money(val), sub=True, vcolor=RED)
+    row('Receita Liquida', _money(ctx['receita_liquida']), strong=True)
+    row('(-) CMV - Custo das Mercadorias Vendidas', '- ' + _money(ctx['cmv']), sub=True, vcolor=RED)
+    lb_color = GREEN if ctx['lucro_bruto'] >= 0 else RED
+    row('Lucro Bruto', _money(ctx['lucro_bruto']), strong=True, vcolor=lb_color)
+    row('(-) Despesas Operacionais', '- ' + _money(ctx['total_despesas']), sub=True, vcolor=RED)
+    if ctx['regime'] == 'mei' and ctx['das_mei'] > 0:
+        row('(-) DAS MEI (fixo mensal)', '- ' + _money(ctx['das_mei']), sub=True, vcolor=RED)
+
+    # ── RESULTADO ──
+    pdf.ln(2)
+    rl = ctx['resultado_liquido']
+    if rl >= 0:
+        pdf.set_fill_color(230, 244, 234); tc = GREEN; titulo = 'LUCRO LIQUIDO'
+    else:
+        pdf.set_fill_color(251, 233, 231); tc = RED; titulo = 'PREJUIZO'
+    pdf.set_text_color(*tc)
+    pdf.set_font('Helvetica', 'B', 13)
+    pdf.cell(W - 55, 12, '  ' + titulo, 0, 0, 'L', True)
+    pdf.cell(55, 12, _money(abs(rl)) + '  ', 0, 1, 'R', True)
+
+    # ── DESPESAS POR CATEGORIA ──
+    secao('Despesas por Categoria')
+    if ctx['por_categoria']:
+        td = ctx['total_despesas']
+        for cat, val in sorted(ctx['por_categoria'].items(), key=lambda x: x[1], reverse=True):
+            pdf.set_font('Helvetica', '', 10)
+            pdf.set_text_color(40)
+            pct = f"{(val / td * 100):.0f}%" if td else '0%'
+            pdf.cell(W - 75, 7, cat, 0, 0, 'L')
+            pdf.set_text_color(*RED)
+            pdf.cell(45, 7, _money(val), 0, 0, 'R')
+            pdf.set_text_color(150)
+            pdf.cell(30, 7, pct, 0, 1, 'R')
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.set_fill_color(245, 245, 248)
+        pdf.set_text_color(26, 26, 46)
+        pdf.cell(W - 75, 7, 'Total', 0, 0, 'L', True)
+        pdf.set_text_color(*RED)
+        pdf.cell(45, 7, _money(td), 0, 0, 'R', True)
+        pdf.set_text_color(150)
+        pdf.cell(30, 7, '100%', 0, 1, 'R', True)
+    else:
+        pdf.set_font('Helvetica', 'I', 10)
+        pdf.set_text_color(150)
+        pdf.cell(0, 7, 'Nenhuma despesa no periodo.', 0, 1)
+
+    # ── INDICADORES ──
+    secao('Indicadores')
+    rliq = ctx['receita_liquida']
+    rbru = ctx['receita_bruta']
+    qv = ctx['qtd_vendas']
+    indicadores = [
+        ('Margem Bruta',        f"{(ctx['lucro_bruto'] / rliq * 100):.1f}%" if rliq else '0.0%'),
+        ('Margem Liquida',      f"{(rl / rbru * 100):.1f}%" if rbru else '0.0%'),
+        ('Ticket Medio',        _money(rbru / qv) if qv else _money(0)),
+        ('CMV sobre Receita',   f"{(ctx['cmv'] / rliq * 100):.1f}%" if rliq else '0.0%'),
+    ]
+    for lab, val in indicadores:
+        pdf.set_font('Helvetica', '', 10)
+        pdf.set_text_color(40)
+        pdf.cell(W - 45, 7, lab, 0, 0, 'L')
+        pdf.set_font('Helvetica', 'B', 10)
+        pdf.set_text_color(26, 26, 46)
+        pdf.cell(45, 7, val, 0, 1, 'R')
+
+    # ── LISTA DE DESPESAS ──
+    if ctx['despesas']:
+        secao('Despesas do Periodo')
+        pdf.set_font('Helvetica', 'B', 8)
+        pdf.set_text_color(130)
+        pdf.set_draw_color(220)
+        pdf.cell(28, 6, 'DATA', 'B', 0, 'L')
+        pdf.cell(45, 6, 'CATEGORIA', 'B', 0, 'L')
+        pdf.cell(W - 28 - 45 - 35, 6, 'DESCRICAO', 'B', 0, 'L')
+        pdf.cell(35, 6, 'VALOR', 'B', 1, 'R')
+        for d in ctx['despesas']:
+            pdf.set_font('Helvetica', '', 9)
+            pdf.set_text_color(50)
+            desc = (d.description or '-')[:48]
+            pdf.cell(28, 6, d.date.strftime('%d/%m/%Y'), 0, 0, 'L')
+            pdf.cell(45, 6, d.category[:24], 0, 0, 'L')
+            pdf.cell(W - 28 - 45 - 35, 6, desc, 0, 0, 'L')
+            pdf.set_text_color(*RED)
+            pdf.cell(35, 6, _money(d.amount), 0, 1, 'R')
+
+    return bytes(pdf.output())
+
 @dre_bp.route('/pdf')
 @login_required
 def pdf():
+    from flask import make_response
     hoje = date.today()
     inicio_str = request.args.get('inicio', hoje.replace(day=1).strftime('%Y-%m-%d'))
     fim_str    = request.args.get('fim',    hoje.strftime('%Y-%m-%d'))
     ctx = _calcular_dre(inicio_str, fim_str)
-    ctx['gerado_em'] = datetime.now()
-    return render_template('dre/relatorio_pdf.html', **ctx)
+    pdf_bytes = _gerar_pdf_dre(ctx)
+    resp = make_response(pdf_bytes)
+    resp.headers['Content-Type'] = 'application/pdf'
+    resp.headers['Content-Disposition'] = f'attachment; filename=DRE_{inicio_str}_a_{fim_str}.pdf'
+    return resp
 
 @dre_bp.route('/despesa/nova', methods=['POST'])
 @login_required
