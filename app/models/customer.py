@@ -20,6 +20,7 @@ class Customer(db.Model):
     neighborhood_id = db.Column(db.Integer, db.ForeignKey('neighborhoods.id'), nullable=True)
     name            = db.Column(db.String(128), nullable=False)
     phone           = db.Column(db.String(32))
+    cep             = db.Column(db.String(9))
     address         = db.Column(db.String(256))
     delivery_fee    = db.Column(db.Float, default=0)
     notes           = db.Column(db.Text)

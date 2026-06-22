@@ -18,6 +18,18 @@
         <input type="text" name="phone" class="form-control" value="{{ customer.phone if customer else '' }}" placeholder="(00) 00000-0000">
       </div>
       <div class="mb-3">
+        <label class="form-label fw-semibold">CEP</label>
+        <div class="input-group">
+          <input type="text" name="cep" id="cepInput" class="form-control"
+                 value="{{ customer.cep if customer else '' }}" placeholder="00000-000"
+                 maxlength="9" inputmode="numeric" autocomplete="off">
+          <button type="button" class="btn btn-outline-secondary" id="btnBuscarCep">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+        <div class="form-text" id="cepMsg"></div>
+      </div>
+      <div class="mb-3">
         <label class="form-label fw-semibold">Bairro</label>
         <select name="neighborhood_id" class="form-select" id="neighborhoodSel" onchange="applyFee(this)">
           <option value="">— Sem bairro —</option>
@@ -28,10 +40,11 @@
           </option>
           {% endfor %}
         </select>
+        <div class="form-text" id="bairroMsg"></div>
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Endereço</label>
-        <input type="text" name="address" class="form-control" value="{{ customer.address if customer else '' }}" placeholder="Rua, número…">
+        <input type="text" name="address" id="addressInput" class="form-control" value="{{ customer.address if customer else '' }}" placeholder="Rua, número…">
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Observações</label>
@@ -53,6 +66,69 @@
 function applyFee(sel) {
   const opt = sel.options[sel.selectedIndex];
   // only informativo — backend salva a taxa
+}
+
+const cepInput   = document.getElementById('cepInput');
+const cepMsg     = document.getElementById('cepMsg');
+const bairroMsg  = document.getElementById('bairroMsg');
+const addressInp = document.getElementById('addressInput');
+const bairroSel  = document.getElementById('neighborhoodSel');
+
+// Máscara simples 00000-000
+cepInput.addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').slice(0, 8);
+  if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5);
+  this.value = v;
+  if (v.replace(/\D/g, '').length === 8) buscarCep();
+});
+
+document.getElementById('btnBuscarCep').addEventListener('click', buscarCep);
+
+function buscarCep() {
+  const cep = cepInput.value.replace(/\D/g, '');
+  cepMsg.textContent = '';
+  bairroMsg.textContent = '';
+  if (cep.length !== 8) {
+    cepMsg.innerHTML = '<span class="text-danger">CEP deve ter 8 dígitos.</span>';
+    return;
+  }
+  cepMsg.innerHTML = '<span class="text-muted">Buscando…</span>';
+
+  fetch(`https://viacep.com.br/ws/${cep}/json/`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.erro) {
+        cepMsg.innerHTML = '<span class="text-danger">CEP não encontrado.</span>';
+        return;
+      }
+      cepMsg.innerHTML = `<span class="text-success">${d.localidade} - ${d.uf}</span>`;
+
+      // Preenche o endereço (rua), preservando número se já houver
+      if (d.logradouro) {
+        addressInp.value = d.logradouro;
+        addressInp.focus();
+      }
+
+      // Tenta casar o bairro retornado com um bairro já cadastrado
+      if (d.bairro) {
+        const alvo = d.bairro.trim().toLowerCase();
+        let achou = false;
+        for (const opt of bairroSel.options) {
+          // texto da option é "Nome (R$ x)", pega só o nome
+          const nome = opt.text.split('(')[0].trim().toLowerCase();
+          if (nome === alvo) { bairroSel.value = opt.value; achou = true; break; }
+        }
+        if (achou) {
+          bairroMsg.innerHTML = `<span class="text-success">Bairro "${d.bairro}" selecionado.</span>`;
+        } else {
+          bairroMsg.innerHTML = `<span class="text-warning">Bairro "${d.bairro}" ainda não cadastrado. `
+            + `<a href="{{ url_for('customers.bairros') }}" target="_blank">Cadastrar bairro</a> para definir a taxa.</span>`;
+        }
+      }
+    })
+    .catch(() => {
+      cepMsg.innerHTML = '<span class="text-danger">Erro ao consultar o CEP. Tente novamente.</span>';
+    });
 }
 </script>
 {% endblock %}

@@ -105,6 +105,7 @@ def _run_migrations(db):
             notes TEXT,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
+        "ALTER TABLE customers ADD COLUMN IF NOT EXISTS cep VARCHAR(9)",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount FLOAT DEFAULT 0",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount_type VARCHAR(8)",
         """CREATE TABLE IF NOT EXISTS coupons (

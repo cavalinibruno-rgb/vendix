@@ -27,6 +27,7 @@ def novo():
     if request.method == 'POST':
         name            = request.form.get('name', '').strip()
         phone           = request.form.get('phone', '').strip()
+        cep             = request.form.get('cep', '').strip()
         address         = request.form.get('address', '').strip()
         neighborhood_id = request.form.get('neighborhood_id') or None
         notes           = request.form.get('notes', '').strip()
@@ -44,7 +45,7 @@ def novo():
 
         customer = Customer(
             tenant_id=tid(),
-            name=name, phone=phone, address=address,
+            name=name, phone=phone, cep=cep, address=address,
             neighborhood_id=neighborhood_id,
             delivery_fee=fee, notes=notes
         )
@@ -63,6 +64,7 @@ def editar(customer_id):
     if request.method == 'POST':
         customer.name            = request.form.get('name', '').strip()
         customer.phone           = request.form.get('phone', '').strip()
+        customer.cep             = request.form.get('cep', '').strip()
         customer.address         = request.form.get('address', '').strip()
         customer.neighborhood_id = request.form.get('neighborhood_id') or None
         customer.notes           = request.form.get('notes', '').strip()
