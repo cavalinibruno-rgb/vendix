@@ -94,12 +94,26 @@ def relatorio_motoboys():
         de_dt  = datetime.combine(hoje, datetime.min.time())
         ate_dt = datetime.combine(hoje, datetime.max.time())
 
-    query = Sale.query.filter(
+    # Base: todas as entregas com motoboy no período (sem filtro de motoboy ainda)
+    base_periodo = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.motoboy_id.isnot(None),
         Sale.dispatched_at >= de_dt,
         Sale.dispatched_at <= ate_dt,
     )
+
+    # Dropdown: somente motoboys que tiveram entregas NESTE período
+    # (assim quem foi desligado aparece nos meses que trabalhou e some depois)
+    motoboys = []
+    _vistos = set()
+    for v in base_periodo.order_by(Sale.dispatched_at.asc()).all():
+        if v.motoboy_id not in _vistos:
+            _vistos.add(v.motoboy_id)
+            motoboys.append({'id': v.motoboy_id, 'name': v.motoboy_name or 'Motoboy'})
+    motoboys.sort(key=lambda m: m['name'])
+
+    # Aplica filtro de motoboy específico ao resultado
+    query = base_periodo
     if motoboy_filtro:
         query = query.filter(Sale.motoboy_id == int(motoboy_filtro))
 
@@ -114,8 +128,6 @@ def relatorio_motoboys():
         g['total_frete'] += (v.delivery_fee or 0)
 
     resumo = sorted(grupos.items(), key=lambda x: x[1]['nome'])
-
-    motoboys = Motoboy.query.filter_by(tenant_id=tid(), active=True).order_by(Motoboy.name).all()
 
     return render_template('despacho/relatorio_motoboys.html',
         resumo=resumo,

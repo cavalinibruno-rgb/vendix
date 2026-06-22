@@ -29,7 +29,7 @@
         <select name="motoboy_id" class="form-select form-select-sm">
           <option value="">Todos</option>
           {% for m in motoboys %}
-          <option value="{{ m.id }}" {% if motoboy_filtro == m.id|string %}selected{% endif %}>{{ m.name }}</option>
+          <option value="{{ m['id'] }}" {% if motoboy_filtro == m['id']|string %}selected{% endif %}>{{ m['name'] }}</option>
           {% endfor %}
         </select>
       </div>
