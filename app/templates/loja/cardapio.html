@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#1a1a2e">
 <title>{{ tenant.store_name }}</title>
 <style>
@@ -70,9 +70,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
               padding:14px 18px;}
 .prod-qty-btn{width:44px;height:44px;border-radius:50%;border:2px solid #e0e0e0;
               background:#fff;font-size:1.4rem;cursor:pointer;
-              display:flex;align-items:center;justify-content:center;font-weight:700;color:#1a1a2e;}
+              display:flex;align-items:center;justify-content:center;font-weight:700;color:#1a1a2e;
+              touch-action:manipulation;}
 .prod-qty-btn:active{background:#f0f0f0;}
-.prod-qty-num{font-size:1.3rem;font-weight:800;color:#1a1a2e;min-width:36px;text-align:center;}
+.prod-qty-num{font-size:1.3rem;font-weight:800;color:#1a1a2e;width:54px;text-align:center;
+              border:2px solid #e0e0e0;border-radius:10px;padding:6px 4px;
+              background:#fff;-webkit-appearance:none;}
 .prod-add-btn{margin:0 18px;width:calc(100% - 36px);background:#c9a84c;color:#1a1a2e;
               border:none;border-radius:14px;padding:15px 18px;font-weight:800;font-size:.95rem;
               display:flex;justify-content:space-between;cursor:pointer;}
@@ -190,7 +193,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
     </div>
     <div class="prod-qty-row">
       <button class="prod-qty-btn" onclick="prodQty(-1)">−</button>
-      <span class="prod-qty-num" id="prodSheetQty">1</span>
+      <input class="prod-qty-num" id="prodSheetQty" type="number" min="1" inputmode="numeric" value="1" oninput="prodQtyInput(this)">
       <button class="prod-qty-btn" onclick="prodQty(1)">+</button>
     </div>
     <button class="prod-add-btn" id="prodAddBtn" onclick="confirmarAddItem()">
@@ -342,14 +345,21 @@ function addItem(id) {
 }
 
 function _atualizarSheetQty() {
-  document.getElementById('prodSheetQty').textContent  = _prodSheetQty;
-  document.getElementById('prodAddLabel').textContent  = `Adicionar (${_prodSheetQty})`;
-  document.getElementById('prodAddTotal').textContent  = 'R$ ' + fmt(_prodSheet.price * _prodSheetQty);
+  document.getElementById('prodSheetQty').value       = _prodSheetQty;
+  document.getElementById('prodAddLabel').textContent = `Adicionar (${_prodSheetQty})`;
+  document.getElementById('prodAddTotal').textContent = 'R$ ' + fmt(_prodSheet.price * _prodSheetQty);
 }
 
 function prodQty(delta) {
   _prodSheetQty = Math.max(1, _prodSheetQty + delta);
   _atualizarSheetQty();
+}
+
+function prodQtyInput(el) {
+  const v = parseInt(el.value) || 1;
+  _prodSheetQty = Math.max(1, v);
+  document.getElementById('prodAddLabel').textContent = `Adicionar (${_prodSheetQty})`;
+  document.getElementById('prodAddTotal').textContent = 'R$ ' + fmt(_prodSheet.price * _prodSheetQty);
 }
 
 function confirmarAddItem() {
