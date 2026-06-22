@@ -16,6 +16,26 @@ except AttributeError:
 db = SQLAlchemy()
 login_manager = LoginManager()
 
+LOJA_DOMAIN_SUFFIX = '.vendixapp.com.br'
+
+
+class LojaSubdomainMiddleware:
+    """Reescreve <slug>.vendixapp.com.br/<path> → /loja/<slug>/<path> internamente."""
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        host = environ.get('HTTP_HOST', '').split(':')[0].lower()
+        if (host.endswith(LOJA_DOMAIN_SUFFIX)
+                and host not in ('vendixapp.com.br', 'www.vendixapp.com.br')):
+            slug   = host[:-len(LOJA_DOMAIN_SUFFIX)]
+            path   = environ.get('PATH_INFO', '/')
+            prefix = f'/loja/{slug}'
+            if not path.startswith(prefix):
+                environ['PATH_INFO'] = (prefix + path).rstrip('/') or prefix
+        return self.app(environ, start_response)
+
 
 def _run_migrations(db):
     """Adiciona colunas novas em tabelas existentes sem quebrar dados."""
@@ -210,4 +230,5 @@ def create_app():
         from app.seed import seed_master
         seed_master()
 
+    app.wsgi_app = LojaSubdomainMiddleware(app.wsgi_app)
     return app
