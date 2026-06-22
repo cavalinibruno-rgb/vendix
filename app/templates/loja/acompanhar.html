@@ -170,7 +170,7 @@ function applyStatus(data) {
   const s       = data.status;
   const banner  = document.getElementById('statusBanner');
 
-  if (s === lastStatus && s !== 'pending') return; // no change
+  if (s === lastStatus) return; // sem mudança
   lastStatus = s;
 
   // Timeline steps

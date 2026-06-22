@@ -150,7 +150,10 @@ def acompanhar(slug, pedido_id):
 # ── Status polling (cliente) ────────────────────────────
 @loja_bp.route('/<slug>/pedido/<int:pedido_id>/status')
 def pedido_status(slug, pedido_id):
+    from flask import current_app
     tenant = _get_tenant(slug)
+    # Expira a sessão para garantir leitura fresca do banco
+    db.session.expire_all()
     pedido = PedidoOnline.query.filter_by(id=pedido_id, tenant_id=tenant.id).first_or_404()
 
     status = pedido.status
@@ -163,9 +166,12 @@ def pedido_status(slug, pedido_id):
             status = 'dispatched'
             dispatched_at = sale.dispatched_at.strftime('%H:%M')
 
-    return jsonify({
-        'status':       status,
-        'accepted_at':  pedido.accepted_at.strftime('%H:%M') if pedido.accepted_at else None,
+    resp = jsonify({
+        'status':        status,
+        'accepted_at':   pedido.accepted_at.strftime('%H:%M') if pedido.accepted_at else None,
         'dispatched_at': dispatched_at,
         'reject_reason': pedido.reject_reason,
     })
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
