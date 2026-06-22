@@ -174,7 +174,7 @@
                 {% if p.stock_quantity <= 0 %}
                 <span class="badge bg-danger">{{ p.stock_quantity }}</span>
                 {% else %}
-                <span class="badge bg-warning text-dark">{{ p.stock_quantity }}</span>
+                <span class="badge bg-warning" style="color:#1a1a2e">{{ p.stock_quantity }}</span>
                 {% endif %}
               </td>
               <td class="text-center text-muted small pe-4">{{ p.min_stock }}</td>
