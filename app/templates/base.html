@@ -316,16 +316,38 @@
 </div>
 
 <div class="main-content" id="mainContent">
-  <div class="flash-messages">
-    {% for cat, msg in get_flashed_messages(with_categories=true) %}
-    <div class="alert alert-{{ 'danger' if cat == 'danger' else 'success' if cat == 'success' else 'warning' }} alert-dismissible fade show" role="alert">
-      {{ msg }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endfor %}
-  </div>
+  {% block content %}{% endblock %}
   {% block content %}{% endblock %}
 </div>
+
+<!-- Modal flash (salvamento / erro) -->
+{% set flash_msgs = get_flashed_messages(with_categories=true) %}
+{% if flash_msgs %}
+<div class="modal fade" id="modalFlash" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-body py-4 px-4 text-center">
+        {% for cat, msg in flash_msgs %}
+        <div style="margin-bottom:{% if not loop.last %}12px{% else %}0{% endif %};">
+          <span style="font-size:1.8rem;display:block;margin-bottom:6px;">
+            {% if cat == 'success' %}✅{% elif cat == 'danger' %}❌{% else %}⚠️{% endif %}
+          </span>
+          <p class="mb-0 fw-semibold" style="font-size:.95rem;">{{ msg }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="modal-footer justify-content-center border-0 pt-0 pb-3">
+        <button type="button" class="btn btn-warning fw-bold px-5" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFlash')).show();
+});
+</script>
+{% endif %}
 
 <!-- Modal confirmação global -->
 <div class="modal fade" id="modalConfirm" tabindex="-1">
