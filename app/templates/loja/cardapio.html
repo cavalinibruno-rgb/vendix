@@ -253,15 +253,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
         </button>
         <div id="geoStatus" style="font-size:.78rem;text-align:center;margin-bottom:8px;color:#888;"></div>
         {% endif %}
-        <!-- Bairro -->
-        <select class="sel" id="bairroSel" onchange="onBairroChange()">
-          <option value="">Selecione o bairro *</option>
-          {% for b in bairros %}
-          <option value="{{ b.id }}" data-fee="{{ b.delivery_fee }}">{{ b.name }}</option>
-          {% endfor %}
-        </select>
         <!-- Rua -->
-        <input class="inp" style="margin-top:8px;" id="cliEnd" type="text"
+        <input class="inp" id="cliEnd" type="text"
                placeholder="Rua *" autocomplete="street-address">
         <!-- Número e Complemento lado a lado -->
         <div style="display:flex;gap:8px;margin-top:8px;">
@@ -270,6 +263,18 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
           <input class="inp" id="cliComp" type="text"
                  placeholder="Complemento" style="flex:1;">
         </div>
+        <!-- Bairro -->
+        {% if tenant.get_settings().get('loja_lat') %}
+        <input class="inp" style="margin-top:8px;" id="cliBairroText" type="text"
+               placeholder="Bairro *">
+        {% else %}
+        <select class="sel" style="margin-top:8px;" id="bairroSel" onchange="onBairroChange()">
+          <option value="">Selecione o bairro *</option>
+          {% for b in bairros %}
+          <option value="{{ b.id }}" data-fee="{{ b.delivery_fee }}">{{ b.name }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
         <!-- Ponto de referência -->
         <input class="inp" style="margin-top:8px;" id="cliRef" type="text"
                placeholder="Ponto de referência (opcional)">
@@ -529,6 +534,8 @@ function usarLocalizacao() {
                 const bairro = a.suburb || a.neighbourhood || a.quarter || a.city_district || '';
                 if (rua)    document.getElementById('cliEnd').value = rua;
                 if (numero) document.getElementById('cliNum').value = numero;
+                const bairroField = document.getElementById('cliBairroText');
+                if (bairroField && bairro) bairroField.value = bairro;
               })
               .catch(() => {});
           }
@@ -640,10 +647,13 @@ function fazerPedido() {
   const num  = document.getElementById('cliNum').value.trim();
   const comp = document.getElementById('cliComp').value.trim();
   const ref  = document.getElementById('cliRef').value.trim();
-  const endCompleto = [end, num, comp, ref ? `Ref: ${ref}` : ''].filter(Boolean).join(', ');
+  const bairroTextEl = document.getElementById('cliBairroText');
+  const bairroText   = bairroTextEl ? bairroTextEl.value.trim() : '';
+  const endCompleto  = [end, num, comp, bairroText, ref ? `Ref: ${ref}` : ''].filter(Boolean).join(', ');
 
   if (modoGeo && !geoOk) { erroEl.textContent = 'Confirme sua localização antes de continuar.'; return; }
-  if (!bairroId) { erroEl.textContent = 'Selecione o bairro.'; return; }
+  if (!modoGeo && !bairroId) { erroEl.textContent = 'Selecione o bairro.'; return; }
+  if (modoGeo && !bairroText) { erroEl.textContent = 'Informe o bairro.'; return; }
   if (!end)  { erroEl.textContent = 'Informe a rua.'; return; }
   if (!num)  { erroEl.textContent = 'Informe o número.'; return; }
   if (!carrinho.length) { erroEl.textContent = 'Carrinho vazio.'; return; }
