@@ -6,10 +6,14 @@
   <div>
     <h1><i class="bi bi-receipt me-2"></i>Vendas</h1>
     <p class="text-muted mb-0">
+      {% if busca_pedido %}
+      Resultado da busca pelo pedido <strong>#{{ busca_pedido }}</strong>
+      {% else %}
       {{ sales|length }} venda(s)
       {% if periodo_um_dia %}em {{ de_fil.strftime('%d/%m/%Y') }}
       {% else %}de {{ de_fil.strftime('%d/%m/%Y') }} a {{ ate_fil.strftime('%d/%m/%Y') }}{% endif %}
       {% if not modo_restrito %}<span class="ms-2">— Total: <strong class="text-success">R$ {{ '%.2f'|format(total_periodo) }}</strong></span>{% endif %}
+      {% endif %}
       {% if modo_restrito %}<span class="badge bg-warning text-dark ms-2"><i class="bi bi-eye-slash me-1"></i>Modo operador</span>{% endif %}
     </p>
   </div>
@@ -18,8 +22,29 @@
   </a>
 </div>
 
-<!-- Filtro de período -->
+<!-- Busca por número do pedido -->
 <div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">Buscar pedido nº:</label>
+        <input type="number" name="pedido" class="form-control form-control-sm" style="width:140px;"
+               value="{{ busca_pedido }}" placeholder="Ex: 123" min="1">
+      </div>
+      <button type="submit" class="btn btn-sm btn-warning fw-semibold">
+        <i class="bi bi-search me-1"></i>Buscar
+      </button>
+      {% if busca_pedido %}
+      <a href="{{ url_for('sales.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-x-lg me-1"></i>Limpar busca
+      </a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Filtro de período -->
+<div class="card mb-3 {% if busca_pedido %}opacity-50{% endif %}">
   <div class="card-body py-2">
     <form method="get" class="d-flex align-items-end gap-2 flex-wrap">
       <div>
@@ -90,9 +115,10 @@
     {% else %}
     <div class="text-center py-5 text-muted">
       <i class="bi bi-receipt" style="font-size:2.5rem;"></i>
-      <p class="mt-2">Nenhuma venda
-        {% if periodo_um_dia %}em {{ de_fil.strftime('%d/%m/%Y') }}
-        {% else %}de {{ de_fil.strftime('%d/%m/%Y') }} a {{ ate_fil.strftime('%d/%m/%Y') }}{% endif %}.</p>
+      <p class="mt-2">
+        {% if busca_pedido %}Nenhum pedido encontrado com o número <strong>#{{ busca_pedido }}</strong>.
+        {% elif periodo_um_dia %}Nenhuma venda em {{ de_fil.strftime('%d/%m/%Y') }}.
+        {% else %}Nenhuma venda de {{ de_fil.strftime('%d/%m/%Y') }} a {{ ate_fil.strftime('%d/%m/%Y') }}.{% endif %}</p>
       <a href="{{ url_for('sales.nova') }}" class="btn btn-warning btn-sm">Fazer venda</a>
     </div>
     {% endif %}
