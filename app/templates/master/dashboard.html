@@ -53,6 +53,7 @@
           <th>#</th>
           <th>Loja</th>
           <th>E-mail</th>
+          <th>Telefone</th>
           <th>Status</th>
           <th>Vencimento</th>
           <th>Criada em</th>
@@ -65,6 +66,7 @@
           <td class="text-muted small">{{ t.id }}</td>
           <td class="fw-semibold">{{ t.store_name }}</td>
           <td class="text-muted small">{{ t.email }}</td>
+          <td class="text-muted small">{{ t.phone or '—' }}</td>
           <td>
             {% if t.status == 'active' and t.is_active %}
               <span class="badge bg-success">Ativa</span>
