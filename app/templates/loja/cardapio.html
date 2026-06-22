@@ -245,12 +245,23 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
       <!-- Endereço -->
       <div class="sec">
         <div class="sec-label">Endereço de entrega</div>
+        {% if tenant.get_settings().get('loja_lat') %}
+        <!-- Modo por distância -->
+        <button type="button" id="btnGeo" onclick="usarLocalizacao()"
+          style="width:100%;background:#1a1a2e;color:#c9a84c;border:none;border-radius:10px;
+                 padding:12px;font-weight:700;font-size:.88rem;cursor:pointer;margin-bottom:8px;">
+          📍 Usar minha localização
+        </button>
+        <div id="geoStatus" style="font-size:.78rem;text-align:center;margin-bottom:8px;color:#888;"></div>
+        {% else %}
+        <!-- Modo por bairro -->
         <select class="sel" id="bairroSel" onchange="onBairroChange()">
           <option value="">Selecione o bairro *</option>
           {% for b in bairros %}
           <option value="{{ b.id }}" data-fee="{{ b.delivery_fee }}">{{ b.name }}</option>
           {% endfor %}
         </select>
+        {% endif %}
         <input class="inp" style="margin-top:8px;" id="cliEnd" type="text"
                placeholder="Rua, número, complemento *" autocomplete="street-address">
       </div>
@@ -312,6 +323,7 @@ let carrinho = [];
 let pgto = 'entrega_dinheiro';
 let taxaEntrega = 0;
 let cupomAplicado = null; // { code, type, amount, desconto }
+let geoOk = false; // localização confirmada via GPS
 
 // Carrega produtos
 fetch(`/loja/${SLUG}/produtos`)
@@ -457,6 +469,66 @@ function onBairroChange() {
   renderCartTotais();
 }
 
+function usarLocalizacao() {
+  const btn    = document.getElementById('btnGeo');
+  const status = document.getElementById('geoStatus');
+  if (!navigator.geolocation) {
+    status.textContent = '❌ Seu navegador não suporta geolocalização.';
+    status.style.color = '#eb5757';
+    return;
+  }
+  btn.textContent = '⏳ Obtendo localização…';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      fetch(`/loja/${SLUG}/taxa-distancia?lat=${lat}&lng=${lng}`)
+        .then(r => r.json())
+        .then(d => {
+          btn.disabled = false;
+          if (d.error) {
+            status.textContent = '❌ ' + d.error;
+            status.style.color = '#eb5757';
+            btn.textContent = '📍 Usar minha localização';
+            return;
+          }
+          if (d.fora) {
+            status.textContent = `😔 Você está a ${d.dist_km} km — fora do raio de entrega.`;
+            status.style.color = '#eb5757';
+            btn.textContent = '📍 Tentar novamente';
+            geoOk = false;
+            taxaEntrega = 0;
+          } else {
+            taxaEntrega = d.fee;
+            geoOk = true;
+            const taxaMsg = d.fee > 0 ? ` — Taxa: R$ ${fmt(d.fee)}` : ' — Entrega grátis!';
+            status.innerHTML = `✅ Localização confirmada (${d.dist_km} km)${taxaMsg}`;
+            status.style.color = '#27ae60';
+            btn.textContent = '✅ Localização confirmada';
+            btn.style.background = '#27ae60';
+            btn.style.color = '#fff';
+            atualizarCartUI();
+            renderCartTotais();
+          }
+        })
+        .catch(() => {
+          btn.disabled = false;
+          btn.textContent = '📍 Usar minha localização';
+          status.textContent = '❌ Erro ao calcular distância.';
+          status.style.color = '#eb5757';
+        });
+    },
+    err => {
+      btn.disabled = false;
+      btn.textContent = '📍 Usar minha localização';
+      status.textContent = '❌ Permissão de localização negada. Ative o GPS e tente novamente.';
+      status.style.color = '#eb5757';
+    },
+    { timeout: 10000 }
+  );
+}
+
 function renderCartItens() {
   const el = document.getElementById('cartItens');
   if (!carrinho.length) {
@@ -536,14 +608,16 @@ function fazerPedido() {
   const nome = document.getElementById('cliNome').value.trim();
   const tel  = document.getElementById('cliTel').value.trim();
   const end  = document.getElementById('cliEnd').value.trim();
-  const bairroSel = document.getElementById('bairroSel');
-  const bairroId  = bairroSel.value || null;
-  const erroEl    = document.getElementById('erroMsg');
+  const bairroSelEl = document.getElementById('bairroSel');
+  const bairroId    = bairroSelEl ? (bairroSelEl.value || null) : null;
+  const modoGeo     = !!document.getElementById('btnGeo'); // true se loja tem coords
+  const erroEl      = document.getElementById('erroMsg');
   erroEl.textContent = '';
 
   if (!nome) { erroEl.textContent = 'Informe seu nome.'; return; }
   if (!tel)  { erroEl.textContent = 'Informe seu telefone.'; return; }
-  if (!bairroId) { erroEl.textContent = 'Selecione o bairro.'; return; }
+  if (modoGeo && !geoOk) { erroEl.textContent = 'Confirme sua localização antes de continuar.'; return; }
+  if (!modoGeo && !bairroId) { erroEl.textContent = 'Selecione o bairro.'; return; }
   if (!end)  { erroEl.textContent = 'Informe seu endereço.'; return; }
   if (!carrinho.length) { erroEl.textContent = 'Carrinho vazio.'; return; }
 

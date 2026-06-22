@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
 from werkzeug.security import generate_password_hash
 from app.models.coupon import Coupon
+import requests as _req, json as _json
 
 config_bp = Blueprint('config', __name__, url_prefix='/configuracoes')
 
@@ -107,6 +108,64 @@ def excluir_cupom(coupon_id):
     db.session.commit()
     flash(f'Cupom "{c.code}" excluído.', 'success')
     return redirect(url_for('config.index') + '#cupons')
+
+@config_bp.route('/localizacao', methods=['POST'])
+@login_required
+def salvar_localizacao():
+    tenant = current_user.tenant
+    cfg = tenant.get_settings()
+    cfg['loja_lat']      = request.form.get('loja_lat', '').strip()
+    cfg['loja_lng']      = request.form.get('loja_lng', '').strip()
+    cfg['loja_endereco'] = request.form.get('loja_endereco', '').strip()
+    # Zonas: lista de {max_km, fee}
+    zonas = []
+    maxs = request.form.getlist('zona_max_km')
+    fees = request.form.getlist('zona_fee')
+    for m, f in zip(maxs, fees):
+        try:
+            zonas.append({'max_km': float(m.replace(',','.')), 'fee': float(f.replace(',','.'))})
+        except ValueError:
+            pass
+    zonas.sort(key=lambda z: z['max_km'])
+    cfg['zonas_entrega'] = zonas
+    tenant.save_settings(cfg)
+    db.session.commit()
+    flash('Localização e zonas de entrega salvas.', 'success')
+    return redirect(url_for('config.index') + '#localizacao')
+
+
+@config_bp.route('/geocodificar')
+@login_required
+def geocodificar():
+    cep    = request.args.get('cep', '').strip().replace('-', '')
+    numero = request.args.get('numero', '').strip()
+    if not cep:
+        return jsonify({'error': 'CEP não informado.'})
+    try:
+        via = _req.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=5).json()
+        if via.get('erro'):
+            return jsonify({'error': 'CEP não encontrado.'})
+        logradouro = via.get('logradouro', '')
+        bairro     = via.get('bairro', '')
+        cidade     = via.get('localidade', '')
+        uf         = via.get('uf', '')
+        query = f'{logradouro}, {numero}, {bairro}, {cidade}, {uf}, Brasil'
+        nom = _req.get(
+            'https://nominatim.openstreetmap.org/search',
+            params={'q': query, 'format': 'json', 'limit': 1},
+            headers={'User-Agent': 'Vendix/1.0'},
+            timeout=8
+        ).json()
+        if not nom:
+            return jsonify({'error': 'Endereço não encontrado. Tente escrever o endereço completo manualmente.'})
+        return jsonify({
+            'lat':      nom[0]['lat'],
+            'lng':      nom[0]['lon'],
+            'endereco': query,
+        })
+    except Exception as e:
+        return jsonify({'error': f'Erro ao buscar endereço: {str(e)}'})
+
 
 @config_bp.route('/alterar-senha', methods=['POST'])
 @login_required

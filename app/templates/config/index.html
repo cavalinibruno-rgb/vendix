@@ -43,6 +43,94 @@
   </div>
 </div>
 
+<!-- ── Localização e Zonas de Entrega ── -->
+<div class="row g-3 mb-3" id="localizacao">
+  <div class="col-12">
+    <div class="card border-warning" style="border-width:2px!important;">
+      <div class="card-header py-2" style="background:rgba(201,168,76,.12);">
+        <i class="bi bi-geo-alt me-2 text-warning"></i><strong>Localização da Loja e Zonas de Entrega</strong>
+      </div>
+      <div class="card-body p-3">
+        <p class="text-muted small mb-3">Informe o CEP e número da loja para calcular a taxa de entrega automaticamente pela distância.</p>
+        <form method="post" action="{{ url_for('config.salvar_localizacao') }}" id="formLocalizacao">
+
+          <div class="row g-2 mb-3 align-items-end">
+            <div class="col-5 col-md-3">
+              <label class="form-label fw-semibold small mb-1">CEP</label>
+              <input type="text" id="inputCep" class="form-control form-control-sm" placeholder="00000-000" maxlength="9" inputmode="numeric">
+            </div>
+            <div class="col-3 col-md-2">
+              <label class="form-label fw-semibold small mb-1">Número</label>
+              <input type="text" id="inputNumero" class="form-control form-control-sm" placeholder="123">
+            </div>
+            <div class="col-4 col-md-2">
+              <button type="button" class="btn btn-warning btn-sm fw-bold w-100" onclick="buscarEndereco()">
+                <i class="bi bi-search me-1"></i>Buscar
+              </button>
+            </div>
+          </div>
+
+          <div id="enderecoResult" class="mb-3" style="display:none;">
+            <div class="alert alert-success py-2 small mb-2" id="enderecoTexto"></div>
+            <input type="hidden" name="loja_lat"      id="hiddenLat"  value="{{ cfg.get('loja_lat','') }}">
+            <input type="hidden" name="loja_lng"      id="hiddenLng"  value="{{ cfg.get('loja_lng','') }}">
+            <input type="hidden" name="loja_endereco" id="hiddenEnd"  value="{{ cfg.get('loja_endereco','') }}">
+          </div>
+
+          {% if cfg.get('loja_lat') %}
+          <div class="alert alert-success py-2 small mb-3">
+            <i class="bi bi-check-circle me-1"></i>
+            <strong>Localização salva:</strong> {{ cfg.get('loja_endereco','') }}
+            <input type="hidden" name="loja_lat"      value="{{ cfg.get('loja_lat','') }}">
+            <input type="hidden" name="loja_lng"      value="{{ cfg.get('loja_lng','') }}">
+            <input type="hidden" name="loja_endereco" value="{{ cfg.get('loja_endereco','') }}">
+          </div>
+          {% endif %}
+
+          <div id="erroGeo" class="alert alert-danger py-2 small mb-3" style="display:none;"></div>
+
+          <!-- Zonas de entrega -->
+          <label class="form-label fw-semibold small mb-1">Zonas de entrega por distância</label>
+          <div class="text-muted small mb-2">Adicione faixas de distância. Clientes fora da última faixa receberão mensagem de "fora do raio de entrega".</div>
+          <div id="zonas">
+            {% set zonas = cfg.get('zonas_entrega', []) %}
+            {% if zonas %}
+              {% for z in zonas %}
+              <div class="zona-row d-flex gap-2 mb-2 align-items-center">
+                <span class="small text-muted">Até</span>
+                <input type="number" name="zona_max_km" class="form-control form-control-sm" style="max-width:90px;" step="0.1" value="{{ z.max_km }}" placeholder="km">
+                <span class="small text-muted">km →</span>
+                <span class="small text-muted">R$</span>
+                <input type="number" name="zona_fee" class="form-control form-control-sm" style="max-width:90px;" step="0.01" value="{{ z.fee }}" placeholder="0.00">
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="this.closest('.zona-row').remove()"><i class="bi bi-trash"></i></button>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="zona-row d-flex gap-2 mb-2 align-items-center">
+                <span class="small text-muted">Até</span>
+                <input type="number" name="zona_max_km" class="form-control form-control-sm" style="max-width:90px;" step="0.1" placeholder="km">
+                <span class="small text-muted">km →</span>
+                <span class="small text-muted">R$</span>
+                <input type="number" name="zona_fee" class="form-control form-control-sm" style="max-width:90px;" step="0.01" placeholder="0.00">
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="this.closest('.zona-row').remove()"><i class="bi bi-trash"></i></button>
+              </div>
+            {% endif %}
+          </div>
+          <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="addZona()">
+            <i class="bi bi-plus-lg me-1"></i>Adicionar faixa
+          </button>
+
+          <div class="mt-3">
+            <button type="submit" class="btn btn-warning btn-sm fw-semibold">
+              <i class="bi bi-floppy me-1"></i>Salvar Localização e Zonas
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="row g-3 mb-3" id="regime">
   <div class="col-12">
     <div class="card">
@@ -293,6 +381,39 @@ function mostrarCampos() {
   document.getElementById('campos_presumido').style.display = (regime === 'presumido' || regime === 'real') ? '' : 'none';
 }
 mostrarCampos();
+
+function buscarEndereco() {
+  const cep    = document.getElementById('inputCep').value.replace(/\D/g,'');
+  const numero = document.getElementById('inputNumero').value.trim();
+  const erroEl = document.getElementById('erroGeo');
+  const resEl  = document.getElementById('enderecoResult');
+  erroEl.style.display = 'none';
+  resEl.style.display  = 'none';
+  if (cep.length !== 8) { erroEl.textContent = 'CEP inválido.'; erroEl.style.display = ''; return; }
+  fetch(`/configuracoes/geocodificar?cep=${cep}&numero=${encodeURIComponent(numero)}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) { erroEl.textContent = d.error; erroEl.style.display = ''; return; }
+      document.getElementById('hiddenLat').value = d.lat;
+      document.getElementById('hiddenLng').value = d.lng;
+      document.getElementById('hiddenEnd').value = d.endereco;
+      document.getElementById('enderecoTexto').innerHTML = '<i class="bi bi-check-circle me-1"></i><strong>Endereço encontrado:</strong> ' + d.endereco;
+      resEl.style.display = '';
+    })
+    .catch(() => { erroEl.textContent = 'Erro ao buscar. Tente novamente.'; erroEl.style.display = ''; });
+}
+
+function addZona() {
+  const div = document.createElement('div');
+  div.className = 'zona-row d-flex gap-2 mb-2 align-items-center';
+  div.innerHTML = `<span class="small text-muted">Até</span>
+    <input type="number" name="zona_max_km" class="form-control form-control-sm" style="max-width:90px;" step="0.1" placeholder="km">
+    <span class="small text-muted">km →</span>
+    <span class="small text-muted">R$</span>
+    <input type="number" name="zona_fee" class="form-control form-control-sm" style="max-width:90px;" step="0.01" placeholder="0.00">
+    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="this.closest('.zona-row').remove()"><i class="bi bi-trash"></i></button>`;
+  document.getElementById('zonas').appendChild(div);
+}
 
 function copiarLink() {
   const input = document.getElementById('inputLinkLoja');

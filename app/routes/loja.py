@@ -163,6 +163,36 @@ def fazer_pedido(slug):
     return jsonify({'pedido_id': pedido.id})
 
 
+# ── Taxa por distância (cliente) ───────────────────────
+@loja_bp.route('/<slug>/taxa-distancia')
+def taxa_distancia(slug):
+    import math
+    tenant = _get_tenant(slug)
+    cfg    = tenant.get_settings()
+    try:
+        lat1 = float(cfg.get('loja_lat', 0))
+        lng1 = float(cfg.get('loja_lng', 0))
+        lat2 = float(request.args.get('lat', 0))
+        lng2 = float(request.args.get('lng', 0))
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Coordenadas inválidas.'})
+    if not lat1 or not lng1:
+        return jsonify({'error': 'Loja sem localização configurada.'})
+    # Haversine
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng/2)**2
+    dist_km = R * 2 * math.asin(math.sqrt(a))
+    zonas = cfg.get('zonas_entrega', [])
+    if not zonas:
+        return jsonify({'dist_km': round(dist_km, 2), 'fee': 0, 'fora': False})
+    for z in sorted(zonas, key=lambda z: z['max_km']):
+        if dist_km <= z['max_km']:
+            return jsonify({'dist_km': round(dist_km, 2), 'fee': z['fee'], 'fora': False})
+    return jsonify({'dist_km': round(dist_km, 2), 'fee': 0, 'fora': True})
+
+
 # ── Acompanhar pedido (cliente) ─────────────────────────
 @loja_bp.route('/<slug>/pedido/<int:pedido_id>/acompanhar')
 def acompanhar(slug, pedido_id):
