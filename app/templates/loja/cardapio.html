@@ -267,7 +267,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
         {% if tenant.get_settings().get('loja_lat') %}
         <input class="inp" style="margin-top:8px;" id="cliBairroText" type="text"
                placeholder="Bairro *">
-        <div style="font-size:.72rem;color:#eb5757;margin-top:3px;font-weight:600;">⚠️ Verifique e corrija o bairro se necessário</div>
+        <div id="avisoBairro" style="font-size:.72rem;color:#eb5757;margin-top:3px;font-weight:600;display:none;">⚠️ Verifique e corrija o bairro se necessário</div>
         {% else %}
         <select class="sel" style="margin-top:8px;" id="bairroSel" onchange="onBairroChange()">
           <option value="">Selecione o bairro *</option>
@@ -537,6 +537,8 @@ function usarLocalizacao() {
                 if (numero) document.getElementById('cliNum').value = numero;
                 const bairroField = document.getElementById('cliBairroText');
                 if (bairroField && bairro) bairroField.value = bairro;
+                const aviso = document.getElementById('avisoBairro');
+                if (aviso) aviso.style.display = '';
               })
               .catch(() => {});
           }
