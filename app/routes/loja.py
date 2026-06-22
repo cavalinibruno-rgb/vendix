@@ -5,6 +5,7 @@ from app.models.product import Product, ProductType
 from app.models.customer import Neighborhood
 from app.models.pedido_online import PedidoOnline
 from app.models.sale import Sale
+from app.models.coupon import Coupon
 import json, io
 from PIL import Image
 
@@ -65,6 +66,16 @@ def foto_produto(slug, produto_id):
     return resp
 
 
+# ── Validar cupom (público) ────────────────────────────
+@loja_bp.route('/<slug>/cupom/<code>')
+def validar_cupom(slug, code):
+    tenant = _get_tenant(slug)
+    c = Coupon.query.filter_by(tenant_id=tenant.id, code=code.upper(), active=True).first()
+    if not c:
+        return jsonify({'error': 'Cupom inválido ou expirado.'})
+    return jsonify({'type': c.coupon_type, 'amount': c.amount})
+
+
 # ── Fazer pedido ────────────────────────────────────────
 @loja_bp.route('/<slug>/pedido', methods=['POST'])
 def fazer_pedido(slug):
@@ -78,6 +89,7 @@ def fazer_pedido(slug):
     payment_method = data.get('payment_method', 'entrega_dinheiro')
     troco_para     = float(data.get('troco_para') or 0) or None
     notes          = (data.get('notes') or '').strip()
+    cupom_code     = (data.get('cupom_code') or '').strip().upper()
     items_raw      = data.get('items', [])
 
     if not cliente_nome:
@@ -116,7 +128,19 @@ def fazer_pedido(slug):
     if not items_ok:
         return jsonify({'error': 'Nenhum produto válido.'}), 400
 
-    total = round(subtotal + taxa_entrega, 2)
+    # Aplica cupom de desconto
+    desconto = 0.0
+    cupom_usado = None
+    if cupom_code:
+        c = Coupon.query.filter_by(tenant_id=tenant.id, code=cupom_code, active=True).first()
+        if c:
+            cupom_usado = cupom_code
+            if c.coupon_type == 'percent':
+                desconto = round(subtotal * c.amount / 100, 2)
+            else:
+                desconto = min(round(c.amount, 2), subtotal)
+
+    total = round(max(0, subtotal + taxa_entrega - desconto), 2)
 
     pedido = PedidoOnline(
         tenant_id      = tenant.id,

@@ -248,9 +248,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
         <select class="sel" id="bairroSel" onchange="onBairroChange()">
           <option value="">Selecione o bairro *</option>
           {% for b in bairros %}
-          <option value="{{ b.id }}" data-fee="{{ b.delivery_fee }}">
-            {{ b.name }} {% if b.delivery_fee > 0 %}(+R$ {{ '%.2f'|format(b.delivery_fee) }}){% endif %}
-          </option>
+          <option value="{{ b.id }}" data-fee="{{ b.delivery_fee }}">{{ b.name }}</option>
           {% endfor %}
         </select>
         <input class="inp" style="margin-top:8px;" id="cliEnd" type="text"
@@ -279,6 +277,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
         </div>
       </div>
 
+      <!-- Cupom -->
+      <div class="sec">
+        <div class="sec-label">Cupom de desconto</div>
+        <div style="display:flex;gap:8px;">
+          <input class="inp" id="cupomInput" type="text" placeholder="Digite o código" style="text-transform:uppercase;flex:1;">
+          <button onclick="aplicarCupom()" style="background:#1a1a2e;color:#c9a84c;border:none;border-radius:10px;padding:0 16px;font-weight:700;font-size:.85rem;cursor:pointer;">Aplicar</button>
+        </div>
+        <div id="cupomMsg" style="font-size:.78rem;margin-top:5px;"></div>
+      </div>
+
       <!-- Observação -->
       <div class="sec" style="margin-bottom:4px;">
         <div class="sec-label">Observação (opcional)</div>
@@ -303,6 +311,7 @@ let todos = [];
 let carrinho = [];
 let pgto = 'entrega_dinheiro';
 let taxaEntrega = 0;
+let cupomAplicado = null; // { code, type, amount, desconto }
 
 // Carrega produtos
 fetch(`/loja/${SLUG}/produtos`)
@@ -470,13 +479,34 @@ function renderCartItens() {
 }
 
 function renderCartTotais() {
-  const sub   = carrinho.reduce((s, i) => s + i.price * i.qty, 0);
-  const total = sub + taxaEntrega;
-  const el    = document.getElementById('cartTotais');
+  const sub      = carrinho.reduce((s, i) => s + i.price * i.qty, 0);
+  const desconto = cupomAplicado ? cupomAplicado.desconto : 0;
+  const total    = sub + taxaEntrega - desconto;
+  const el       = document.getElementById('cartTotais');
   el.innerHTML = `
     <div class="tot-row"><span>Subtotal</span><span>R$ ${fmt(sub)}</span></div>
     ${taxaEntrega > 0 ? `<div class="tot-row"><span>Taxa de entrega</span><span>R$ ${fmt(taxaEntrega)}</span></div>` : ''}
-    <div class="tot-total"><span>Total</span><span>R$ ${fmt(total)}</span></div>`;
+    ${desconto > 0 ? `<div class="tot-row" style="color:#27ae60;"><span>Desconto (${cupomAplicado.code})</span><span>− R$ ${fmt(desconto)}</span></div>` : ''}
+    <div class="tot-total"><span>Total</span><span>R$ ${fmt(Math.max(0, total))}</span></div>`;
+}
+
+async function aplicarCupom() {
+  const code = document.getElementById('cupomInput').value.trim().toUpperCase();
+  const msg  = document.getElementById('cupomMsg');
+  if (!code) return;
+  msg.textContent = 'Verificando…'; msg.style.color = '#888';
+  try {
+    const r = await fetch(`/loja/${SLUG}/cupom/${encodeURIComponent(code)}`);
+    const d = await r.json();
+    if (d.error) { msg.textContent = d.error; msg.style.color = '#eb5757'; cupomAplicado = null; }
+    else {
+      const sub = carrinho.reduce((s, i) => s + i.price * i.qty, 0);
+      const desconto = d.type === 'percent' ? sub * d.amount / 100 : Math.min(d.amount, sub);
+      cupomAplicado = { code, type: d.type, amount: d.amount, desconto };
+      msg.textContent = `Cupom aplicado! Desconto de R$ ${fmt(desconto)}`; msg.style.color = '#27ae60';
+      renderCartTotais();
+    }
+  } catch(e) { msg.textContent = 'Erro ao verificar cupom.'; msg.style.color = '#eb5757'; }
 }
 
 function abrirCarrinho() {
@@ -535,6 +565,7 @@ function fazerPedido() {
       payment_method: pgto,
       troco_para:     troco,
       notes:          document.getElementById('obsInput').value.trim(),
+      cupom_code:     cupomAplicado ? cupomAplicado.code : null,
       items: carrinho.map(i => ({
         product_id: i.id,
         name:       i.name,
