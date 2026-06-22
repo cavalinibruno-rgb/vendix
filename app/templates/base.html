@@ -498,11 +498,14 @@
         if (d.ok) {
           stopAlarm();
           bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
-          // Impressão silenciosa: abre comprovante em popup e imprime automaticamente
+          // Impressão do comprovante
           if (d.sale_id) {
-            const pw = window.open(`/vendas/${d.sale_id}/comprovante?autoprint=1`, '_blank',
-              'width=400,height=600,menubar=no,toolbar=no,location=no,status=no');
-            if (pw) { pw.onafterprint = () => pw.close(); }
+            const url = `${location.origin}/vendas/${d.sale_id}/comprovante?autoprint=1`;
+            if (window.electronAPI) {
+              window.electronAPI.printSilent(url); // silenciosa via Electron
+            } else {
+              window.open(url, '_blank');
+            }
           }
           // Se estiver na página de Entregas, recarrega para mostrar o novo pedido
           if (window.location.pathname.startsWith('/entregas')) {
