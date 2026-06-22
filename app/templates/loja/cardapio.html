@@ -49,6 +49,35 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
               padding:14px 18px;font-weight:700;font-size:.95rem;
               display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
 
+/* Bottom sheet produto */
+.prod-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;
+              display:none;align-items:flex-end;}
+.prod-overlay.show{display:flex;}
+.prod-sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;
+            padding-bottom:calc(16px + env(safe-area-inset-bottom));
+            animation:slideUp .25s ease-out;}
+.prod-sheet-img{width:100%;height:200px;object-fit:contain;background:#f9f9f9;
+                display:block;border-radius:20px 20px 0 0;padding:16px;}
+.prod-sheet-ph{width:100%;height:200px;background:#f5f5f5;border-radius:20px 20px 0 0;
+               display:flex;align-items:center;justify-content:center;font-size:3rem;color:#ddd;}
+.prod-sheet-info{padding:14px 18px 8px;}
+.prod-sheet-name{font-size:1.05rem;font-weight:700;color:#1a1a2e;margin-bottom:4px;}
+.prod-sheet-price{font-size:1.15rem;font-weight:800;color:#c9a84c;}
+.prod-sheet-close{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.35);
+                  border:none;border-radius:50%;width:32px;height:32px;color:#fff;
+                  font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.prod-qty-row{display:flex;align-items:center;justify-content:center;gap:20px;
+              padding:14px 18px;}
+.prod-qty-btn{width:44px;height:44px;border-radius:50%;border:2px solid #e0e0e0;
+              background:#fff;font-size:1.4rem;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;font-weight:700;color:#1a1a2e;}
+.prod-qty-btn:active{background:#f0f0f0;}
+.prod-qty-num{font-size:1.3rem;font-weight:800;color:#1a1a2e;min-width:36px;text-align:center;}
+.prod-add-btn{margin:0 18px;width:calc(100% - 36px);background:#c9a84c;color:#1a1a2e;
+              border:none;border-radius:14px;padding:15px 18px;font-weight:800;font-size:.95rem;
+              display:flex;justify-content:space-between;cursor:pointer;}
+.prod-add-btn:active{background:#b8943d;}
+
 /* Overlay carrinho */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;
          display:none;align-items:flex-end;}
@@ -148,6 +177,27 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
     <span id="cartBarDesc">🛒 Ver carrinho</span>
     <span id="cartBarTotal">R$ 0,00</span>
   </button>
+</div>
+
+<!-- Bottom sheet: detalhe do produto -->
+<div class="prod-overlay" id="prodOverlay" onclick="fecharProdSheet(event)">
+  <div class="prod-sheet" style="position:relative;">
+    <div id="prodSheetImg"></div>
+    <button class="prod-sheet-close" onclick="fecharProdSheetDireto()">✕</button>
+    <div class="prod-sheet-info">
+      <div class="prod-sheet-name" id="prodSheetName"></div>
+      <div class="prod-sheet-price" id="prodSheetPrice"></div>
+    </div>
+    <div class="prod-qty-row">
+      <button class="prod-qty-btn" onclick="prodQty(-1)">−</button>
+      <span class="prod-qty-num" id="prodSheetQty">1</span>
+      <button class="prod-qty-btn" onclick="prodQty(1)">+</button>
+    </div>
+    <button class="prod-add-btn" id="prodAddBtn" onclick="confirmarAddItem()">
+      <span id="prodAddLabel">Adicionar (1)</span>
+      <span id="prodAddTotal">R$ 0,00</span>
+    </button>
+  </div>
 </div>
 
 <!-- Overlay / Sheet do carrinho e checkout -->
@@ -267,13 +317,58 @@ function renderGrid(lista) {
     </div>`).join('');
 }
 
+let _prodSheet = null;
+let _prodSheetQty = 1;
+
 function addItem(id) {
   const prod = todos.find(p => p.id === id);
   if (!prod) return;
+  _prodSheet = prod;
+  // qty inicial: já no carrinho? mostra qty atual, senão 1
   const ex = carrinho.find(i => i.id === id);
-  if (ex) ex.qty++;
-  else carrinho.push({ id: prod.id, name: prod.name, price: prod.price, qty: 1 });
+  _prodSheetQty = ex ? ex.qty : 1;
+
+  // Imagem
+  const imgEl = document.getElementById('prodSheetImg');
+  imgEl.innerHTML = prod.thumb
+    ? `<img class="prod-sheet-img" src="${prod.thumb}" alt="${prod.name}">`
+    : `<div class="prod-sheet-ph">🍽️</div>`;
+
+  document.getElementById('prodSheetName').textContent  = prod.name;
+  document.getElementById('prodSheetPrice').textContent = 'R$ ' + fmt(prod.price);
+  _atualizarSheetQty();
+  document.getElementById('prodOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function _atualizarSheetQty() {
+  document.getElementById('prodSheetQty').textContent  = _prodSheetQty;
+  document.getElementById('prodAddLabel').textContent  = `Adicionar (${_prodSheetQty})`;
+  document.getElementById('prodAddTotal').textContent  = 'R$ ' + fmt(_prodSheet.price * _prodSheetQty);
+}
+
+function prodQty(delta) {
+  _prodSheetQty = Math.max(1, _prodSheetQty + delta);
+  _atualizarSheetQty();
+}
+
+function confirmarAddItem() {
+  if (!_prodSheet) return;
+  const idx = carrinho.findIndex(i => i.id === _prodSheet.id);
+  if (idx >= 0) carrinho[idx].qty = _prodSheetQty;
+  else carrinho.push({ id: _prodSheet.id, name: _prodSheet.name, price: _prodSheet.price, qty: _prodSheetQty });
   atualizarCartUI();
+  fecharProdSheetDireto();
+}
+
+function fecharProdSheetDireto() {
+  document.getElementById('prodOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+  _prodSheet = null;
+}
+
+function fecharProdSheet(e) {
+  if (e.target === document.getElementById('prodOverlay')) fecharProdSheetDireto();
 }
 
 function changeQty(id, delta) {
