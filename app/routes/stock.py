@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from app.auth_utils import autenticar_operador
 from flask_login import login_required, current_user
 from app import db
-from app.models.product import Product, ProductType
+from app.models.product import Product, ProductType, Brand
 from app.models.stock import StockMovement
 from datetime import date, datetime
 
@@ -29,7 +29,9 @@ def registrar_movimento(tenant_id, product, tipo, quantidade, motivo, user=None)
 def index():
     q        = request.args.get('q', '')
     tipo_id  = request.args.get('tipo', type=int)
+    marca_id = request.args.get('marca', type=int)
     tipos    = ProductType.query.filter_by(tenant_id=tid()).order_by(ProductType.name).all()
+    marcas   = Brand.query.filter_by(tenant_id=tid()).order_by(Brand.name).all()
 
     ordem    = request.args.get('ordem', '')
 
@@ -40,6 +42,8 @@ def index():
         query = query.filter(Product.name.ilike(f'%{q}%'))
     if tipo_id:
         query = query.filter_by(type_id=tipo_id)
+    if marca_id:
+        query = query.filter_by(brand_id=marca_id)
     if ordem == 'estoque_asc':
         query = query.order_by(Product.stock_quantity.asc())
     elif ordem == 'estoque_desc':
@@ -67,6 +71,7 @@ def index():
 
     return render_template('stock/index.html',
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
+        marcas=marcas, marca_id=marca_id,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
     )
 

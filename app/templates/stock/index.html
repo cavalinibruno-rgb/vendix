@@ -29,14 +29,20 @@
         <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
           <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
                  style="max-width:200px;" placeholder="Buscar produto...">
-          <select name="tipo" class="form-select form-select-sm" style="max-width:160px;" onchange="this.form.submit()">
+          <select name="tipo" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
             <option value="">Todos os tipos</option>
             {% for t in tipos %}
             <option value="{{ t.id }}" {% if t.id == tipo_id %}selected{% endif %}>{{ t.name }}</option>
             {% endfor %}
           </select>
+          <select name="marca" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
+            <option value="">Todas as marcas</option>
+            {% for m in marcas %}
+            <option value="{{ m.id }}" {% if m.id == marca_id %}selected{% endif %}>{{ m.name }}</option>
+            {% endfor %}
+          </select>
           <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search me-1"></i>Filtrar</button>
-          {% if q or tipo_id %}
+          {% if q or tipo_id or marca_id %}
           <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
           {% endif %}
           {# preservar filtros de movimentação #}
@@ -54,7 +60,7 @@
               <th>Tipo</th>
               <th class="text-center">
                 {% set prox = 'estoque_asc' if ordem != 'estoque_asc' else 'estoque_desc' %}
-                <a href="{{ url_for('stock.index', q=q, tipo=tipo_id, mov_tipo=filtro_tipo, mov_data=filtro_data, ordem=prox) }}"
+                <a href="{{ url_for('stock.index', q=q, tipo=tipo_id, marca=marca_id, mov_tipo=filtro_tipo, mov_data=filtro_data, ordem=prox) }}"
                    class="text-decoration-none text-dark">
                   Estoque
                   {% if ordem == 'estoque_asc' %}<i class="bi bi-sort-numeric-up ms-1"></i>
