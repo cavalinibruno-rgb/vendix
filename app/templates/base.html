@@ -498,14 +498,16 @@
         if (d.ok) {
           stopAlarm();
           bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
-          // Impressão do comprovante
+          // Impressão via iframe oculto (funciona no Electron sem atualização)
           if (d.sale_id) {
-            const url = `${location.origin}/vendas/${d.sale_id}/comprovante?autoprint=1`;
-            if (window.electronAPI) {
-              window.electronAPI.printSilent(url); // silenciosa via Electron
-            } else {
-              window.open(url, '_blank');
-            }
+            const fr = document.createElement('iframe');
+            fr.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;';
+            fr.src = `/vendas/${d.sale_id}/comprovante`;
+            document.body.appendChild(fr);
+            fr.onload = () => {
+              fr.contentWindow.print();
+              setTimeout(() => fr.remove(), 5000);
+            };
           }
           // Se estiver na página de Entregas, recarrega para mostrar o novo pedido
           if (window.location.pathname.startsWith('/entregas')) {
