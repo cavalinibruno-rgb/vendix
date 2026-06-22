@@ -125,21 +125,21 @@
     <table class="table table-sm table-hover mb-0 align-middle">
       <thead class="table-light">
         <tr>
-          <th>#</th>
+          <th class="ps-4">#</th>
           <th>Concluída às</th>
           <th>Cliente</th>
           <th>Motoboy</th>
-          <th class="text-end">Total</th>
+          <th class="text-end pe-4">Total</th>
         </tr>
       </thead>
       <tbody id="tbodyConcluidas">
         {% for v in concluidas %}
         <tr>
-          <td class="text-muted small">#{{ v.id }}</td>
+          <td class="text-muted small ps-4">#{{ v.id }}</td>
           <td class="small text-nowrap text-success">{{ v.delivered_at.strftime('%d/%m %H:%M') }}</td>
           <td>{{ v.customer.name if v.customer else '—' }}</td>
           <td><span class="badge bg-success">{{ v.motoboy_name or '—' }}</span></td>
-          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+          <td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>
         </tr>
         {% else %}
         <tr><td colspan="5" class="text-center text-muted py-3">Nenhuma entrega concluída ainda.</td></tr>
