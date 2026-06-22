@@ -42,7 +42,10 @@
 
 <!-- Lista de lojas -->
 <div class="card">
-  <div class="card-header"><i class="bi bi-shop me-2 text-warning"></i>Lojas Cadastradas</div>
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-shop me-2 text-warning"></i>Lojas Cadastradas</span>
+    <span class="badge bg-warning text-dark fw-bold">{{ tenants|length }}</span>
+  </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead class="table-light">
