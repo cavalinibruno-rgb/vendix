@@ -430,6 +430,15 @@
         <div class="mb-3">
           <label class="form-label fw-semibold">Bairro</label>
           <select id="novoCliBairro" class="form-select"></select>
+          <div class="form-text" id="novoCliBairroMsg"></div>
+          <div id="novoCliBairroNovo" class="mt-2 p-2 border rounded" style="display:none;">
+            <div class="small mb-1">Cadastrar bairro <strong id="nbNome"></strong>:</div>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">Taxa R$</span>
+              <input type="text" id="nbTaxa" class="form-control" inputmode="decimal" placeholder="0,00">
+              <button type="button" class="btn btn-warning" id="nbSalvar">Salvar bairro</button>
+            </div>
+          </div>
         </div>
         <div class="mb-2">
           <label class="form-label fw-semibold">Endereço</label>
@@ -701,6 +710,8 @@ function abrirModalCliente() {
   document.getElementById('novoCliCep').value   = '';
   document.getElementById('novoCliEndereco').value = '';
   document.getElementById('novoCliBairro').value = '';
+  document.getElementById('novoCliBairroMsg').textContent = '';
+  document.getElementById('novoCliBairroNovo').style.display = 'none';
   document.getElementById('modalClienteMsg').textContent = '';
   // Copia as opções de bairro do select principal para o modal
   const origem = document.getElementById('bairroSelect');
@@ -729,16 +740,67 @@ function buscarCepModal() {
     .then(d => {
       if (d.erro) return;
       if (d.logradouro) document.getElementById('novoCliEndereco').value = d.logradouro;
+      const bMsg = document.getElementById('novoCliBairroMsg');
+      const bNovo = document.getElementById('novoCliBairroNovo');
+      bMsg.textContent = '';
+      bNovo.style.display = 'none';
       if (d.bairro) {
         const sel = document.getElementById('novoCliBairro');
         const alvo = d.bairro.trim().toLowerCase();
+        let achou = false;
         for (const opt of sel.options) {
           const nome = opt.text.split('(')[0].trim().toLowerCase();
-          if (nome === alvo) { sel.value = opt.value; break; }
+          if (nome === alvo) { sel.value = opt.value; achou = true; break; }
+        }
+        if (achou) {
+          bMsg.innerHTML = `<span class="text-success">Bairro "${d.bairro}" selecionado.</span>`;
+        } else {
+          bMsg.innerHTML = `<span class="text-warning">Bairro "${d.bairro}" ainda não cadastrado.</span>`;
+          document.getElementById('nbNome').textContent = d.bairro;
+          document.getElementById('nbTaxa').value = '';
+          bNovo.dataset.nome = d.bairro;
+          bNovo.style.display = '';
         }
       }
     }).catch(()=>{});
 }
+
+// Salvar bairro novo a partir do modal de cliente
+document.getElementById('nbSalvar').addEventListener('click', function() {
+  const bNovo = document.getElementById('novoCliBairroNovo');
+  const nome = bNovo.dataset.nome || document.getElementById('nbNome').textContent;
+  const taxa = document.getElementById('nbTaxa').value.replace(',', '.').trim() || '0';
+  if (!nome) return;
+  fetch("{{ url_for('customers.bairro_criar_ajax') }}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: nome, fee: taxa }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.error) {
+      document.getElementById('novoCliBairroMsg').innerHTML = `<span class="text-danger">${d.error}</span>`;
+      return;
+    }
+    const label = `${d.name} (R$ ${parseFloat(d.fee).toFixed(2)})`;
+    // Adiciona o bairro ao select do modal E ao select principal da venda
+    [document.getElementById('novoCliBairro'), document.getElementById('bairroSelect')].forEach(sel => {
+      if (sel && ![...sel.options].some(o => o.value == d.id)) {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.setAttribute('data-fee', d.fee);
+        opt.text = label;
+        sel.appendChild(opt);
+      }
+    });
+    document.getElementById('novoCliBairro').value = d.id;
+    document.getElementById('novoCliBairroMsg').innerHTML = `<span class="text-success">Bairro "${d.name}" cadastrado e selecionado.</span>`;
+    bNovo.style.display = 'none';
+  })
+  .catch(() => {
+    document.getElementById('novoCliBairroMsg').innerHTML = '<span class="text-danger">Erro ao salvar o bairro.</span>';
+  });
+});
 
 document.getElementById('btnSalvarCliente').addEventListener('click', function() {
   const nome = document.getElementById('novoCliNome').value.trim();
