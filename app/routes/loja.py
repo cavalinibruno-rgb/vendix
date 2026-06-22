@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort, send_file
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort, send_file, make_response
 from app import db
 from app.models.tenant import Tenant
 from app.models.product import Product, ProductType
@@ -31,24 +31,30 @@ def api_produtos(slug):
     produtos = Product.query.filter_by(tenant_id=tenant.id, active=True).order_by(Product.name).all()
     out = []
     for p in produtos:
-        thumb = None
-        if p.thumbnail_data:
-            import base64
-            mime  = p.image_mime or 'image/jpeg'
-            thumb = f'data:{mime};base64,{base64.b64encode(p.thumbnail_data).decode()}'
-        elif p.image_data:
-            import base64
-            mime  = p.image_mime or 'image/jpeg'
-            thumb = f'data:{mime};base64,{base64.b64encode(p.image_data[:8192]).decode()}'
+        has_foto = bool(p.thumbnail_data or p.image_data)
         out.append({
-            'id':       p.id,
-            'name':     p.name,
-            'price':    p.sale_price,
-            'type_id':  p.type_id,
+            'id':        p.id,
+            'name':      p.name,
+            'price':     p.sale_price,
+            'type_id':   p.type_id,
             'type_name': p.type.name if p.type else None,
-            'thumb':    thumb,
+            'thumb':     f'/loja/{slug}/produto/{p.id}/foto' if has_foto else None,
         })
     return jsonify(out)
+
+
+@loja_bp.route('/<slug>/produto/<int:produto_id>/foto')
+def foto_produto(slug, produto_id):
+    tenant = _get_tenant(slug)
+    p = Product.query.filter_by(id=produto_id, tenant_id=tenant.id).first_or_404()
+    data = p.thumbnail_data or p.image_data
+    if not data:
+        abort(404)
+    mime = p.image_mime or 'image/jpeg'
+    resp = make_response(data)
+    resp.headers['Content-Type'] = mime
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
 
 
 # ── Fazer pedido ────────────────────────────────────────
