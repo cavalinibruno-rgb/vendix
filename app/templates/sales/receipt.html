@@ -312,9 +312,27 @@
   </div>
 
   <!-- PAGAMENTO -->
+  {% set pgto_label = {
+    'dinheiro': 'Dinheiro', 'cartao': 'Cartão', 'pix': 'Pix', 'conta': 'Conta',
+    'pelo_app': 'Pelo App', 'entrega_dinheiro': 'Dinheiro (entrega)',
+    'entrega_cartao': 'Cartão (entrega)', 'entrega_pix': 'Pix (entrega)',
+    'combinado': 'Pagamento Combinado'
+  } %}
+  {% if sale.payment_method == 'combinado' and payment_entries %}
+  <div class="totals-row bold" style="margin-top:2mm;">
+    <span>PAGAMENTO</span>
+    <span>COMBINADO</span>
+  </div>
+  {% for e in payment_entries %}
+  <div class="totals-row">
+    <span>{{ pgto_label.get(e.method, e.method | upper) }}</span>
+    <span>R$ {{ '%.2f' | format(e.amount | float) }}</span>
+  </div>
+  {% endfor %}
+  {% else %}
   <div class="totals-row bold" style="margin-top:2mm;">
     <span>Pagamento</span>
-    <span>{{ sale.payment_method | upper }}</span>
+    <span>{{ pgto_label.get(sale.payment_method, sale.payment_method | upper) }}</span>
   </div>
   {% if sale.amount_paid %}
   <div class="totals-row">
@@ -327,6 +345,7 @@
     <span>Troco</span>
     <span>R$ {{ '%.2f' | format(sale.change_amount) }}</span>
   </div>
+  {% endif %}
   {% endif %}
 
   {% if sale.notes %}

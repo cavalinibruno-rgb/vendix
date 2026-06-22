@@ -35,6 +35,7 @@ def confirmar():
     if not data or not data.get('items'):
         return jsonify({'error': 'Carrinho vazio'}), 400
 
+    import json as _json
     customer_id    = data.get('customer_id') or None
     delivery_mode  = data.get('delivery_mode', 'retirada')
     delivery_fee   = float(data.get('delivery_fee', 0))
@@ -46,6 +47,14 @@ def confirmar():
     items          = data.get('items', [])
     discount_type  = data.get('discount_type') or None   # 'value' | 'percent' | None
     discount_input = float(data.get('discount', 0) or 0)
+
+    # Pagamento combinado
+    payment_entries_raw  = data.get('payment_entries') or []
+    payment_entries_json = None
+    if payment_entries_raw:
+        payment_method       = 'combinado'
+        payment_entries_json = _json.dumps(payment_entries_raw)
+        amount_paid          = round(sum(float(e.get('amount', 0)) for e in payment_entries_raw), 2)
 
     subtotal = sum(float(i['unit_price']) * float(i['quantity']) for i in items)
 
@@ -75,9 +84,10 @@ def confirmar():
         notes          = notes,
         source         = source,
         app_name       = app_name,
-        amount_paid    = amount_paid,
-        change_amount  = round(amount_paid - total, 2) if amount_paid and amount_paid > total else None,
-        cashier_name   = cashier,
+        amount_paid      = amount_paid,
+        change_amount    = round(amount_paid - total, 2) if amount_paid and amount_paid > total else None,
+        cashier_name     = cashier,
+        payment_entries  = payment_entries_json,
     )
     db.session.add(sale)
     db.session.flush()
@@ -237,11 +247,20 @@ def comprovante(sale_id):
                         entries.append(type('C', (), {'name': comp.name, 'quantity': ci.quantity})())
                 combo_map[item.product_id] = entries
 
+    import json as _json
+    payment_entries = []
+    if sale.payment_method == 'combinado' and sale.payment_entries:
+        try:
+            payment_entries = _json.loads(sale.payment_entries)
+        except Exception:
+            pass
+
     return render_template('sales/receipt.html',
         sale=sale,
         store_name=store_name,
         combo_map=combo_map,
         autoprint=autoprint,
+        payment_entries=payment_entries,
     )
 
 @sales_bp.route('/<int:sale_id>/cancelar', methods=['POST'])

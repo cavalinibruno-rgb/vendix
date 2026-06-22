@@ -394,9 +394,33 @@
                 </div>
               </div>
             </div>
-            <button type="button" class="btn-2formas" onclick="usar2Formas()">
-              <i class="bi bi-layers"></i> Utilizar 2 Formas de Pagamento
+            <button type="button" class="btn-2formas" id="btnCombinar" onclick="usar2Formas()">
+              <i class="bi bi-layers"></i> Combinar Formas de Pagamento
             </button>
+            <!-- Painel de pagamento combinado -->
+            <div id="painelCombinado" style="display:none;" class="mt-2">
+              <div id="listaCombinados"></div>
+              <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-1" onclick="adicionarLinhaPgto()">
+                <i class="bi bi-plus-lg me-1"></i>Adicionar forma
+              </button>
+              <div class="mt-2 px-2 py-2" style="background:#252525;border-radius:8px;font-size:.82rem;">
+                <div class="d-flex justify-content-between mb-1">
+                  <span style="color:#aaa;">Total da venda:</span>
+                  <span id="combinadoTotal" style="color:#ddd;">R$ 0,00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                  <span style="color:#aaa;">Alocado:</span>
+                  <span id="combinadoAlocado" style="color:#6fcf97;">R$ 0,00</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span style="color:#aaa;">Faltando:</span>
+                  <span id="combinadoFaltando" style="color:#eb5757;">R$ 0,00</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-link btn-sm text-muted w-100 mt-1" onclick="cancelarCombinado()">
+                Cancelar combinação
+              </button>
+            </div>
           </div>
         </div>
 
@@ -956,6 +980,8 @@ function calcTotais() {
 
   // Recalcula o troco se o campo de dinheiro estiver visível
   if (document.getElementById('campoTroco').style.display !== 'none') calcTroco();
+  // Recalcula painel combinado se ativo
+  if (modoCombinado) calcCombinado();
 }
 function renderResumo() { calcTotais(); }
 
@@ -970,6 +996,7 @@ function setOrigem(o) {
   document.getElementById('campoApp').style.display  = o === 'app'  ? '' : 'none';
   document.getElementById('pgtoLoja').style.display  = o === 'loja' ? 'flex' : 'none';
   document.getElementById('pgtoApp').style.display   = o === 'app'  ? 'flex' : 'none';
+  cancelarCombinado();
   // App não precisa de cliente — esconde a seção e limpa a seleção
   document.getElementById('secaoCliente').style.display = o === 'app' ? 'none' : '';
   if (o === 'app') {
@@ -981,6 +1008,7 @@ function setOrigem(o) {
 
 // ── Pagamento ─────────────────────────────────────────
 function setPgto(card) {
+  if (modoCombinado) cancelarCombinado();
   pgto = card.dataset.pgto;
   document.querySelectorAll('.pgto-card').forEach(c => c.classList.toggle('active', c === card));
   const isDinheiro = pgto === 'dinheiro' || pgto === 'entrega_dinheiro';
@@ -1012,9 +1040,90 @@ function calcTroco() {
   }
 }
 
-// Placeholder — implementar divisão de pagamento futuramente
+// ── Pagamento combinado ───────────────────────────────
+let modoCombinado = false;
+
 function usar2Formas() {
-  aviso('Pagamento em 2 formas será implementado em breve.');
+  if (modoCombinado) { cancelarCombinado(); return; }
+  modoCombinado = true;
+  pgto = null;
+  document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('campoTroco').style.display = 'none';
+  document.getElementById('painelCombinado').style.display = '';
+  document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-x-lg me-1"></i>Cancelar combinação';
+  // Inicia com 2 linhas
+  const lista = document.getElementById('listaCombinados');
+  lista.innerHTML = '';
+  adicionarLinhaPgto();
+  adicionarLinhaPgto();
+  calcCombinado();
+}
+
+function cancelarCombinado() {
+  modoCombinado = false;
+  document.getElementById('painelCombinado').style.display = 'none';
+  document.getElementById('listaCombinados').innerHTML = '';
+  document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-layers me-1"></i>Combinar Formas de Pagamento';
+}
+
+function adicionarLinhaPgto() {
+  const lista = document.getElementById('listaCombinados');
+  const div = document.createElement('div');
+  div.className = 'd-flex gap-2 align-items-center mb-2 linha-pgto';
+  const isApp = origem === 'app';
+  const opts = isApp
+    ? `<option value="pelo_app">📱 Pelo App</option>
+       <option value="entrega_dinheiro">💵 Dinheiro (entrega)</option>
+       <option value="entrega_cartao">💳 Cartão (entrega)</option>
+       <option value="entrega_pix">☐ Pix (entrega)</option>`
+    : `<option value="dinheiro">💵 Dinheiro</option>
+       <option value="cartao">💳 Cartão</option>
+       <option value="pix">☐ Pix</option>
+       <option value="conta">👤 Conta</option>`;
+  div.innerHTML = `
+    <select class="form-select form-select-sm" style="background:#2d2d2d;border-color:#444;color:#ddd;min-width:0;" onchange="calcCombinado()">${opts}</select>
+    <input type="text" class="form-control form-control-sm text-end" inputmode="decimal" placeholder="0,00"
+           style="width:90px;background:#2d2d2d;border-color:#444;color:#ddd;" oninput="calcCombinado()">
+    <button type="button" class="btn btn-sm btn-link text-danger p-0" style="flex-shrink:0;" onclick="removerLinhaPgto(this)">
+      <i class="bi bi-x-lg"></i>
+    </button>`;
+  lista.appendChild(div);
+  setTimeout(() => div.querySelector('input').focus(), 60);
+}
+
+function removerLinhaPgto(btn) {
+  btn.closest('.linha-pgto').remove();
+  calcCombinado();
+}
+
+function getLinhasCombinadas() {
+  return [...document.querySelectorAll('.linha-pgto')].map(div => ({
+    method: div.querySelector('select').value,
+    amount: parseFloat(div.querySelector('input').value.replace(',', '.')) || 0,
+  }));
+}
+
+function getTotal() {
+  const subtotal = carrinho.reduce((s, i) => s + i.total, 0);
+  const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
+  return Math.max(0, subtotal - getDesconto(subtotal) + taxa);
+}
+
+function calcCombinado() {
+  const total = getTotal();
+  const linhas = getLinhasCombinadas();
+  const alocado = linhas.reduce((s, l) => s + l.amount, 0);
+  const faltando = total - alocado;
+  document.getElementById('combinadoTotal').textContent = 'R$ ' + fmtNum(total);
+  document.getElementById('combinadoAlocado').textContent = 'R$ ' + fmtNum(alocado);
+  const elFalt = document.getElementById('combinadoFaltando');
+  if (faltando <= 0.005 && alocado > 0) {
+    elFalt.textContent = '✓ Valor completo';
+    elFalt.style.color = '#6fcf97';
+  } else {
+    elFalt.textContent = 'R$ ' + fmtNum(Math.max(0, faltando));
+    elFalt.style.color = faltando > 0.005 ? '#eb5757' : '#6fcf97';
+  }
 }
 
 // ── Aviso ─────────────────────────────────────────────
@@ -1026,6 +1135,40 @@ function aviso(msg) {
 // ── Finalizar ─────────────────────────────────────────
 function finalizarVenda() {
   if (!carrinho.length) { aviso('Adicione pelo menos um produto.'); return; }
+
+  if (modoCombinado) {
+    const linhas = getLinhasCombinadas();
+    if (!linhas.length) { aviso('Adicione pelo menos uma forma de pagamento.'); return; }
+    const total = getTotal();
+    const alocado = linhas.reduce((s, l) => s + l.amount, 0);
+    if (Math.abs(alocado - total) > 0.01) {
+      aviso('O total das formas de pagamento (R$ ' + fmtNum(alocado) + ') não bate com o valor da venda (R$ ' + fmtNum(total) + ').'); return;
+    }
+    if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
+      aviso('Informe o nome do app (iFood, Anotaí, etc.)'); return;
+    }
+    const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
+    const subtotal = carrinho.reduce((s,i)=>s+i.total,0);
+    const payload = {
+      customer_id:     clienteAtual ? clienteAtual.id : null,
+      delivery_mode:   modo, delivery_fee: taxa,
+      payment_method:  'combinado',
+      payment_entries: linhas,
+      notes:           document.getElementById('obsVenda').value,
+      source:          origem,
+      app_name:        origem === 'app' ? document.getElementById('appNome').value.trim() : null,
+      discount:        getDesconto(subtotal),
+      discount_type:   'value',
+      items:           carrinho,
+    };
+    fetch('/vendas/confirmar', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      .then(r=>r.json()).then(d => {
+        if (d.sale_id) window.location.href = `/vendas/${d.sale_id}/comprovante?autoprint=1`;
+        else aviso('Erro: ' + (d.error || 'desconhecido'));
+      }).catch(()=>aviso('Erro ao finalizar venda.'));
+    return;
+  }
+
   if (!pgto) { aviso('Selecione a forma de pagamento.'); return; }
   if (pgto === 'conta' && !clienteAtual) { aviso('Para lançar na Conta, selecione um cliente.'); return; }
   if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
