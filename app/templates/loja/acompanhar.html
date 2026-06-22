@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#1a1a2e">
+<title>Pedido #{{ pedido.id }} – {{ tenant.store_name }}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-height:100vh;}
+.header{background:#1a1a2e;padding:14px 18px;text-align:center;}
+.header-nome{color:#c9a84c;font-size:1rem;font-weight:700;}
+.header-sub{color:#aaa;font-size:.78rem;margin-top:2px;}
+
+.card{background:#fff;border-radius:16px;margin:16px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+
+.pedido-num{text-align:center;margin-bottom:20px;}
+.pedido-num-label{font-size:.75rem;color:#999;text-transform:uppercase;letter-spacing:.05em;}
+.pedido-num-val{font-size:2.2rem;font-weight:800;color:#1a1a2e;line-height:1;}
+
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;align-items:flex-start;gap:14px;padding-bottom:20px;position:relative;}
+.step:last-child{padding-bottom:0;}
+.step:not(:last-child)::after{content:'';position:absolute;left:17px;top:36px;bottom:0;
+  width:2px;background:#e5e5e5;}
+.step.done::after{background:#c9a84c;}
+.step-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;
+          justify-content:center;font-size:1.1rem;flex-shrink:0;z-index:1;}
+.step.done .step-dot{background:#c9a84c;}
+.step.current .step-dot{background:#1a1a2e;animation:pulse 1.4s infinite;}
+.step.pending .step-dot{background:#e5e5e5;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(26,26,46,.3);}50%{box-shadow:0 0 0 8px rgba(26,26,46,0);}}
+.step-info{padding-top:6px;}
+.step-title{font-size:.9rem;font-weight:700;color:#1a1a2e;}
+.step.pending .step-title{color:#bbb;}
+.step-time{font-size:.75rem;color:#999;margin-top:2px;}
+.step-desc{font-size:.78rem;color:#888;margin-top:3px;}
+
+/* Status cards */
+.status-banner{text-align:center;padding:16px;border-radius:12px;margin-bottom:16px;}
+.status-banner.waiting{background:#fff8e6;border:1.5px solid #f0cc5a;}
+.status-banner.accepted{background:#f0fdf4;border:1.5px solid #86efac;}
+.status-banner.dispatched{background:#eff6ff;border:1.5px solid #93c5fd;}
+.status-banner.rejected{background:#fff1f2;border:1.5px solid #fca5a5;}
+.status-icon{font-size:2.2rem;display:block;margin-bottom:6px;}
+.status-text{font-size:.9rem;font-weight:700;color:#1a1a2e;}
+.status-sub{font-size:.78rem;color:#888;margin-top:3px;}
+
+/* Resumo */
+.resumo-item{display:flex;justify-content:space-between;font-size:.85rem;color:#444;padding:5px 0;
+             border-bottom:1px solid #f5f5f5;}
+.resumo-item:last-child{border-bottom:none;}
+.resumo-total{display:flex;justify-content:space-between;font-size:.95rem;font-weight:700;
+              color:#1a1a2e;padding-top:10px;margin-top:4px;border-top:2px solid #f0f0f0;}
+
+.sec-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+           color:#999;margin-bottom:10px;}
+
+.pgto-badge{display:inline-flex;align-items:center;gap:6px;background:#f5f5f5;
+            border-radius:8px;padding:6px 12px;font-size:.85rem;font-weight:600;color:#444;}
+
+.btn-voltar{display:block;text-align:center;margin:0 16px 24px;padding:13px;
+            background:#1a1a2e;color:#c9a84c;border-radius:12px;font-weight:700;
+            text-decoration:none;font-size:.9rem;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-nome">{{ tenant.store_name }}</div>
+  <div class="header-sub">Acompanhe seu pedido</div>
+</div>
+
+<div class="card">
+  <div class="pedido-num">
+    <div class="pedido-num-label">Pedido Nº</div>
+    <div class="pedido-num-val">#{{ pedido.id }}</div>
+  </div>
+
+  <!-- Banner de status (atualizado via JS) -->
+  <div id="statusBanner" class="status-banner waiting">
+    <span class="status-icon">⏳</span>
+    <div class="status-text">Aguardando confirmação da loja</div>
+    <div class="status-sub">Você será notificado quando o pedido for aceito</div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+    <div class="step done" id="step-received">
+      <div class="step-dot">✓</div>
+      <div class="step-info">
+        <div class="step-title">Pedido recebido</div>
+        <div class="step-time">{{ pedido.created_at.strftime('%H:%M') }}</div>
+      </div>
+    </div>
+    <div class="step current" id="step-accepted">
+      <div class="step-dot" id="dot-accepted">🕐</div>
+      <div class="step-info">
+        <div class="step-title">Confirmado pela loja</div>
+        <div class="step-time" id="time-accepted">—</div>
+      </div>
+    </div>
+    <div class="step pending" id="step-dispatched">
+      <div class="step-dot" id="dot-dispatched">🛵</div>
+      <div class="step-info">
+        <div class="step-title">Saiu para entrega</div>
+        <div class="step-time" id="time-dispatched">—</div>
+      </div>
+    </div>
+    <div class="step pending" id="step-delivered">
+      <div class="step-dot">🏠</div>
+      <div class="step-info">
+        <div class="step-title">Entregue</div>
+        <div class="step-time">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Resumo do pedido -->
+<div class="card">
+  <div class="sec-label">Resumo do pedido</div>
+  {% for item in pedido.items %}
+  <div class="resumo-item">
+    <span>{{ item.name }} ×{{ item.quantity|int }}</span>
+    <span>R$ {{ '%.2f'|format(item.total) }}</span>
+  </div>
+  {% endfor %}
+  {% if pedido.taxa_entrega and pedido.taxa_entrega > 0 %}
+  <div class="resumo-item">
+    <span>Taxa de entrega</span>
+    <span>R$ {{ '%.2f'|format(pedido.taxa_entrega) }}</span>
+  </div>
+  {% endif %}
+  <div class="resumo-total">
+    <span>Total</span>
+    <span>R$ {{ '%.2f'|format(pedido.total) }}</span>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div class="sec-label">Pagamento</div>
+    {% set pgto_labels = {
+      'entrega_dinheiro': '💵 Dinheiro na entrega',
+      'entrega_cartao':   '💳 Cartão na entrega',
+      'entrega_pix':      '📱 Pix na entrega',
+    } %}
+    <span class="pgto-badge">{{ pgto_labels.get(pedido.payment_method, pedido.payment_method) }}</span>
+    {% if pedido.troco_para and pedido.troco_para > 0 %}
+    <div style="font-size:.78rem;color:#888;margin-top:6px;">Troco para R$ {{ '%.2f'|format(pedido.troco_para) }}</div>
+    {% endif %}
+  </div>
+
+  {% if pedido.notes %}
+  <div style="margin-top:14px;">
+    <div class="sec-label">Observação</div>
+    <div style="font-size:.85rem;color:#444;">{{ pedido.notes }}</div>
+  </div>
+  {% endif %}
+</div>
+
+<a href="/loja/{{ tenant.slug }}" class="btn-voltar">← Voltar ao cardápio</a>
+
+<script>
+const SLUG      = {{ tenant.slug | tojson }};
+const PEDIDO_ID = {{ pedido.id }};
+let lastStatus  = {{ pedido.status | tojson }};
+
+function applyStatus(data) {
+  const s       = data.status;
+  const banner  = document.getElementById('statusBanner');
+
+  if (s === lastStatus && s !== 'pending') return; // no change
+  lastStatus = s;
+
+  // Timeline steps
+  const stepAcc  = document.getElementById('step-accepted');
+  const stepDisp = document.getElementById('step-dispatched');
+  const dotAcc   = document.getElementById('dot-accepted');
+  const timeAcc  = document.getElementById('time-accepted');
+  const timeDisp = document.getElementById('time-dispatched');
+
+  if (s === 'pending') {
+    banner.className = 'status-banner waiting';
+    banner.innerHTML = '<span class="status-icon">⏳</span><div class="status-text">Aguardando confirmação</div><div class="status-sub">A loja está analisando seu pedido…</div>';
+
+  } else if (s === 'accepted') {
+    // Notifica
+    if (Notification.permission === 'granted') {
+      new Notification('Pedido confirmado! 🎉', { body: 'Sua loja confirmou seu pedido. Preparando tudo!' });
+    }
+    banner.className = 'status-banner accepted';
+    banner.innerHTML = '<span class="status-icon">✅</span><div class="status-text">Pedido confirmado!</div><div class="status-sub">A loja está preparando seu pedido.</div>';
+    stepAcc.className = 'step done';
+    dotAcc.textContent = '✓';
+    if (data.accepted_at) timeAcc.textContent = data.accepted_at;
+
+  } else if (s === 'dispatched') {
+    if (Notification.permission === 'granted') {
+      new Notification('Seu pedido saiu! 🛵', { body: 'Seu pedido está a caminho.' });
+    }
+    banner.className = 'status-banner dispatched';
+    banner.innerHTML = '<span class="status-icon">🛵</span><div class="status-text">Saiu para entrega!</div><div class="status-sub">Seu pedido está a caminho.</div>';
+    stepAcc.className  = 'step done';
+    dotAcc.textContent = '✓';
+    if (data.accepted_at) timeAcc.textContent = data.accepted_at;
+    stepDisp.className = 'step done';
+    document.getElementById('dot-dispatched').textContent = '✓';
+    if (data.dispatched_at) timeDisp.textContent = data.dispatched_at;
+
+  } else if (s === 'rejected') {
+    banner.className = 'status-banner rejected';
+    banner.innerHTML = `<span class="status-icon">❌</span><div class="status-text">Pedido recusado</div><div class="status-sub">${data.reject_reason || 'A loja não pôde atender seu pedido.'}</div>`;
+    stepAcc.className = 'step pending';
+    clearInterval(pollTimer);
+  }
+}
+
+// Solicita permissão de notificação
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+// Polling a cada 8 segundos
+function poll() {
+  fetch(`/loja/${SLUG}/pedido/${PEDIDO_ID}/status`)
+    .then(r => r.json())
+    .then(applyStatus)
+    .catch(() => {});
+}
+
+const pollTimer = setInterval(poll, 8000);
+poll(); // imediato
+</script>
+</body>
+</html>

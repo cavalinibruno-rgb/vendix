@@ -156,12 +156,22 @@ def live_stats():
     ultima = Sale.query.filter_by(tenant_id=tid, status='confirmed') \
                        .order_by(Sale.created_at.desc()).first()
 
+    # Pedidos online pendentes
+    from app.models.pedido_online import PedidoOnline
+    pedidos_pendentes = PedidoOnline.query.filter_by(tenant_id=tid, status='pending').count()
+    ultimo_pedido     = PedidoOnline.query.filter_by(tenant_id=tid, status='pending') \
+                                          .order_by(PedidoOnline.created_at.desc()).first()
+
     return jsonify({
-        'qtd_vendas':          len(vendas_caixa),
-        'total_geral':         total_geral,
-        'entregas_pendentes':  entregas_pendentes,
-        'entregas_retorno':    entregas_retorno,
-        'ultima_venda_id':     ultima.id if ultima else None,
-        'ultima_venda_total':  ultima.total if ultima else 0,
+        'qtd_vendas':           len(vendas_caixa),
+        'total_geral':          total_geral,
+        'entregas_pendentes':   entregas_pendentes,
+        'entregas_retorno':     entregas_retorno,
+        'ultima_venda_id':      ultima.id if ultima else None,
+        'ultima_venda_total':   ultima.total if ultima else 0,
         'ultima_venda_cliente': (ultima.customer.name if ultima and ultima.customer else 'Consumidor') if ultima else '',
+        'pedidos_pendentes':    pedidos_pendentes,
+        'ultimo_pedido_id':     ultimo_pedido.id if ultimo_pedido else None,
+        'ultimo_pedido_nome':   ultimo_pedido.cliente_nome if ultimo_pedido else '',
+        'ultimo_pedido_total':  ultimo_pedido.total if ultimo_pedido else 0,
     })

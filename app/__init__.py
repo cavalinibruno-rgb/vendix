@@ -162,6 +162,8 @@ def create_app():
     from app.routes.despacho import despacho_bp
     from app.routes.config import config_bp
     from app.routes.dre import dre_bp
+    from app.routes.loja import loja_bp
+    from app.routes.pedidos_online import pedidos_online_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -177,6 +179,8 @@ def create_app():
     app.register_blueprint(despacho_bp)
     app.register_blueprint(config_bp)
     app.register_blueprint(dre_bp)
+    app.register_blueprint(loja_bp)
+    app.register_blueprint(pedidos_online_bp)
 
     @app.context_processor
     def inject_nav_badges():
@@ -200,6 +204,7 @@ def create_app():
         from app.models.expense import Expense  # noqa: F401
         from app.models.combo import ComboItem  # noqa: F401
         from app.models.coupon import Coupon  # noqa: F401
+        from app.models.pedido_online import PedidoOnline  # noqa: F401
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master

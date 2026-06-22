@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Pedidos Online – Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1><i class="bi bi-phone me-2"></i>Pedidos Online</h1>
+    <p class="text-muted mb-0">Link do cardápio e pedidos recebidos</p>
+  </div>
+</div>
+
+{% if pendentes %}
+<!-- ── Pendentes ── -->
+<h5 class="fw-bold mb-3" style="color:#eb5757;">
+  <i class="bi bi-clock-fill me-1"></i>Aguardando confirmação ({{ pendentes|length }})
+</h5>
+{% for p in pendentes %}
+<div class="card mb-3" id="card-pedido-{{ p.id }}">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <span class="badge bg-warning text-dark me-2" style="font-size:.85rem;">#{{ p.id }}</span>
+        <strong>{{ p.cliente_nome }}</strong>
+        {% if p.cliente_tel %}
+        <span class="text-muted small ms-2">{{ p.cliente_tel }}</span>
+        {% endif %}
+        <div class="text-muted small mt-1">
+          <i class="bi bi-clock me-1"></i>{{ p.created_at.strftime('%H:%M') }}
+          {% if p.bairro_nome %} &nbsp;·&nbsp; <i class="bi bi-geo-alt me-1"></i>{{ p.bairro_nome }}{% endif %}
+          {% if p.endereco %} — {{ p.endereco }}{% endif %}
+        </div>
+      </div>
+      <div class="text-end">
+        <div class="fs-5 fw-bold text-warning">R$ {{ '%.2f'|format(p.total) }}</div>
+        {% set pgto_labels = {'entrega_dinheiro':'💵 Dinheiro','entrega_cartao':'💳 Cartão','entrega_pix':'📱 Pix'} %}
+        <div class="small text-muted">{{ pgto_labels.get(p.payment_method, p.payment_method) }}</div>
+        {% if p.troco_para %}<div class="small text-muted">Troco p/ R$ {{ '%.2f'|format(p.troco_para) }}</div>{% endif %}
+      </div>
+    </div>
+
+    <!-- Itens -->
+    <table class="table table-sm mb-2">
+      <tbody>
+        {% for item in p.items %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td class="text-center text-muted">×{{ item.quantity|int }}</td>
+          <td class="text-end fw-semibold">R$ {{ '%.2f'|format(item.total) }}</td>
+        </tr>
+        {% endfor %}
+        {% if p.taxa_entrega and p.taxa_entrega > 0 %}
+        <tr class="text-muted">
+          <td colspan="2">Taxa de entrega</td>
+          <td class="text-end">R$ {{ '%.2f'|format(p.taxa_entrega) }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    {% if p.notes %}
+    <div class="alert alert-secondary py-1 px-2 mb-2 small">
+      <i class="bi bi-chat-left-text me-1"></i>{{ p.notes }}
+    </div>
+    {% endif %}
+
+    <!-- Botões -->
+    <div class="d-flex gap-2">
+      <button class="btn btn-warning fw-bold flex-fill" onclick="aceitar({{ p.id }})">
+        <i class="bi bi-check-lg me-1"></i>Aceitar
+      </button>
+      <button class="btn btn-outline-danger fw-semibold flex-fill" onclick="abrirRecusar({{ p.id }})">
+        <i class="bi bi-x-lg me-1"></i>Recusar
+      </button>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="alert alert-success mb-4">
+  <i class="bi bi-check-circle-fill me-2"></i>Nenhum pedido pendente no momento.
+</div>
+{% endif %}
+
+<!-- ── Histórico ── -->
+{% if recentes %}
+<h5 class="fw-bold mb-3 mt-2">Histórico recente</h5>
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">#</th>
+          <th>Cliente</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th class="pe-4">Horário</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in recentes %}
+        {% set status_cfg = {
+          'accepted': ('bg-success', 'Aceito'),
+          'rejected': ('bg-danger',  'Recusado'),
+          'dispatched': ('bg-info text-dark', 'Despachado'),
+        } %}
+        {% set cfg = status_cfg.get(p.status, ('bg-secondary', p.status)) %}
+        <tr>
+          <td class="ps-4 text-muted small">{{ p.id }}</td>
+          <td><strong>{{ p.cliente_nome }}</strong>
+            {% if p.cliente_tel %}<span class="text-muted small ms-1">{{ p.cliente_tel }}</span>{% endif %}
+          </td>
+          <td class="fw-semibold">R$ {{ '%.2f'|format(p.total) }}</td>
+          <td><span class="badge {{ cfg[0] }}">{{ cfg[1] }}</span></td>
+          <td class="pe-4 text-muted small">{{ p.created_at.strftime('%d/%m %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal: motivo da recusa -->
+<div class="modal fade" id="modalRecusar" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-x-circle me-1 text-danger"></i>Recusar pedido</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold small">Motivo (opcional)</label>
+        <input type="text" id="recusaMotivo" class="form-control"
+               placeholder="Ex: produto em falta, fora da área…">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger fw-semibold" id="btnConfRecusar">
+          <i class="bi bi-x-lg me-1"></i>Confirmar recusa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let recusandoId = null;
+const modalRecusar = new bootstrap.Modal(document.getElementById('modalRecusar'));
+
+function aceitar(id) {
+  fetch(`/pedidos-online/${id}/aceitar`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        const card = document.getElementById(`card-pedido-${id}`);
+        if (card) {
+          card.style.opacity = '.5';
+          card.innerHTML = `<div class="card-body text-success fw-semibold">
+            <i class="bi bi-check-circle me-1"></i>Pedido #${id} aceito! Vai para Entregas.
+          </div>`;
+          setTimeout(() => card.remove(), 2500);
+        }
+      }
+    })
+    .catch(() => alert('Erro ao aceitar o pedido.'));
+}
+
+function abrirRecusar(id) {
+  recusandoId = id;
+  document.getElementById('recusaMotivo').value = '';
+  modalRecusar.show();
+}
+
+document.getElementById('btnConfRecusar').addEventListener('click', function() {
+  if (!recusandoId) return;
+  const motivo = document.getElementById('recusaMotivo').value.trim();
+  fetch(`/pedidos-online/${recusandoId}/recusar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason: motivo }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      modalRecusar.hide();
+      const card = document.getElementById(`card-pedido-${recusandoId}`);
+      if (card) {
+        card.style.opacity = '.5';
+        card.innerHTML = `<div class="card-body text-danger fw-semibold">
+          <i class="bi bi-x-circle me-1"></i>Pedido #${recusandoId} recusado.
+        </div>`;
+        setTimeout(() => card.remove(), 2500);
+      }
+    }
+  })
+  .catch(() => alert('Erro ao recusar o pedido.'));
+});
+</script>
+{% endblock %}

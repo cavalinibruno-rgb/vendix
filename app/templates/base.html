@@ -241,6 +241,10 @@
         <span id="badge-entrega-pend" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;color:#1a1a2e;{% if entregas_pendentes == 0 %}display:none{% endif %}">{{ entregas_pendentes }}</span>
         <span id="badge-entrega-ret" class="badge rounded-pill ms-1" style="font-size:.65rem;background:#c9a84c;color:#1a1a2e;{% if entregas_retorno == 0 %}display:none{% endif %}">{{ entregas_retorno }}</span>
       </a>
+      <a href="{{ url_for('pedidos_online.index') }}" class="nav-link {% if 'pedidos_online' in ep %}active{% endif %}">
+        <i class="bi bi-phone"></i><span class="nav-label"> Pedidos Online</span>
+        <span id="badge-pedidos-online" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;display:none;"></span>
+      </a>
       <a href="{{ url_for('sales.index') }}" class="nav-link {% if ep == 'sales.index' %}active{% endif %}">
         <i class="bi bi-receipt"></i><span class="nav-label"> Vendas</span>
       </a>
@@ -341,6 +345,28 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
 
+<!-- Modal: Novo Pedido Online -->
+<div class="modal fade" id="modalNovoPedido" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-body text-center p-4">
+        <div style="font-size:2.5rem;margin-bottom:8px;">🛵</div>
+        <h5 class="fw-bold mb-1">Novo Pedido Online!</h5>
+        <div class="text-muted small mb-3" id="modalPedidoNome">—</div>
+        <div class="fs-4 fw-bold text-warning mb-4" id="modalPedidoTotal">R$ 0,00</div>
+        <div class="d-grid gap-2">
+          <button class="btn btn-warning fw-bold" onclick="aceitarPedidoModal()">
+            <i class="bi bi-check-lg me-1"></i>Aceitar agora
+          </button>
+          <button class="btn btn-outline-secondary" onclick="verPedidosOnline()">
+            Ver todos os pedidos
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast de notificações -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999">
   <div id="toastVenda" class="toast align-items-center border-0" role="alert" aria-live="assertive">
@@ -354,12 +380,48 @@
 <script>
 {% if current_user.is_authenticated %}
 (function() {
-  let _ultimaVendaId = null;
-  let _entregasPend  = {{ entregas_pendentes }};
-  let _entregasRet   = {{ entregas_retorno }};
+  let _ultimaVendaId    = null;
+  let _entregasPend     = {{ entregas_pendentes }};
+  let _entregasRet      = {{ entregas_retorno }};
+  let _pedidosPend      = 0;
+  let _ultimoPedidoId   = null;
+  let _alarmInterval    = null;
+  let _audioCtx         = null;
 
-  function playNovoPedido() { /* alarme implementado junto com o link de compra */ }
-  function playEntrega()    { /* alarme implementado junto com o link de compra */ }
+  // ── Alarme (sawtooth loop, 880/1100 Hz) ──────────────────────────────
+  function getAudioCtx() {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return _audioCtx;
+  }
+
+  function _beep(freq, dur) {
+    try {
+      const ctx  = getAudioCtx();
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type      = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(0.6, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + dur);
+    } catch(e) {}
+  }
+
+  function startAlarm() {
+    if (_alarmInterval) return;
+    let t = 0;
+    _alarmInterval = setInterval(() => {
+      _beep(t % 2 === 0 ? 880 : 1100, 0.35);
+      t++;
+    }, 500);
+  }
+
+  function stopAlarm() {
+    if (_alarmInterval) { clearInterval(_alarmInterval); _alarmInterval = null; }
+  }
 
   function fmt(v) { return Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
@@ -368,14 +430,33 @@
     bootstrap.Toast.getOrCreateInstance(document.getElementById('toastVenda'), {delay:5000}).show();
   }
 
+  // ── Modal de novo pedido online ───────────────────────────────────────
+  function showPedidoModal(d) {
+    document.getElementById('modalPedidoNome').textContent  = d.ultimo_pedido_nome  || '—';
+    document.getElementById('modalPedidoTotal').textContent = 'R$ ' + fmt(d.ultimo_pedido_total || 0);
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNovoPedido')).show();
+  }
+
+  function aceitarPedidoModal() {
+    if (!_ultimoPedidoId) return;
+    fetch(`/pedidos-online/${_ultimoPedidoId}/aceitar`, {method:'POST',headers:{'Content-Type':'application/json'}})
+      .then(r => r.json())
+      .then(() => { stopAlarm(); bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide(); })
+      .catch(() => {});
+  }
+
+  function verPedidosOnline() {
+    stopAlarm();
+    bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido'))?.hide();
+    window.location.href = '/pedidos-online/';
+  }
+
   function poll() {
     fetch('/api/live-stats').then(r => r.json()).then(d => {
 
       // ── Nova venda ────────────────────────────────
       if (_ultimaVendaId !== null && d.ultima_venda_id !== _ultimaVendaId) {
-        playNovoPedido();
         showToast(`<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong> ${d.ultima_venda_cliente} — R$ ${fmt(d.ultima_venda_total)}`);
-        // Atualiza dashboard se estiver nela
         const eq = document.getElementById('dash-qtd');
         const et = document.getElementById('dash-total');
         if (eq) eq.textContent = d.qtd_vendas;
@@ -390,18 +471,34 @@
       if (bR) { bR.textContent = d.entregas_retorno;   bR.style.display = d.entregas_retorno   > 0 ? '' : 'none'; }
 
       if (d.entregas_pendentes > _entregasPend) {
-        playEntrega();
         showToast(`<i class="bi bi-send-fill text-warning me-2"></i><strong>${d.entregas_pendentes}</strong> entrega(s) aguardando despacho`);
       }
       _entregasPend = d.entregas_pendentes;
       _entregasRet  = d.entregas_retorno;
 
+      // ── Pedidos online ────────────────────────────
+      const bPO = document.getElementById('badge-pedidos-online');
+      if (bPO) { bPO.textContent = d.pedidos_pendentes; bPO.style.display = (d.pedidos_pendentes||0) > 0 ? '' : 'none'; }
+
+      if ((d.pedidos_pendentes || 0) > _pedidosPend || (d.ultimo_pedido_id && d.ultimo_pedido_id !== _ultimoPedidoId)) {
+        _ultimoPedidoId = d.ultimo_pedido_id;
+        startAlarm();
+        showPedidoModal(d);
+      }
+
+      if ((d.pedidos_pendentes || 0) === 0) stopAlarm();
+      _pedidosPend = d.pedidos_pendentes || 0;
+
     }).catch(() => {});
   }
 
-  // Primeira leitura silenciosa para inicializar _ultimaVendaId
+  // Primeira leitura silenciosa para inicializar
   fetch('/api/live-stats').then(r => r.json()).then(d => {
-    _ultimaVendaId = d.ultima_venda_id;
+    _ultimaVendaId  = d.ultima_venda_id;
+    _pedidosPend    = d.pedidos_pendentes || 0;
+    _ultimoPedidoId = d.ultimo_pedido_id;
+    const bPO = document.getElementById('badge-pedidos-online');
+    if (bPO && _pedidosPend > 0) { bPO.textContent = _pedidosPend; bPO.style.display = ''; }
   }).catch(() => {});
 
   // Polling a cada 10 segundos
