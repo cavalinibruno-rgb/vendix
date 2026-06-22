@@ -79,7 +79,7 @@
           <th>Pagamento</th>
           <th>Entrega</th>
           {% if not modo_restrito %}<th class="text-end">Total</th>{% endif %}
-          <th>Horário</th>
+          <th>Data / Hora</th>
           <th class="pe-4"></th>
         </tr>
       </thead>
@@ -102,7 +102,7 @@
           {% if not modo_restrito %}
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(s.total) }}</td>
           {% endif %}
-          <td class="text-muted small">{{ s.created_at.strftime('%H:%M') }}</td>
+          <td class="text-muted small text-nowrap">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
           <td class="pe-4">
             <a href="{{ url_for('sales.detalhe', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-eye"></i>
