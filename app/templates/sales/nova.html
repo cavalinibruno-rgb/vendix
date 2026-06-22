@@ -1066,6 +1066,8 @@ function cancelarCombinado() {
   document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-layers me-1"></i>Combinar Formas de Pagamento';
 }
 
+const CASH_METHODS = ['dinheiro', 'entrega_dinheiro'];
+
 function renderCamposCombinados() {
   const campo = document.getElementById('campoCombinados');
   const selecionados = [...document.querySelectorAll('.pgto-card.active')];
@@ -1088,22 +1090,29 @@ function renderCamposCombinados() {
   document.getElementById('painelCombinado').style.display = '';
 
   selecionados.forEach((card, idx) => {
-    const method = card.dataset.pgto;
-    const label  = card.dataset.label || method;
-    const valor  = valoresAntigos[method] || '';
+    const method  = card.dataset.pgto;
+    const label   = card.dataset.label || method;
+    const valor   = valoresAntigos[method] || '';
+    const isCash  = CASH_METHODS.includes(method);
     const div = document.createElement('div');
-    div.className = 'campo-pgto-linha d-flex align-items-center gap-2 mb-2';
+    div.className = 'campo-pgto-linha mb-2';
     div.dataset.pgto = method;
+    div.dataset.cash = isCash ? '1' : '0';
+
+    const placeholder = isCash ? 'Valor recebido' : '0,00';
     div.innerHTML = `
       <div class="input-group input-group-sm">
         <span class="input-group-text" style="background:#2d2d2d;border-color:#444;color:#aaa;font-size:.8rem;min-width:80px;">${label}</span>
         <span class="input-group-text" style="background:#2d2d2d;border-color:#444;color:#888;">R$</span>
-        <input type="text" class="form-control" inputmode="decimal" placeholder="0,00"
+        <input type="text" class="form-control" inputmode="decimal" placeholder="${placeholder}"
                value="${valor}" oninput="calcCombinado()"
                style="background:#2d2d2d;border-color:#444;color:#ddd;text-align:right;font-size:.95rem;font-weight:600;">
-      </div>`;
+      </div>
+      ${isCash ? `<div class="troco-comb d-flex justify-content-between align-items-center mt-1 px-1" style="display:none!important;">
+        <span style="color:#6fcf97;font-size:.8rem;">Troco:</span>
+        <strong class="troco-comb-val" style="color:#6fcf97;font-size:.85rem;">R$ 0,00</strong>
+      </div>` : ''}`;
     campo.appendChild(div);
-    // Foca no primeiro campo vazio
     if (idx === 0 && !valor) setTimeout(() => div.querySelector('input').focus(), 60);
   });
 }
@@ -1122,18 +1131,54 @@ function getTotal() {
 }
 
 function calcCombinado() {
-  const total   = getTotal();
-  const linhas  = getLinhasCombinadas();
-  const alocado = linhas.reduce((s, l) => s + l.amount, 0);
-  const faltando = total - alocado;
+  const total  = getTotal();
+  const linhas = getLinhasCombinadas();
+
+  // Separa dinheiro dos demais
+  let nonCashSum   = 0;
+  let cashReceived = 0;
+  let hasCash      = false;
+  linhas.forEach(l => {
+    if (CASH_METHODS.includes(l.method)) { cashReceived = l.amount; hasCash = true; }
+    else nonCashSum += l.amount;
+  });
+
+  const cashNeeded = Math.max(0, total - nonCashSum);
+  const troco      = hasCash ? Math.max(0, cashReceived - cashNeeded) : 0;
+  const alocado    = nonCashSum + (hasCash ? Math.min(cashReceived, cashNeeded) : 0);
+  const faltando   = Math.max(0, total - alocado);
+
+  // Atualiza linha de troco do dinheiro
+  const cashLinha = document.querySelector('.campo-pgto-linha[data-cash="1"]');
+  if (cashLinha) {
+    const trocoDiv = cashLinha.querySelector('.troco-comb');
+    if (trocoDiv) {
+      if (hasCash && cashReceived > 0) {
+        trocoDiv.style.display = 'flex';
+        const trocoVal = cashLinha.querySelector('.troco-comb-val');
+        if (troco > 0) {
+          trocoVal.textContent = 'R$ ' + fmtNum(troco);
+          trocoVal.style.color = '#6fcf97';
+          trocoDiv.querySelector('span').style.color = '#6fcf97';
+        } else {
+          trocoVal.textContent = 'Sem troco';
+          trocoVal.style.color = '#aaa';
+          trocoDiv.querySelector('span').style.color = '#aaa';
+        }
+      } else {
+        trocoDiv.style.display = 'none';
+      }
+    }
+  }
+
   document.getElementById('combinadoTotal').textContent   = 'R$ ' + fmtNum(total);
   document.getElementById('combinadoAlocado').textContent = 'R$ ' + fmtNum(alocado);
   const elFalt = document.getElementById('combinadoFaltando');
-  if (alocado > 0 && faltando <= 0.005) {
+  if (faltando <= 0.005 && (alocado > 0 || hasCash)) {
     elFalt.textContent = '✓ Valor completo';
     elFalt.style.color = '#6fcf97';
   } else {
-    elFalt.textContent = 'R$ ' + fmtNum(Math.max(0, faltando));
+    elFalt.textContent = 'R$ ' + fmtNum(faltando);
     elFalt.style.color = '#eb5757';
   }
 }
