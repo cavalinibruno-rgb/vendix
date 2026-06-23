@@ -303,6 +303,7 @@
 </div>
 
 <div class="topbar" id="topbar">
+  <span id="relogioTopbar" style="font-size:.82rem;color:#9ba8b5;font-variant-numeric:tabular-nums;"></span>
   {% if current_user.is_authenticated and not current_user.is_master %}
     {% set tenant = current_user.tenant %}
     {% if tenant %}
@@ -698,6 +699,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const icon = document.getElementById('themeIcon');
     if (icon) icon.className = dark ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
   }
+  (function() {
+    const el = document.getElementById('relogioTopbar');
+    if (!el) return;
+    function atualizar() {
+      const now = new Date();
+      const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      const d = String(now.getDate()).padStart(2,'0');
+      const m = String(now.getMonth()+1).padStart(2,'0');
+      const h = String(now.getHours()).padStart(2,'0');
+      const min = String(now.getMinutes()).padStart(2,'0');
+      const s = String(now.getSeconds()).padStart(2,'0');
+      el.textContent = `${dias[now.getDay()]} ${d}/${m} ${h}:${min}:${s}`;
+    }
+    atualizar();
+    setInterval(atualizar, 1000);
+  })();
   function toggleTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const next = !isDark;
