@@ -61,15 +61,24 @@
     .step-text p { font-size: .88rem; color: #999; margin: 0; }
 
     /* PLANOS */
-    .planos { padding: 80px 20px; max-width: 700px; margin: 0 auto; text-align: center; }
-    .plano-card { background: rgba(201,168,76,.08); border: 2px solid var(--gold);
-                  border-radius: 20px; padding: 40px 32px; }
-    .plano-price { font-size: 3rem; font-weight: 900; color: var(--gold); line-height: 1; }
-    .plano-price sup { font-size: 1.2rem; vertical-align: top; margin-top: 10px; }
-    .plano-period { color: #888; font-size: .9rem; margin-bottom: 28px; }
-    .plano-features { list-style: none; padding: 0; text-align: left; margin-bottom: 32px; }
-    .plano-features li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06);
-                          font-size: .9rem; }
+    .planos { padding: 80px 20px; max-width: 960px; margin: 0 auto; text-align: center; }
+    .planos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+    @media(max-width:640px){ .planos-grid { grid-template-columns: 1fr; } }
+    .plano-card { background: rgba(255,255,255,.04); border: 2px solid #333;
+                  border-radius: 20px; padding: 36px 28px; position: relative; text-align: left; }
+    .plano-card.destaque { background: rgba(201,168,76,.08); border-color: var(--gold); }
+    .plano-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+                   background: var(--gold); color: #1a1a2e; font-size: .75rem; font-weight: 800;
+                   padding: 4px 16px; border-radius: 20px; white-space: nowrap; letter-spacing: .05em; }
+    .plano-nome { font-size: .8rem; font-weight: 700; color: #888; text-transform: uppercase;
+                  letter-spacing: .1em; margin-bottom: 16px; }
+    .plano-price { font-size: 2.6rem; font-weight: 900; color: var(--gold); line-height: 1; }
+    .plano-price sup { font-size: 1rem; vertical-align: top; margin-top: 8px; }
+    .plano-price span { font-size: 1rem; font-weight: 600; color: #aaa; }
+    .plano-price-alt { font-size: .82rem; color: #888; margin: 6px 0 24px; }
+    .plano-features { list-style: none; padding: 0; margin-bottom: 28px; }
+    .plano-features li { padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+                          font-size: .88rem; color: #ccc; }
     .plano-features li:last-child { border: none; }
     .plano-features li::before { content: '✓ '; color: var(--gold); font-weight: 700; }
 
@@ -189,24 +198,55 @@
 
 <!-- PLANOS -->
 <section class="planos">
-  <div class="section-title">Plano único, sem surpresas</div>
-  <div class="section-sub">Tudo incluído. Sem contrato de fidelidade.</div>
-  <div class="plano-card">
-    <div class="plano-price"><sup>R$</sup>89</div>
-    <div class="plano-period">por mês</div>
-    <ul class="plano-features">
-      <li>PDV completo com impressão</li>
-      <li>Cardápio online com link próprio</li>
-      <li>Pedidos online com taxa por GPS ou bairro</li>
-      <li>Controle de entregas e motoboys</li>
-      <li>Estoque e relatórios financeiros</li>
-      <li>Cupons de desconto</li>
-      <li>Suporte via WhatsApp</li>
-      <li>Aplicativo instalável para Windows</li>
-    </ul>
-    <a href="https://wa.me/5522997021979?text=Olá!%20Quero%20assinar%20o%20Vendix." target="_blank" class="btn-cta" style="width:100%;display:block;text-align:center;">
-      Assinar agora →
-    </a>
+  <div class="section-title">Escolha seu plano</div>
+  <div class="section-sub">Tudo incluído. Sem taxas escondidas.</div>
+
+  <div class="planos-grid">
+
+    <!-- MENSAL -->
+    <div class="plano-card">
+      <div class="plano-nome">Mensal</div>
+      <div class="plano-price"><sup>R$</sup>129<span>,90</span></div>
+      <div class="plano-price-alt">por mês · cancele quando quiser</div>
+      <ul class="plano-features">
+        <li>PDV completo com impressão</li>
+        <li>Cardápio online com link próprio</li>
+        <li>Pedidos online com taxa por GPS ou bairro</li>
+        <li>Controle de entregas e motoboys</li>
+        <li>Estoque e relatórios financeiros</li>
+        <li>Cupons de desconto</li>
+        <li>Suporte via WhatsApp</li>
+        <li>Aplicativo instalável para Windows</li>
+      </ul>
+      <a href="https://wa.me/5522997021979?text=Olá!%20Quero%20assinar%20o%20Vendix%20Mensal." target="_blank" class="btn-cta" style="width:100%;display:block;text-align:center;background:#333;border-color:#555;color:#ddd;">
+        Assinar mensal →
+      </a>
+    </div>
+
+    <!-- ANUAL -->
+    <div class="plano-card destaque">
+      <div class="plano-badge">🏆 MELHOR VALOR</div>
+      <div class="plano-nome">Anual</div>
+      <div class="plano-price"><sup>R$</sup>99<span>,90</span></div>
+      <div class="plano-price-alt">
+        12x de R$ 99,90 &nbsp;·&nbsp;
+        <strong style="color:var(--gold);">ou R$ 1.198,80 à vista</strong>
+      </div>
+      <ul class="plano-features">
+        <li>PDV completo com impressão</li>
+        <li>Cardápio online com link próprio</li>
+        <li>Pedidos online com taxa por GPS ou bairro</li>
+        <li>Controle de entregas e motoboys</li>
+        <li>Estoque e relatórios financeiros</li>
+        <li>Cupons de desconto</li>
+        <li>Suporte via WhatsApp</li>
+        <li>Aplicativo instalável para Windows</li>
+      </ul>
+      <a href="https://wa.me/5522997021979?text=Olá!%20Quero%20assinar%20o%20Vendix%20Anual." target="_blank" class="btn-cta" style="width:100%;display:block;text-align:center;">
+        Assinar anual →
+      </a>
+    </div>
+
   </div>
 </section>
 
