@@ -143,6 +143,9 @@ def _calcular_dre(inicio_str, fim_str):
 @dre_bp.route('/')
 @login_required
 def index():
+    if current_user.is_employee:
+        from flask import abort
+        abort(403)
     hoje = date.today()
     inicio_str = request.args.get('inicio', hoje.replace(day=1).strftime('%Y-%m-%d'))
     fim_str    = request.args.get('fim',    hoje.strftime('%Y-%m-%d'))

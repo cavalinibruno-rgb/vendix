@@ -140,6 +140,7 @@
   </div>
 </div>
 
+{% if not current_user.is_employee %}
 <div class="row g-3 mb-3" id="regime">
   <div class="col-12">
     <div class="card">
@@ -210,11 +211,14 @@
   </div>
 </div>
 
+{% endif %}{# /is_employee regime #}
+
 <div class="row g-4">
   <!-- COLUNA ESQUERDA -->
   <div class="col-lg-6 d-flex flex-column gap-4">
 
     <!-- Dashboard do Operador -->
+    {% if not current_user.is_employee %}
     <div class="card">
       <div class="card-header py-2"><i class="bi bi-eye-slash me-2 text-secondary"></i>Dashboard do Operador</div>
       <div class="card-body p-3">
@@ -245,6 +249,7 @@
         </form>
       </div>
     </div>
+    {% endif %}{# /is_employee dashboard operador #}
 
     <!-- Alterar Senha -->
     <div class="card" id="seguranca">
