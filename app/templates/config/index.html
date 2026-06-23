@@ -7,6 +7,60 @@
   <p class="text-muted">Personalize o comportamento do sistema</p>
 </div>
 
+<!-- ── Identidade da Loja ── -->
+<div class="row g-3 mb-3" id="identidade">
+  <div class="col-12">
+    <div class="card border-warning" style="border-width:2px!important;">
+      <div class="card-header py-2" style="background:rgba(201,168,76,.12);">
+        <i class="bi bi-palette me-2 text-warning"></i><strong>Identidade da Loja</strong>
+      </div>
+      <div class="card-body p-3">
+        <form method="post" action="{{ url_for('config.salvar_identidade') }}" enctype="multipart/form-data">
+          <div class="row g-3 align-items-center">
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small mb-1">Nome da Loja</label>
+              <input type="text" name="store_name" class="form-control"
+                     value="{{ tenant.store_name }}" placeholder="Ex: Pizzaria do João">
+              <div class="form-text">Aparece na barra superior do sistema.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold small mb-1">Logotipo</label>
+              <div class="d-flex align-items-center gap-3 mb-2">
+                {% if tenant.logo_data %}
+                <img src="{{ url_for('config.servir_logo') }}" alt="logo"
+                     style="height:48px;object-fit:contain;border-radius:6px;background:#fff;padding:4px;">
+                {% else %}
+                <div style="width:48px;height:48px;border-radius:6px;background:#2d2d2d;display:flex;align-items:center;justify-content:center;">
+                  <i class="bi bi-image text-muted"></i>
+                </div>
+                {% endif %}
+                <input type="file" name="logo" class="form-control form-control-sm"
+                       accept="image/*" style="max-width:260px;">
+              </div>
+              <div class="form-text">PNG, JPG ou SVG · máx. 2 MB. Recomendado: fundo transparente.</div>
+            </div>
+
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-warning btn-sm fw-bold">
+              <i class="bi bi-check2 me-1"></i>Salvar
+            </button>
+            {% if tenant.logo_data %}
+            <form method="post" action="{{ url_for('config.remover_logo') }}" class="d-inline">
+              <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>Remover logotipo
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── Link da Loja ── -->
 <div class="row g-3 mb-3">
   <div class="col-12">

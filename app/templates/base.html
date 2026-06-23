@@ -179,8 +179,12 @@
     .main-content { margin-left: 240px; padding: 28px 32px; min-height: 100vh; transition: margin-left .2s ease; }
     .main-content.collapsed { margin-left: 60px; }
     .topbar { margin-left: 240px; background: var(--bg-topbar); border-bottom: 1px solid var(--border-topbar);
-      padding: 10px 32px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+      padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
       position: sticky; top: 0; z-index: 99; transition: margin-left .2s ease, background .2s; }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .topbar-logo { height: 38px; max-width: 160px; object-fit: contain; }
+    .topbar-store-name { font-weight: 700; font-size: .95rem; color: var(--gold, #c9a84c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
     .topbar.collapsed { margin-left: 60px; }
     .page-header { margin-bottom: 24px; }
     .page-header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-main); margin: 0; }
@@ -303,19 +307,32 @@
 </div>
 
 <div class="topbar" id="topbar">
-  <span id="relogioTopbar" style="font-size:.82rem;color:#9ba8b5;font-variant-numeric:tabular-nums;"></span>
-  {% if current_user.is_authenticated and not current_user.is_master %}
-    {% set tenant = current_user.tenant %}
-    {% if tenant %}
-    <span class="badge bg-success-subtle text-success">{{ tenant.store_name }}</span>
-    {% if tenant.expires_at %}
-    <span class="text-muted small">Vence: {{ tenant.expires_at.strftime('%d/%m/%Y') }}</span>
+  <!-- Esquerda: logo ou nome da loja -->
+  <div class="topbar-brand">
+    {% if current_user.is_authenticated and not current_user.is_master %}
+      {% set tenant = current_user.tenant %}
+      {% if tenant %}
+        {% if tenant.logo_data %}
+        <img src="{{ url_for('config.servir_logo') }}" class="topbar-logo" alt="{{ tenant.store_name }}">
+        {% else %}
+        <span class="topbar-store-name">{{ tenant.store_name }}</span>
+        {% endif %}
+      {% endif %}
     {% endif %}
+  </div>
+  <!-- Direita: relógio, validade, tema -->
+  <div class="topbar-right">
+    <span id="relogioTopbar" style="font-size:.82rem;color:#9ba8b5;font-variant-numeric:tabular-nums;"></span>
+    {% if current_user.is_authenticated and not current_user.is_master %}
+      {% set tenant = current_user.tenant %}
+      {% if tenant and tenant.expires_at %}
+      <span class="text-muted small">Vence: {{ tenant.expires_at.strftime('%d/%m/%Y') }}</span>
+      {% endif %}
     {% endif %}
-  {% endif %}
-  <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Alternar tema">
-    <i class="bi bi-moon-fill" id="themeIcon"></i>
-  </button>
+    <button class="btn-theme" id="btnTheme" onclick="toggleTheme()" title="Alternar tema">
+      <i class="bi bi-moon-fill" id="themeIcon"></i>
+    </button>
+  </div>
 </div>
 
 <div class="main-content" id="mainContent">

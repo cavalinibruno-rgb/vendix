@@ -141,6 +141,8 @@ def _run_migrations(db):
         )""",
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS starts_at TIMESTAMP",
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS ends_at TIMESTAMP",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_data BYTEA",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(32)",
         # Índices de performance
         "CREATE INDEX IF NOT EXISTS idx_sales_tenant_id ON sales(tenant_id)",
         "CREATE INDEX IF NOT EXISTS idx_sales_tenant_created ON sales(tenant_id, created_at)",

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_required, current_user
 from app import db
 from werkzeug.security import generate_password_hash
@@ -182,6 +182,46 @@ def geocodificar():
         return jsonify({'error': 'Endereço não encontrado automaticamente. Use o campo manual abaixo.'})
     except Exception as e:
         return jsonify({'error': f'Erro ao buscar: {str(e)}'})
+
+
+@config_bp.route('/identidade', methods=['POST'])
+@login_required
+def salvar_identidade():
+    tenant = current_user.tenant
+    novo_nome = request.form.get('store_name', '').strip()
+    if novo_nome:
+        tenant.store_name = novo_nome
+    logo = request.files.get('logo')
+    if logo and logo.filename:
+        data = logo.read()
+        if len(data) > 2 * 1024 * 1024:
+            flash('Logotipo muito grande (máx. 2 MB).', 'danger')
+            return redirect(url_for('config.index') + '#identidade')
+        tenant.logo_data = data
+        tenant.logo_mime = logo.content_type or 'image/png'
+    db.session.commit()
+    flash('Identidade da loja salva!', 'success')
+    return redirect(url_for('config.index') + '#identidade')
+
+
+@config_bp.route('/logo/remover', methods=['POST'])
+@login_required
+def remover_logo():
+    tenant = current_user.tenant
+    tenant.logo_data = None
+    tenant.logo_mime = None
+    db.session.commit()
+    flash('Logotipo removido.', 'success')
+    return redirect(url_for('config.index') + '#identidade')
+
+
+@config_bp.route('/logo')
+@login_required
+def servir_logo():
+    tenant = current_user.tenant
+    if not tenant.logo_data:
+        return '', 404
+    return Response(tenant.logo_data, mimetype=tenant.logo_mime or 'image/png')
 
 
 @config_bp.route('/alterar-senha', methods=['POST'])
