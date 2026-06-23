@@ -129,6 +129,14 @@ def _run_migrations(db):
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS payment_entries TEXT",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount FLOAT DEFAULT 0",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount_type VARCHAR(8)",
+        # Índices de performance
+        "CREATE INDEX IF NOT EXISTS idx_sales_tenant_id ON sales(tenant_id)",
+        "CREATE INDEX IF NOT EXISTS idx_sales_tenant_created ON sales(tenant_id, created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_sales_tenant_status ON sales(tenant_id, status)",
+        "CREATE INDEX IF NOT EXISTS idx_pedidos_tenant_status ON pedidos_online(tenant_id, status)",
+        "CREATE INDEX IF NOT EXISTS idx_pedidos_tenant_created ON pedidos_online(tenant_id, created_at)",
+        "CREATE INDEX IF NOT EXISTS idx_products_tenant_id ON products(tenant_id)",
+        "CREATE INDEX IF NOT EXISTS idx_sale_items_sale_id ON sale_items(sale_id)",
         """CREATE TABLE IF NOT EXISTS coupons (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
