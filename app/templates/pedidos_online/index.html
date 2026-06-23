@@ -163,6 +163,9 @@ function aceitar(id) {
           </div>`;
           setTimeout(() => card.remove(), 2500);
         }
+        if (d.sale_id) {
+          window.open(`/vendas/${d.sale_id}/comprovante?autoprint=1`, '_blank');
+        }
       }
     })
     .catch(() => alert('Erro ao aceitar o pedido.'));
