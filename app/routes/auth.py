@@ -18,7 +18,8 @@ def login():
                 if not tenant or not tenant.is_active:
                     flash('Sua assinatura está suspensa. Entre em contato com o suporte.', 'danger')
                     return render_template('auth/login.html')
-            login_user(user)
+            remember = 'remember' in request.form
+            login_user(user, remember=remember)
             if user.is_master:
                 return redirect(url_for('master.dashboard'))
             return redirect(url_for('dashboard.index'))
