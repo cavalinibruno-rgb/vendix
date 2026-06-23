@@ -43,25 +43,7 @@ def aceitar(pedido_id):
                 else (current_user.display_name or current_user.username))
     items    = pedido.items
 
-    # Busca ou cria cliente pelo telefone
     customer_id = None
-    if pedido.cliente_tel:
-        from app.models.customer import Customer
-        existing = Customer.query.filter_by(tenant_id=tid(), phone=pedido.cliente_tel).first()
-        if existing:
-            customer_id = existing.id
-        else:
-            c = Customer(
-                tenant_id       = tid(),
-                name            = pedido.cliente_nome,
-                phone           = pedido.cliente_tel,
-                address         = pedido.endereco,
-                neighborhood_id = pedido.bairro_id,
-                delivery_fee    = pedido.taxa_entrega,
-            )
-            db.session.add(c)
-            db.session.flush()
-            customer_id = c.id
 
     # Cria venda
     sale = Sale(
