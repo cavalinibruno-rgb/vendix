@@ -10,4 +10,6 @@ class Coupon(db.Model):
     coupon_type = db.Column('type', db.String(8), nullable=False)   # 'percent' | 'value'
     amount      = db.Column(db.Float, nullable=False)
     active      = db.Column(db.Boolean, default=True)
+    starts_at   = db.Column(db.DateTime, nullable=True)
+    ends_at     = db.Column(db.DateTime, nullable=True)
     created_at  = db.Column(db.DateTime, default=datetime.now)

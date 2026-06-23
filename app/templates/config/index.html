@@ -306,6 +306,7 @@
     </div>
 
     <!-- Cupons de Desconto -->
+    {% if not current_user.is_employee %}
     <div class="card" id="cupons">
       <div class="card-header py-2"><i class="bi bi-ticket-perforated me-2 text-warning"></i>Cupons de Desconto</div>
       <div class="card-body p-3">
@@ -328,6 +329,14 @@
               <label class="form-label fw-semibold small mb-1">Valor</label>
               <input type="text" name="amount" class="form-control form-control-sm" inputmode="decimal" placeholder="10" required>
             </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small mb-1">Início <span class="text-muted fw-normal">(opcional)</span></label>
+              <input type="datetime-local" name="starts_at" class="form-control form-control-sm">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small mb-1">Validade <span class="text-muted fw-normal">(opcional)</span></label>
+              <input type="datetime-local" name="ends_at" class="form-control form-control-sm">
+            </div>
           </div>
           <button type="submit" class="btn btn-warning btn-sm fw-semibold mt-2">
             <i class="bi bi-plus-lg me-1"></i>Criar Cupom
@@ -341,6 +350,7 @@
             <tr>
               <th>Código</th>
               <th>Desconto</th>
+              <th>Período</th>
               <th>Status</th>
               <th></th>
             </tr>
@@ -352,6 +362,15 @@
               <td>
                 {% if c.coupon_type == 'percent' %}{{ '%.0f'|format(c.amount) }}%
                 {% else %}R$ {{ '%.2f'|format(c.amount) }}{% endif %}
+              </td>
+              <td class="small text-muted" style="white-space:nowrap;">
+                {% if c.starts_at or c.ends_at %}
+                  {% if c.starts_at %}{{ c.starts_at.strftime('%d/%m %H:%M') }}{% else %}—{% endif %}
+                  →
+                  {% if c.ends_at %}{{ c.ends_at.strftime('%d/%m %H:%M') }}{% else %}sem fim{% endif %}
+                {% else %}
+                  Sem limite
+                {% endif %}
               </td>
               <td>
                 {% if c.active %}
@@ -380,6 +399,7 @@
         {% endif %}
       </div>
     </div>
+    {% endif %}{# /is_employee cupons #}
 
   </div>
 </div>

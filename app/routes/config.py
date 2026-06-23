@@ -86,7 +86,18 @@ def criar_cupom():
     if Coupon.query.filter_by(tenant_id=tid(), code=code).first():
         flash(f'Cupom "{code}" já existe.', 'danger')
         return redirect(url_for('config.index') + '#cupons')
-    db.session.add(Coupon(tenant_id=tid(), code=code, coupon_type=ctype, amount=amount))
+
+    from datetime import datetime as _dt
+    def parse_dt(field):
+        val = request.form.get(field, '').strip()
+        try: return _dt.strptime(val, '%Y-%m-%dT%H:%M') if val else None
+        except ValueError: return None
+
+    starts_at = parse_dt('starts_at')
+    ends_at   = parse_dt('ends_at')
+
+    db.session.add(Coupon(tenant_id=tid(), code=code, coupon_type=ctype, amount=amount,
+                          starts_at=starts_at, ends_at=ends_at))
     db.session.commit()
     flash(f'Cupom "{code}" criado com sucesso.', 'success')
     return redirect(url_for('config.index') + '#cupons')

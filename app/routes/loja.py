@@ -70,9 +70,15 @@ def foto_produto(slug, produto_id):
 @loja_bp.route('/<slug>/cupom/<code>')
 def validar_cupom(slug, code):
     tenant = _get_tenant(slug)
+    from datetime import datetime as _dt
     c = Coupon.query.filter_by(tenant_id=tenant.id, code=code.upper(), active=True).first()
     if not c:
         return jsonify({'error': 'Cupom inválido ou expirado.'})
+    now = _dt.now()
+    if c.starts_at and now < c.starts_at:
+        return jsonify({'error': 'Este cupom ainda não está válido.'})
+    if c.ends_at and now > c.ends_at:
+        return jsonify({'error': 'Este cupom expirou.'})
     return jsonify({'type': c.coupon_type, 'amount': c.amount})
 
 
