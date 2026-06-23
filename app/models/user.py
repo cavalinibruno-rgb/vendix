@@ -47,7 +47,8 @@ def load_user(user_id):
 class EmployeeLoginProxy:
     """Adapta Employee para funcionar com Flask-Login."""
     def __init__(self, emp):
-        self._emp = emp
+        from app.models.tenant import Tenant
+        self._emp         = emp
         self.id           = f'e_{emp.id}'
         self.tenant_id    = emp.tenant_id
         self.username     = emp.username
@@ -57,6 +58,7 @@ class EmployeeLoginProxy:
         self.is_active    = True
         self.is_anonymous = False
         self.is_authenticated = True
+        self.tenant       = Tenant.query.get(emp.tenant_id)
 
     @property
     def is_master(self):
