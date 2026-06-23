@@ -178,6 +178,48 @@
     border-color: #444;
     color: #ddd;
   }
+
+  /* ── Telas de etapas ── */
+  .step-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: calc(100vh - 130px); gap: 24px; text-align: center;
+  }
+  .step-title {
+    color: #888; font-size: 1rem; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .step-btn-wrap { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  .step-btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    width: 200px; height: 200px; border-radius: 20px; border: 2px solid #444;
+    background: #1e1e1e; color: #ddd; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+    transition: all .2s; text-transform: uppercase; letter-spacing: .06em; text-decoration: none;
+  }
+  .step-btn i { font-size: 2.8rem; color: #888; transition: color .2s; }
+  .step-btn:hover { border-color: #c9a84c; background: rgba(201,168,76,.1); color: #e8c97a; }
+  .step-btn:hover i { color: #c9a84c; }
+  .step-back {
+    background: none; border: none; color: #666; font-size: .85rem; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; transition: color .15s;
+  }
+  .step-back:hover { color: #aaa; }
+  /* Painel de pagamento esquerdo (etapa 3) */
+  #pdvPagamento .form-control,
+  #pdvPagamento .form-select,
+  #pdvPagamento .input-group-text {
+    background: #2d2d2d; border-color: #444; color: #ddd;
+  }
+  #pdvPagamento .form-control::placeholder { color: #666; }
+  #pdvPagamento .form-control:focus {
+    background: #2d2d2d; border-color: #c9a84c; color: #ddd; box-shadow: none;
+  }
+  #pdvPagamento .cart-section { background: #2a2a2a; border-radius: 8px; overflow: hidden; margin-top: 1rem; }
+  #pdvPagamento .cart-section-header {
+    background: #333; padding: 10px 14px; font-weight: 600; color: #ddd; font-size: .85rem;
+  }
+  #pdvPagamento .cart-section-body { padding: 12px 14px; }
+  #pdvPagamento .text-muted { color: #888 !important; }
+  #pdvPagamento label.form-label { color: #bbb; }
 </style>
 {% endblock %}
 
@@ -192,10 +234,41 @@
   </div>
 </div>
 
-<div class="row g-3">
+<!-- ── Etapa 0: Origem ── -->
+<div id="step0" class="step-screen">
+  <div class="step-title">Nova Venda</div>
+  <div class="step-btn-wrap">
+    <button class="step-btn" onclick="escolherOrigem('loja')">
+      <i class="bi bi-shop"></i>LOJA
+    </button>
+    <button class="step-btn" onclick="escolherOrigem('app')">
+      <i class="bi bi-phone"></i>APP
+    </button>
+  </div>
+</div>
+
+<!-- ── Etapa 1: Modo atendimento ── -->
+<div id="step1" style="display:none;" class="step-screen">
+  <div class="step-title">Tipo de Atendimento</div>
+  <div class="step-btn-wrap">
+    <button class="step-btn" onclick="escolherModo('retirada')">
+      <i class="bi bi-shop-window"></i>BALCÃO<span style="font-size:.72rem;font-weight:500;color:#888;text-transform:none;">Retirada</span>
+    </button>
+    <button class="step-btn" onclick="escolherModo('entrega')">
+      <i class="bi bi-bicycle"></i>ENTREGA
+    </button>
+  </div>
+  <button class="step-back" onclick="irParaStep(0)">
+    <i class="bi bi-arrow-left"></i> Voltar
+  </button>
+</div>
+
+<div class="row g-3" id="stepPDV" style="display:none;">
 
   <!-- ── Coluna esquerda: PDV ── -->
   <div class="col-lg-7">
+    <!-- Produtos (etapa 2) -->
+    <div id="pdvProdutos">
     <div class="pdv-area">
 
       <!-- Busca -->
@@ -224,7 +297,104 @@
       <div class="pdv-grid" id="pdvGrid"></div>
 
     </div>
-  </div>
+    </div><!-- /pdvProdutos -->
+
+    <!-- ── Pagamento (etapa 3) ── -->
+    <div id="pdvPagamento" style="display:none;">
+      <div class="pdv-area" style="overflow-y:auto;max-height:calc(100vh - 120px);">
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <button class="step-back" onclick="irParaStep(2)">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </button>
+          <span style="color:#c9a84c;font-weight:700;font-size:1rem;letter-spacing:.05em;">
+            <i class="bi bi-credit-card-2-front me-2"></i>FORMA DE PAGAMENTO
+          </span>
+        </div>
+
+        <div id="pgtoLoja" class="pgto-grid">
+          <div class="pgto-card" data-pgto="dinheiro" data-label="Dinheiro" onclick="handlePgtoClick(this)">
+            <i class="bi bi-cash-coin"></i>Dinheiro
+          </div>
+          <div class="pgto-card" data-pgto="cartao" data-label="Cartão" onclick="handlePgtoClick(this)">
+            <i class="bi bi-credit-card"></i>Cartão
+          </div>
+          <div class="pgto-card" data-pgto="pix" data-label="Pix" onclick="handlePgtoClick(this)">
+            <i class="bi bi-qr-code"></i>Pix
+          </div>
+          <div class="pgto-card" data-pgto="conta" data-label="Conta" onclick="handlePgtoClick(this)">
+            <i class="bi bi-person-lines-fill"></i>Conta
+          </div>
+        </div>
+        <div id="pgtoApp" class="pgto-grid mt-2" style="display:none;">
+          <div class="pgto-card" data-pgto="pelo_app" data-label="Pelo app" onclick="handlePgtoClick(this)">
+            <i class="bi bi-phone"></i>Pelo app
+          </div>
+          <div class="pgto-card" data-pgto="entrega_dinheiro" data-label="Dinheiro" onclick="handlePgtoClick(this)">
+            <i class="bi bi-cash-coin"></i>Dinheiro<span class="pgto-sub">na entrega</span>
+          </div>
+          <div class="pgto-card" data-pgto="entrega_cartao" data-label="Cartão" onclick="handlePgtoClick(this)">
+            <i class="bi bi-credit-card"></i>Cartão<span class="pgto-sub">na entrega</span>
+          </div>
+          <div class="pgto-card" data-pgto="entrega_pix" data-label="Pix" onclick="handlePgtoClick(this)">
+            <i class="bi bi-qr-code"></i>Pix<span class="pgto-sub">na entrega</span>
+          </div>
+        </div>
+
+        <!-- Campos combinados -->
+        <div id="campoCombinados" style="display:none;" class="mt-3"></div>
+        <div id="painelCombinado" style="display:none;" class="mt-2 px-2 py-2" style="background:#252525;border-radius:8px;font-size:.82rem;">
+          <div class="d-flex justify-content-between mb-1" style="font-size:.82rem;">
+            <span style="color:#aaa;">Total da venda:</span>
+            <span id="combinadoTotal" style="color:#ddd;">R$ 0,00</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1" style="font-size:.82rem;">
+            <span style="color:#aaa;">Alocado:</span>
+            <span id="combinadoAlocado" style="color:#6fcf97;">R$ 0,00</span>
+          </div>
+          <div class="d-flex justify-content-between" style="font-size:.82rem;">
+            <span style="color:#aaa;">Faltando:</span>
+            <span id="combinadoFaltando" style="color:#eb5757;">R$ 0,00</span>
+          </div>
+        </div>
+        <div id="campoTroco" style="display:none;" class="mt-2">
+          <div class="troco-box">
+            <label class="form-label mb-1"><i class="bi bi-wallet2 me-1"></i>Valor Recebido (R$)</label>
+            <input type="text" id="valorRecebido" class="form-control" inputmode="decimal" placeholder="0,00" oninput="calcTroco()">
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="troco-linha">Troco:</span>
+              <strong class="troco-valor" id="trocoValor">R$ 0,00</strong>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-2formas" id="btnCombinar" onclick="usar2Formas()">
+          <i class="bi bi-layers"></i> Combinar Formas de Pagamento
+        </button>
+
+        <!-- Desconto -->
+        <div class="cart-section">
+          <div class="cart-section-header">Desconto</div>
+          <div class="cart-section-body">
+            <div class="d-flex gap-2 align-items-center">
+              <span class="small text-muted fw-semibold">R$</span>
+              <input type="text" id="inputDesconto" class="form-control form-control-sm" inputmode="decimal"
+                     placeholder="0,00" oninput="calcTotais()" style="max-width:120px;">
+              <span class="small" id="descontoLabel">–</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observação -->
+        <div class="cart-section">
+          <div class="cart-section-body py-2">
+            <input type="text" id="obsVenda" class="form-control form-control-sm" placeholder="Observação (opcional)">
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /pdvPagamento -->
+
+  </div><!-- /col-lg-7 -->
 
   <!-- ── Coluna direita: carrinho + pagamento ── -->
   <div class="col-lg-5">
@@ -267,20 +437,19 @@
           </div>
         </div>
 
-        <!-- Origem -->
-        <div class="cart-section">
-          <div class="cart-section-header">Origem do Pedido</div>
-          <div class="cart-section-body">
-            <div class="btn-group w-100">
-              <button type="button" id="btnLoja" class="btn btn-warning active" onclick="setOrigem('loja')">
-                <i class="bi bi-shop me-1"></i> Loja
-              </button>
-              <button type="button" id="btnApp" class="btn btn-outline-secondary" onclick="setOrigem('app')">
-                <i class="bi bi-phone me-1"></i> App
-              </button>
-            </div>
-            <div id="campoApp" style="display:none;" class="mt-2">
-              <input type="text" id="appNome" class="form-control" placeholder="Nome do app (ex: iFood, Anotaí…)">
+        <!-- Origem: mantido oculto para compatibilidade com JS -->
+        <div style="display:none;">
+          <button id="btnLoja" class="btn btn-warning active"></button>
+          <button id="btnApp" class="btn btn-outline-secondary"></button>
+          <div id="campoApp"></div>
+        </div>
+
+        <!-- Nome do App (visível quando origem=app) -->
+        <div id="campoAppCart" style="display:none;" class="cart-section">
+          <div class="cart-section-body py-2">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-phone"></i></span>
+              <input type="text" id="appNome" class="form-control" placeholder="Nome do app (iFood, Anotaí…)">
             </div>
           </div>
         </div>
@@ -332,94 +501,13 @@
           </div>
         </div>
 
-        <!-- Desconto -->
-        <div class="cart-section">
-          <div class="cart-section-header">Desconto</div>
-          <div class="cart-section-body">
-            <div class="d-flex gap-2 align-items-center">
-              <span class="small text-muted fw-semibold">R$</span>
-              <input type="text" id="inputDesconto" class="form-control form-control-sm" inputmode="decimal"
-                     placeholder="0,00" oninput="calcTotais()" style="max-width:120px;">
-              <span class="small" id="descontoLabel">–</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Observação -->
-        <div class="cart-section">
-          <div class="cart-section-body py-2">
-            <input type="text" id="obsVenda" class="form-control form-control-sm" placeholder="Observação (opcional)">
-          </div>
-        </div>
-
-        <!-- Pagamento -->
-        <div class="cart-section">
-          <div class="cart-section-header">Forma de Pagamento</div>
-          <div class="cart-section-body">
-            <div id="pgtoLoja" class="pgto-grid">
-              <div class="pgto-card" data-pgto="dinheiro" data-label="Dinheiro" onclick="handlePgtoClick(this)">
-                <i class="bi bi-cash-coin"></i>Dinheiro
-              </div>
-              <div class="pgto-card" data-pgto="cartao" data-label="Cartão" onclick="handlePgtoClick(this)">
-                <i class="bi bi-credit-card"></i>Cartão
-              </div>
-              <div class="pgto-card" data-pgto="pix" data-label="Pix" onclick="handlePgtoClick(this)">
-                <i class="bi bi-qr-code"></i>Pix
-              </div>
-              <div class="pgto-card" data-pgto="conta" data-label="Conta" onclick="handlePgtoClick(this)">
-                <i class="bi bi-person-lines-fill"></i>Conta
-              </div>
-            </div>
-            <div id="pgtoApp" class="pgto-grid" style="display:none;">
-              <div class="pgto-card" data-pgto="pelo_app" data-label="Pelo app" onclick="handlePgtoClick(this)">
-                <i class="bi bi-phone"></i>Pelo app
-              </div>
-              <div class="pgto-card" data-pgto="entrega_dinheiro" data-label="Dinheiro" onclick="handlePgtoClick(this)">
-                <i class="bi bi-cash-coin"></i>Dinheiro<span class="pgto-sub">na entrega</span>
-              </div>
-              <div class="pgto-card" data-pgto="entrega_cartao" data-label="Cartão" onclick="handlePgtoClick(this)">
-                <i class="bi bi-credit-card"></i>Cartão<span class="pgto-sub">na entrega</span>
-              </div>
-              <div class="pgto-card" data-pgto="entrega_pix" data-label="Pix" onclick="handlePgtoClick(this)">
-                <i class="bi bi-qr-code"></i>Pix<span class="pgto-sub">na entrega</span>
-              </div>
-            </div>
-            <!-- Campos de valor por forma (modo combinado) -->
-            <div id="campoCombinados" style="display:none;" class="mt-3"></div>
-            <!-- Resumo do modo combinado -->
-            <div id="painelCombinado" style="display:none;" class="mt-2 px-2 py-2" style="background:#252525;border-radius:8px;font-size:.82rem;">
-              <div class="d-flex justify-content-between mb-1" style="font-size:.82rem;">
-                <span style="color:#aaa;">Total da venda:</span>
-                <span id="combinadoTotal" style="color:#ddd;">R$ 0,00</span>
-              </div>
-              <div class="d-flex justify-content-between mb-1" style="font-size:.82rem;">
-                <span style="color:#aaa;">Alocado:</span>
-                <span id="combinadoAlocado" style="color:#6fcf97;">R$ 0,00</span>
-              </div>
-              <div class="d-flex justify-content-between" style="font-size:.82rem;">
-                <span style="color:#aaa;">Faltando:</span>
-                <span id="combinadoFaltando" style="color:#eb5757;">R$ 0,00</span>
-              </div>
-            </div>
-            <div id="campoTroco" style="display:none;" class="mt-2">
-              <div class="troco-box">
-                <label class="form-label mb-1"><i class="bi bi-wallet2 me-1"></i>Valor Recebido (R$)</label>
-                <input type="text" id="valorRecebido" class="form-control" inputmode="decimal" placeholder="0,00" oninput="calcTroco()">
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                  <span class="troco-linha">Troco:</span>
-                  <strong class="troco-valor" id="trocoValor">R$ 0,00</strong>
-                </div>
-              </div>
-            </div>
-            <button type="button" class="btn-2formas" id="btnCombinar" onclick="usar2Formas()">
-              <i class="bi bi-layers"></i> Combinar Formas de Pagamento
-            </button>
-          </div>
-        </div>
-
-        <!-- Finalizar -->
-        <button class="btn btn-warning w-100 fw-bold py-3 fs-5" onclick="finalizarVenda()">
-          <i class="bi bi-check-circle me-2"></i>Finalizar Venda
+        <!-- Etapa 2: ir para pagamento -->
+        <button id="btnFormaPgto" class="btn btn-warning w-100 fw-bold py-3 fs-5" onclick="irParaPagamento()">
+          <i class="bi bi-credit-card me-2"></i>FORMA DE PAGAMENTO
+        </button>
+        <!-- Etapa 3: finalizar venda -->
+        <button id="btnFinalizar" class="btn btn-success w-100 fw-bold py-3 fs-5" style="display:none;" onclick="finalizarVenda()">
+          <i class="bi bi-check-circle me-2"></i>FINALIZAR VENDA
         </button>
 
       </div><!-- /cart-area -->
@@ -986,7 +1074,8 @@ function setOrigem(o) {
   document.getElementById('campoTroco').style.display = 'none';
   document.getElementById('btnLoja').className = o === 'loja' ? 'btn btn-warning active' : 'btn btn-outline-secondary';
   document.getElementById('btnApp').className  = o === 'app'  ? 'btn btn-warning active' : 'btn btn-outline-secondary';
-  document.getElementById('campoApp').style.display  = o === 'app'  ? '' : 'none';
+  document.getElementById('campoApp').style.display    = o === 'app' ? '' : 'none';
+  document.getElementById('campoAppCart').style.display = o === 'app' ? '' : 'none';
   document.getElementById('pgtoLoja').style.display  = o === 'loja' ? 'flex' : 'none';
   document.getElementById('pgtoApp').style.display   = o === 'app'  ? 'flex' : 'none';
   cancelarCombinado();
@@ -1272,5 +1361,35 @@ function finalizarVenda() {
 
 // ── Util ──────────────────────────────────────────────
 function fmtNum(n) { return parseFloat(n || 0).toFixed(2).replace('.', ','); }
+
+// ── Controle de etapas ────────────────────────────────
+function irParaStep(n) {
+  document.getElementById('step0').style.display    = n === 0 ? '' : 'none';
+  document.getElementById('step1').style.display    = n === 1 ? '' : 'none';
+  document.getElementById('stepPDV').style.display  = n >= 2 ? '' : 'none';
+  document.getElementById('pdvProdutos').style.display  = n === 2 ? '' : 'none';
+  document.getElementById('pdvPagamento').style.display = n === 3 ? '' : 'none';
+  document.getElementById('btnFormaPgto').style.display = n === 2 ? '' : 'none';
+  document.getElementById('btnFinalizar').style.display = n === 3 ? '' : 'none';
+}
+
+function escolherOrigem(o) {
+  setOrigem(o);
+  if (o === 'app') {
+    irParaStep(2);
+  } else {
+    irParaStep(1);
+  }
+}
+
+function escolherModo(m) {
+  setModo(m);
+  irParaStep(2);
+}
+
+function irParaPagamento() {
+  if (!carrinho.length) { aviso('Adicione pelo menos um produto.'); return; }
+  irParaStep(3);
+}
 </script>
 {% endblock %}
