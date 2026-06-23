@@ -129,6 +129,16 @@ def _run_migrations(db):
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS payment_entries TEXT",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount FLOAT DEFAULT 0",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount_type VARCHAR(8)",
+        """CREATE TABLE IF NOT EXISTS customer_addresses (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            customer_id INTEGER REFERENCES customers(id) NOT NULL,
+            label VARCHAR(64),
+            address VARCHAR(256),
+            neighborhood_id INTEGER REFERENCES neighborhoods(id),
+            delivery_fee FLOAT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS starts_at TIMESTAMP",
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS ends_at TIMESTAMP",
         # Índices de performance
@@ -236,6 +246,7 @@ def create_app():
         from app.models.expense import Expense  # noqa: F401
         from app.models.combo import ComboItem  # noqa: F401
         from app.models.coupon import Coupon  # noqa: F401
+        from app.models.customer_address import CustomerAddress  # noqa: F401
         from app.models.pedido_online import PedidoOnline  # noqa: F401
         db.create_all()
         _run_migrations(db)

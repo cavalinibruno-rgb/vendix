@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from app import db
 from app.models.customer import Customer, Neighborhood
+from app.models.customer_address import CustomerAddress
 
 customers_bp = Blueprint('customers', __name__, url_prefix='/clientes')
 
@@ -208,3 +209,63 @@ def api_buscar():
         'neighborhood_name': c.neighborhood.name if c.neighborhood else '',
         'delivery_fee': c.delivery_fee or 0,
     } for c in customers])
+
+
+# ── Endereços de entrega do cliente ──────────────────
+@customers_bp.route('/<int:customer_id>/enderecos')
+@login_required
+def api_enderecos(customer_id):
+    c = Customer.query.filter_by(id=customer_id, tenant_id=tid()).first_or_404()
+    result = []
+    if c.address or c.neighborhood_id:
+        result.append({
+            'id': 0,
+            'label': 'Endereço principal',
+            'address': c.address or '',
+            'neighborhood_id': c.neighborhood_id,
+            'neighborhood_name': c.neighborhood.name if c.neighborhood else '',
+            'delivery_fee': c.neighborhood.delivery_fee if c.neighborhood else (c.delivery_fee or 0),
+        })
+    extras = CustomerAddress.query.filter_by(customer_id=customer_id, tenant_id=tid()).order_by(CustomerAddress.created_at).all()
+    for e in extras:
+        n = Neighborhood.query.get(e.neighborhood_id) if e.neighborhood_id else None
+        result.append({
+            'id': e.id,
+            'label': e.label or 'Endereço',
+            'address': e.address or '',
+            'neighborhood_id': e.neighborhood_id,
+            'neighborhood_name': n.name if n else '',
+            'delivery_fee': n.delivery_fee if n else (e.delivery_fee or 0),
+        })
+    return jsonify(result)
+
+
+@customers_bp.route('/<int:customer_id>/enderecos/adicionar', methods=['POST'])
+@login_required
+def api_adicionar_endereco(customer_id):
+    Customer.query.filter_by(id=customer_id, tenant_id=tid()).first_or_404()
+    data = request.get_json() or {}
+    label           = (data.get('label') or '').strip() or 'Endereço'
+    address         = (data.get('address') or '').strip()
+    neighborhood_id = data.get('neighborhood_id') or None
+    fee = 0
+    n = None
+    if neighborhood_id:
+        n = Neighborhood.query.filter_by(id=neighborhood_id, tenant_id=tid()).first()
+        if n:
+            fee = n.delivery_fee
+        else:
+            neighborhood_id = None
+    ea = CustomerAddress(
+        tenant_id=tid(), customer_id=customer_id,
+        label=label, address=address,
+        neighborhood_id=neighborhood_id, delivery_fee=fee,
+    )
+    db.session.add(ea)
+    db.session.commit()
+    return jsonify({
+        'id': ea.id, 'label': ea.label, 'address': ea.address or '',
+        'neighborhood_id': ea.neighborhood_id,
+        'neighborhood_name': n.name if n else '',
+        'delivery_fee': fee,
+    })

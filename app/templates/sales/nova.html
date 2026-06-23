@@ -220,6 +220,33 @@
   #pdvPagamento .cart-section-body { padding: 12px 14px; }
   #pdvPagamento .text-muted { color: #888 !important; }
   #pdvPagamento label.form-label { color: #bbb; }
+  /* ── Itens de endereço ── */
+  .end-addr-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 12px; border-radius: 10px;
+    border: 1px solid #3a3a3a; background: #252525;
+    margin-bottom: 8px; cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .end-addr-item:hover { border-color: #555; background: #2d2d2d; }
+  .end-addr-item.active { border-color: #c9a84c; background: rgba(201,168,76,.08); }
+  .end-addr-item .end-radio {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid #555;
+    flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s;
+  }
+  .end-addr-item.active .end-radio { border-color: #c9a84c; }
+  .end-addr-item.active .end-radio::after {
+    content: ''; width: 9px; height: 9px; border-radius: 50%; background: #c9a84c;
+  }
+  .end-addr-label { font-weight: 600; font-size: .85rem; color: #ddd; }
+  .end-addr-text  { font-size: .78rem; color: #888; margin-top: 2px; }
+  /* Form novo endereço */
+  #endNovoForm { background: #252525; border-radius: 10px; border: 1px solid #3a3a3a; padding: 14px; }
+  #pdvEndereco .form-control, #pdvEndereco .form-select { background: #2d2d2d; border-color: #444; color: #ddd; }
+  #pdvEndereco .form-control::placeholder { color: #666; }
+  #pdvEndereco .form-control:focus, #pdvEndereco .form-select:focus { background: #2d2d2d; border-color: #c9a84c; color: #ddd; box-shadow: none; }
+  #pdvEndereco .form-select option { background: #2d2d2d; }
+  #pdvEndereco .input-group-text { background: #2d2d2d; border-color: #444; color: #888; }
 </style>
 {% endblock %}
 
@@ -312,30 +339,68 @@
           </span>
         </div>
 
-        <p class="text-muted small mb-3">
-          <i class="bi bi-info-circle me-1"></i>Busque o cliente no painel direito para preencher automaticamente.
-        </p>
-
-        <div id="clienteEndereco" class="mb-3" style="display:none;">
-          <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Endereço</label>
-          <div class="input-group input-group-sm">
-            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-            <input type="text" id="clienteEnderecoTexto" class="form-control form-control-sm" placeholder="Endereço de entrega">
-          </div>
+        <!-- Sem cliente selecionado -->
+        <div id="endSemCliente" class="text-muted small py-4 text-center">
+          <i class="bi bi-person me-1"></i>Selecione um cliente no painel direito.
         </div>
 
-        <div id="camposEntrega" style="display:none;" class="mt-2">
-          <div class="row g-2">
-            <div class="col-8">
-              <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Bairro</label>
-              <select id="bairroSelect" class="form-select form-select-sm" onchange="onBairroChange(this)">
-                <option value="">— Sem bairro —</option>
-              </select>
+        <!-- Com cliente selecionado -->
+        <div id="endComCliente" style="display:none;">
+
+          <p class="small fw-semibold mb-2" style="color:#aaa;">Endereços</p>
+
+          <!-- Botão adicionar novo (topo, como no iFood) -->
+          <div class="end-addr-item mb-1" onclick="toggleFormEndereco()" style="cursor:pointer;">
+            <i class="bi bi-plus-circle me-2" style="color:#c9a84c;"></i>
+            <span style="color:#c9a84c;font-weight:600;">Adicionar novo endereço</span>
+          </div>
+
+          <!-- Formulário de novo endereço (colapsável) -->
+          <div id="endNovoForm" style="display:none;" class="mb-3 p-3" style="background:#252525;border-radius:10px;border:1px solid #3a3a3a;">
+            <div class="mb-2">
+              <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Rótulo</label>
+              <input type="text" id="endNovoLabel" class="form-control form-control-sm" placeholder="Ex: Casa, Trabalho, Namorada…">
             </div>
-            <div class="col-4">
-              <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Taxa (R$)</label>
-              <input type="text" id="taxaEntrega" class="form-control form-control-sm" value="0.00" oninput="calcTotais()">
+            <div class="mb-2">
+              <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Endereço</label>
+              <input type="text" id="endNovoAddress" class="form-control form-control-sm" placeholder="Rua, número…">
             </div>
+            <div class="row g-2 mb-3">
+              <div class="col-8">
+                <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Bairro</label>
+                <select id="endNovoBairro" class="form-select form-select-sm" onchange="endNovoOnBairro(this)">
+                  <option value="">— Sem bairro —</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Taxa (R$)</label>
+                <input type="text" id="endNovoTaxa" class="form-control form-control-sm" value="0.00" readonly style="background:#252525;">
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-warning btn-sm fw-semibold flex-grow-1" onclick="salvarNovoEndereco()">
+                <i class="bi bi-check-lg me-1"></i>Salvar e selecionar
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="toggleFormEndereco()">Cancelar</button>
+            </div>
+            <div id="endNovoMsg" class="mt-2 small"></div>
+          </div>
+
+          <!-- Lista de endereços do cliente -->
+          <div id="endListaEnderecos"></div>
+
+        </div>
+
+        <!-- Campos ocultos usados pelo JS para aplicar o endereço selecionado -->
+        <div style="display:none;">
+          <div id="clienteEndereco">
+            <input type="text" id="clienteEnderecoTexto">
+          </div>
+          <div id="camposEntrega">
+            <select id="bairroSelect" onchange="onBairroChange(this)">
+              <option value="">— Sem bairro —</option>
+            </select>
+            <input type="text" id="taxaEntrega" value="0.00" oninput="calcTotais()">
           </div>
         </div>
 
@@ -836,23 +901,14 @@ function selecionarCliente(c) {
   document.getElementById('clienteSelecionado').style.display = '';
   document.getElementById('clienteResultados').style.display = 'none';
   document.getElementById('clienteSearch').value = c.name;
-  const endDiv = document.getElementById('clienteEndereco');
-  if (modo === 'entrega') {
-    document.getElementById('clienteEnderecoTexto').value = c.address || '';
-    endDiv.style.display = '';
-  } else { endDiv.style.display = 'none'; }
-  if (c.neighborhood_id) {
-    document.getElementById('bairroSelect').value = c.neighborhood_id;
-    document.getElementById('taxaEntrega').value = fmtNum(c.delivery_fee || 0);
-  }
-  if (modo === 'entrega' && c.delivery_fee > 0) {
-    document.getElementById('taxaEntrega').value = fmtNum(c.delivery_fee);
-  }
+  // Carrega lista de endereços se estiver em modo entrega
+  if (modo === 'entrega') carregarEnderecos(c.id);
   calcTotais();
 }
 
 function limparCliente() {
   clienteAtual = null;
+  enderecoSelecionado = null;
   document.getElementById('clienteSearch').value = '';
   document.getElementById('clienteSelecionado').style.display = 'none';
   document.getElementById('clienteResultados').style.display = 'none';
@@ -860,6 +916,10 @@ function limparCliente() {
   document.getElementById('taxaEntrega').value = '0.00';
   document.getElementById('bairroSelect').value = '';
   document.getElementById('clienteEndereco').style.display = 'none';
+  // Reseta painel de endereços
+  document.getElementById('endSemCliente').style.display = '';
+  document.getElementById('endComCliente').style.display = 'none';
+  document.getElementById('endListaEnderecos').innerHTML = '';
   calcTotais();
 }
 
@@ -1391,6 +1451,119 @@ function finalizarVenda() {
 // ── Util ──────────────────────────────────────────────
 function fmtNum(n) { return parseFloat(n || 0).toFixed(2).replace('.', ','); }
 
+// ── Endereços de entrega ─────────────────────────────
+let enderecoSelecionado = null;
+
+function carregarEnderecos(clienteId) {
+  document.getElementById('endSemCliente').style.display = 'none';
+  document.getElementById('endComCliente').style.display = '';
+  document.getElementById('endListaEnderecos').innerHTML =
+    '<div class="text-muted small py-2"><i class="bi bi-hourglass me-1"></i>Carregando…</div>';
+  // Preenche bairros no form de novo endereço
+  const selOrig = document.getElementById('bairroSelect');
+  const selNovo = document.getElementById('endNovoBairro');
+  selNovo.innerHTML = selOrig.innerHTML;
+  fetch(`/clientes/${clienteId}/enderecos`)
+    .then(r => r.json())
+    .then(lista => renderEnderecos(lista))
+    .catch(() => {
+      document.getElementById('endListaEnderecos').innerHTML =
+        '<div class="text-danger small">Erro ao carregar endereços.</div>';
+    });
+}
+
+function renderEnderecos(lista) {
+  const el = document.getElementById('endListaEnderecos');
+  el.innerHTML = '';
+  if (!lista.length) {
+    el.innerHTML = '<div class="text-muted small py-2">Nenhum endereço cadastrado.</div>';
+    return;
+  }
+  lista.forEach((e, idx) => {
+    const item = document.createElement('div');
+    item.className = 'end-addr-item' + (idx === 0 ? ' active' : '');
+    item.dataset.endId = e.id;
+    const bairroTexto = e.neighborhood_name ? ` · ${e.neighborhood_name}` : '';
+    const taxaTexto   = e.delivery_fee > 0 ? ` · Taxa R$ ${fmtNum(e.delivery_fee)}` : '';
+    item.innerHTML = `
+      <div class="end-radio"></div>
+      <div>
+        <div class="end-addr-label">${e.label}</div>
+        <div class="end-addr-text">${e.address || '—'}${bairroTexto}${taxaTexto}</div>
+      </div>`;
+    item.addEventListener('click', () => selecionarEndereco(e, item));
+    el.appendChild(item);
+    if (idx === 0) selecionarEndereco(e, item, true);
+  });
+}
+
+function selecionarEndereco(e, itemEl, silencioso) {
+  enderecoSelecionado = e;
+  // Destaca item ativo
+  document.querySelectorAll('#endListaEnderecos .end-addr-item').forEach(i => i.classList.remove('active'));
+  if (itemEl) itemEl.classList.add('active');
+  // Aplica nos campos ocultos que alimentam calcTotais/finalizarVenda
+  const bairroSel = document.getElementById('bairroSelect');
+  if (e.neighborhood_id) {
+    bairroSel.value = e.neighborhood_id;
+  } else {
+    bairroSel.value = '';
+  }
+  document.getElementById('taxaEntrega').value = fmtNum(e.delivery_fee);
+  document.getElementById('clienteEnderecoTexto').value = e.address || '';
+  calcTotais();
+}
+
+function toggleFormEndereco() {
+  const form = document.getElementById('endNovoForm');
+  const visivel = form.style.display !== 'none';
+  form.style.display = visivel ? 'none' : '';
+  if (!visivel) {
+    document.getElementById('endNovoLabel').value   = '';
+    document.getElementById('endNovoAddress').value = '';
+    document.getElementById('endNovoBairro').value  = '';
+    document.getElementById('endNovoTaxa').value    = '0.00';
+    document.getElementById('endNovoMsg').textContent = '';
+    setTimeout(() => document.getElementById('endNovoLabel').focus(), 100);
+  }
+}
+
+function endNovoOnBairro(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const fee = opt.dataset.fee ? parseFloat(opt.dataset.fee) : 0;
+  document.getElementById('endNovoTaxa').value = fmtNum(fee);
+}
+
+function salvarNovoEndereco() {
+  if (!clienteAtual) return;
+  const label   = document.getElementById('endNovoLabel').value.trim() || 'Endereço';
+  const address = document.getElementById('endNovoAddress').value.trim();
+  const nbId    = document.getElementById('endNovoBairro').value || null;
+  const msg     = document.getElementById('endNovoMsg');
+  msg.innerHTML = '<span class="text-muted">Salvando…</span>';
+  fetch(`/clientes/${clienteAtual.id}/enderecos/adicionar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label, address, neighborhood_id: nbId }),
+  })
+  .then(r => r.json())
+  .then(novo => {
+    if (novo.error) { msg.innerHTML = `<span class="text-danger">${novo.error}</span>`; return; }
+    toggleFormEndereco();
+    // Recarrega lista e seleciona o novo
+    fetch(`/clientes/${clienteAtual.id}/enderecos`)
+      .then(r => r.json())
+      .then(lista => {
+        renderEnderecos(lista);
+        // Seleciona o recém criado
+        const novoItem = [...document.querySelectorAll('#endListaEnderecos .end-addr-item')]
+          .find(i => i.dataset.endId == novo.id);
+        if (novoItem) selecionarEndereco(novo, novoItem);
+      });
+  })
+  .catch(() => { msg.innerHTML = '<span class="text-danger">Erro ao salvar.</span>'; });
+}
+
 // ── Controle de etapas ────────────────────────────────
 // Etapas: 0=origem, 1=modo, 2=PDV, 3=endereço(entrega), 4=pagamento
 function irParaStep(n) {
@@ -1423,6 +1596,10 @@ function escolherModo(m) {
 
 function irParaEndereco() {
   if (!carrinho.length) { aviso('Adicione pelo menos um produto.'); return; }
+  // Se cliente já selecionado mas endereços ainda não carregados, carrega agora
+  if (clienteAtual && document.getElementById('endComCliente').style.display === 'none') {
+    carregarEnderecos(clienteAtual.id);
+  }
   irParaStep(3);
 }
 
