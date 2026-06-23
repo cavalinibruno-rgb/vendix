@@ -299,12 +299,55 @@
     </div>
     </div><!-- /pdvProdutos -->
 
-    <!-- ── Pagamento (etapa 3) ── -->
-    <div id="pdvPagamento" style="display:none;">
+    <!-- ── Endereço de entrega (etapa 3) ── -->
+    <div id="pdvEndereco" style="display:none;">
       <div class="pdv-area" style="overflow-y:auto;max-height:calc(100vh - 120px);">
 
         <div class="d-flex align-items-center gap-3 mb-4">
           <button class="step-back" onclick="irParaStep(2)">
+            <i class="bi bi-arrow-left"></i> Voltar
+          </button>
+          <span style="color:#c9a84c;font-weight:700;font-size:1rem;letter-spacing:.05em;">
+            <i class="bi bi-geo-alt me-2"></i>ENDEREÇO DE ENTREGA
+          </span>
+        </div>
+
+        <p class="text-muted small mb-3">
+          <i class="bi bi-info-circle me-1"></i>Busque o cliente no painel direito para preencher automaticamente.
+        </p>
+
+        <div id="clienteEndereco" class="mb-3" style="display:none;">
+          <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Endereço</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+            <input type="text" id="clienteEnderecoTexto" class="form-control form-control-sm" placeholder="Endereço de entrega">
+          </div>
+        </div>
+
+        <div id="camposEntrega" style="display:none;" class="mt-2">
+          <div class="row g-2">
+            <div class="col-8">
+              <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Bairro</label>
+              <select id="bairroSelect" class="form-select form-select-sm" onchange="onBairroChange(this)">
+                <option value="">— Sem bairro —</option>
+              </select>
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold small mb-1" style="color:#bbb;">Taxa (R$)</label>
+              <input type="text" id="taxaEntrega" class="form-control form-control-sm" value="0.00" oninput="calcTotais()">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /pdvEndereco -->
+
+    <!-- ── Pagamento (etapa 4) ── -->
+    <div id="pdvPagamento" style="display:none;">
+      <div class="pdv-area" style="overflow-y:auto;max-height:calc(100vh - 120px);">
+
+        <div class="d-flex align-items-center gap-3 mb-4">
+          <button class="step-back" onclick="voltarDoPagamento()">
             <i class="bi bi-arrow-left"></i> Voltar
           </button>
           <span style="color:#c9a84c;font-weight:700;font-size:1rem;letter-spacing:.05em;">
@@ -401,7 +444,50 @@
     <div class="cart-panel">
       <div class="cart-area">
 
-        <!-- Carrinho -->
+        <!-- Origem: mantido oculto para compatibilidade com JS -->
+        <div style="display:none;">
+          <button id="btnLoja" class="btn btn-warning active"></button>
+          <button id="btnApp" class="btn btn-outline-secondary"></button>
+          <div id="campoApp"></div>
+          <button id="btnRetirada" class="btn btn-warning active"></button>
+          <button id="btnEntrega" class="btn btn-outline-secondary"></button>
+        </div>
+
+        <!-- Nome do App (visível quando origem=app) -->
+        <div id="campoAppCart" style="display:none;" class="cart-section">
+          <div class="cart-section-body py-2">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-phone"></i></span>
+              <input type="text" id="appNome" class="form-control" placeholder="Nome do app (iFood, Anotaí…)">
+            </div>
+          </div>
+        </div>
+
+        <!-- Cliente (acima do carrinho) -->
+        <div class="cart-section" id="secaoCliente">
+          <div class="cart-section-header">
+            <span>Cliente</span>
+            <span id="modoBadge" class="badge text-dark small" style="background:#c9a84c;">Retirada</span>
+          </div>
+          <div class="cart-section-body">
+            <div class="input-group mb-2">
+              <span class="input-group-text"><i class="bi bi-person"></i></span>
+              <input type="text" id="clienteSearch" class="form-control" placeholder="Buscar cliente (opcional)…" autocomplete="off">
+              <button class="btn btn-outline-secondary" onclick="limparCliente()"><i class="bi bi-x"></i></button>
+            </div>
+            <div id="clienteResultados" class="list-group mb-2" style="display:none;max-height:180px;overflow-y:auto;"></div>
+            <div id="clienteNaoEncontrado" class="mb-2" style="display:none;">
+              <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="abrirModalCliente()">
+                <i class="bi bi-person-plus me-1"></i>Cadastrar novo cliente
+              </button>
+            </div>
+            <div id="clienteSelecionado" class="text-success small" style="display:none;">
+              <i class="bi bi-check-circle me-1"></i><span id="clienteNome"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Carrinho (abaixo do cliente) -->
         <div class="cart-section">
           <div class="cart-section-header">
             <span><i class="bi bi-cart3 me-1"></i>Carrinho</span>
@@ -422,7 +508,7 @@
               <span>Subtotal</span>
               <span>R$ <span id="resumoSubtotal">0,00</span></span>
             </div>
-            <div class="d-flex justify-content-between text-muted small mb-1" id="linhaEntrega" style="display:none !important;">
+            <div class="d-flex justify-content-between text-muted small mb-1" id="linhaEntrega" style="display:none;">
               <span>Taxa de entrega</span>
               <span>R$ <span id="resumoTaxa">0,00</span></span>
             </div>
@@ -437,75 +523,16 @@
           </div>
         </div>
 
-        <!-- Origem: mantido oculto para compatibilidade com JS -->
-        <div style="display:none;">
-          <button id="btnLoja" class="btn btn-warning active"></button>
-          <button id="btnApp" class="btn btn-outline-secondary"></button>
-          <div id="campoApp"></div>
-        </div>
-
-        <!-- Nome do App (visível quando origem=app) -->
-        <div id="campoAppCart" style="display:none;" class="cart-section">
-          <div class="cart-section-body py-2">
-            <div class="input-group input-group-sm">
-              <span class="input-group-text"><i class="bi bi-phone"></i></span>
-              <input type="text" id="appNome" class="form-control" placeholder="Nome do app (iFood, Anotaí…)">
-            </div>
-          </div>
-        </div>
-
-        <!-- Cliente -->
-        <div class="cart-section" id="secaoCliente">
-          <div class="cart-section-header">
-            <span>Cliente</span>
-            <div class="btn-group btn-group-sm">
-              <button type="button" id="btnRetirada" class="btn btn-warning active" onclick="setModo('retirada')">Retirada</button>
-              <button type="button" id="btnEntrega"  class="btn btn-outline-secondary" onclick="setModo('entrega')">Entrega</button>
-            </div>
-          </div>
-          <div class="cart-section-body">
-            <div class="input-group mb-2">
-              <span class="input-group-text"><i class="bi bi-person"></i></span>
-              <input type="text" id="clienteSearch" class="form-control" placeholder="Buscar cliente (opcional)…" autocomplete="off">
-              <button class="btn btn-outline-secondary" onclick="limparCliente()"><i class="bi bi-x"></i></button>
-            </div>
-            <div id="clienteResultados" class="list-group mb-2" style="display:none;max-height:180px;overflow-y:auto;"></div>
-            <div id="clienteNaoEncontrado" class="mb-2" style="display:none;">
-              <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="abrirModalCliente()">
-                <i class="bi bi-person-plus me-1"></i>Cadastrar novo cliente
-              </button>
-            </div>
-            <div id="clienteSelecionado" class="text-success small" style="display:none;">
-              <i class="bi bi-check-circle me-1"></i><span id="clienteNome"></span>
-            </div>
-            <div id="clienteEndereco" class="mt-2" style="display:none;">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-                <input type="text" id="clienteEnderecoTexto" class="form-control form-control-sm" placeholder="Endereço de entrega">
-              </div>
-            </div>
-            <div id="camposEntrega" style="display:none;" class="mt-2">
-              <div class="row g-2">
-                <div class="col-8">
-                  <label class="form-label fw-semibold small mb-1">Bairro</label>
-                  <select id="bairroSelect" class="form-select form-select-sm" onchange="onBairroChange(this)">
-                    <option value="">— Sem bairro —</option>
-                  </select>
-                </div>
-                <div class="col-4">
-                  <label class="form-label fw-semibold small mb-1">Taxa (R$)</label>
-                  <input type="text" id="taxaEntrega" class="form-control form-control-sm" value="0.00" oninput="calcTotais()">
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Etapa 2: ir para pagamento -->
+        <!-- Botões inferiores -->
+        <!-- Etapa 2, modo=entrega: endereço -->
+        <button id="btnEndereco" class="btn btn-warning w-100 fw-bold py-3 fs-5" style="display:none;" onclick="irParaEndereco()">
+          <i class="bi bi-geo-alt me-2"></i>ENDEREÇO
+        </button>
+        <!-- Etapa 2 retirada/app OU etapa 3: forma de pagamento -->
         <button id="btnFormaPgto" class="btn btn-warning w-100 fw-bold py-3 fs-5" onclick="irParaPagamento()">
           <i class="bi bi-credit-card me-2"></i>FORMA DE PAGAMENTO
         </button>
-        <!-- Etapa 3: finalizar venda -->
+        <!-- Etapa 4: finalizar -->
         <button id="btnFinalizar" class="btn btn-success w-100 fw-bold py-3 fs-5" style="display:none;" onclick="finalizarVenda()">
           <i class="bi bi-check-circle me-2"></i>FINALIZAR VENDA
         </button>
@@ -748,6 +775,8 @@ function setModo(m) {
   modo = m;
   document.getElementById('btnRetirada').className = m === 'retirada' ? 'btn btn-warning active' : 'btn btn-outline-secondary';
   document.getElementById('btnEntrega').className  = m === 'entrega'  ? 'btn btn-warning active' : 'btn btn-outline-secondary';
+  const badge = document.getElementById('modoBadge');
+  if (badge) { badge.textContent = m === 'entrega' ? 'Entrega' : 'Retirada'; }
   document.getElementById('camposEntrega').style.display = m === 'entrega' ? '' : 'none';
   document.getElementById('linhaEntrega').style.display  = m === 'entrega' ? 'flex' : 'none';
   if (m === 'retirada') {
@@ -1363,14 +1392,19 @@ function finalizarVenda() {
 function fmtNum(n) { return parseFloat(n || 0).toFixed(2).replace('.', ','); }
 
 // ── Controle de etapas ────────────────────────────────
+// Etapas: 0=origem, 1=modo, 2=PDV, 3=endereço(entrega), 4=pagamento
 function irParaStep(n) {
-  document.getElementById('step0').style.display    = n === 0 ? '' : 'none';
-  document.getElementById('step1').style.display    = n === 1 ? '' : 'none';
-  document.getElementById('stepPDV').style.display  = n >= 2 ? '' : 'none';
+  document.getElementById('step0').style.display        = n === 0 ? '' : 'none';
+  document.getElementById('step1').style.display        = n === 1 ? '' : 'none';
+  document.getElementById('stepPDV').style.display      = n >= 2  ? '' : 'none';
   document.getElementById('pdvProdutos').style.display  = n === 2 ? '' : 'none';
-  document.getElementById('pdvPagamento').style.display = n === 3 ? '' : 'none';
-  document.getElementById('btnFormaPgto').style.display = n === 2 ? '' : 'none';
-  document.getElementById('btnFinalizar').style.display = n === 3 ? '' : 'none';
+  document.getElementById('pdvEndereco').style.display  = n === 3 ? '' : 'none';
+  document.getElementById('pdvPagamento').style.display = n === 4 ? '' : 'none';
+  // Botões do painel direito
+  const isEntrega = modo === 'entrega' && origem === 'loja';
+  document.getElementById('btnEndereco').style.display  = (n === 2 && isEntrega) ? '' : 'none';
+  document.getElementById('btnFormaPgto').style.display = (n === 2 && !isEntrega) || n === 3 ? '' : 'none';
+  document.getElementById('btnFinalizar').style.display = n === 4 ? '' : 'none';
 }
 
 function escolherOrigem(o) {
@@ -1387,9 +1421,22 @@ function escolherModo(m) {
   irParaStep(2);
 }
 
-function irParaPagamento() {
+function irParaEndereco() {
   if (!carrinho.length) { aviso('Adicione pelo menos um produto.'); return; }
   irParaStep(3);
+}
+
+function irParaPagamento() {
+  if (!carrinho.length) { aviso('Adicione pelo menos um produto.'); return; }
+  irParaStep(4);
+}
+
+function voltarDoPagamento() {
+  if (modo === 'entrega' && origem === 'loja') {
+    irParaStep(3);
+  } else {
+    irParaStep(2);
+  }
 }
 </script>
 {% endblock %}
