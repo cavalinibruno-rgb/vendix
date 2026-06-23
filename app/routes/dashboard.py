@@ -114,7 +114,7 @@ def index():
 @login_required
 def desbloquear():
     senha = request.form.get('senha', '')
-    user = User.query.get(current_user.id)
+    user = None if current_user.is_employee else User.query.get(current_user.id)
     if user and user.check_password(senha):
         session['dashboard_desbloqueado'] = True
     else:
