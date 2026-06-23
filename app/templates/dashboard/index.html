@@ -215,9 +215,9 @@
               <td class="small text-muted ps-4">{{ v.created_at.strftime('%d/%m %H:%M') }}</td>
               <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
               <td>
-                {% if v.payment_method == 'dinheiro' %}<span class="badge bg-success">Dinheiro</span>
-                {% elif v.payment_method == 'cartao' %}<span class="badge bg-primary">Cartão</span>
-                {% elif v.payment_method == 'pix' %}<span class="badge bg-info text-dark">Pix</span>
+                {% if v.payment_method in ('dinheiro', 'entrega_dinheiro') %}<span class="badge bg-success">Dinheiro</span>
+                {% elif v.payment_method in ('cartao', 'entrega_cartao') %}<span class="badge bg-primary">Cartão</span>
+                {% elif v.payment_method in ('pix', 'entrega_pix') %}<span class="badge bg-info text-dark">Pix</span>
                 {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
               </td>
               {% if not modo_restrito %}<td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>{% endif %}
