@@ -96,6 +96,12 @@
              border-top: 1px solid rgba(255,255,255,.06); color: #555; font-size: .82rem; }
     footer a { color: var(--gold); text-decoration: none; }
 
+    #bg-canvas {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+    nav, section, footer { position: relative; z-index: 1; }
+
     @media (max-width: 600px) {
       nav { padding: 14px 20px; }
       .hero { padding: 70px 20px 60px; }
@@ -103,6 +109,8 @@
   </style>
 </head>
 <body>
+
+<canvas id="bg-canvas"></canvas>
 
 <!-- NAV -->
 <nav>
@@ -268,5 +276,87 @@
   <p style="margin-top:8px;">© 2025 Vendix. Todos os direitos reservados.</p>
 </footer>
 
+<script>
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const GOLD   = 'rgba(201,168,76,';
+  const SILVER = 'rgba(180,180,220,';
+
+  class Particle {
+    constructor() { this.reset(true); }
+    reset(initial) {
+      this.x    = Math.random() * canvas.width;
+      this.y    = initial ? Math.random() * canvas.height : canvas.height + 10;
+      this.r    = Math.random() * 1.8 + 0.4;
+      this.vy   = -(Math.random() * 0.4 + 0.15);
+      this.vx   = (Math.random() - 0.5) * 0.25;
+      this.alpha= Math.random() * 0.5 + 0.15;
+      this.color= Math.random() > 0.4 ? GOLD : SILVER;
+      this.pulse= Math.random() * Math.PI * 2;
+    }
+    update() {
+      this.y += this.vy;
+      this.x += this.vx;
+      this.pulse += 0.02;
+      if (this.y < -10) this.reset(false);
+    }
+    draw() {
+      const a = this.alpha * (0.8 + 0.2 * Math.sin(this.pulse));
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = this.color + a + ')';
+      ctx.fill();
+    }
+  }
+
+  class Streak {
+    constructor() { this.reset(true); }
+    reset(initial) {
+      this.x     = Math.random() * canvas.width;
+      this.y     = initial ? Math.random() * canvas.height : canvas.height + 20;
+      this.len   = Math.random() * 60 + 20;
+      this.vy    = -(Math.random() * 0.6 + 0.2);
+      this.alpha = Math.random() * 0.08 + 0.02;
+      this.color = Math.random() > 0.5 ? GOLD : SILVER;
+    }
+    update() {
+      this.y += this.vy;
+      if (this.y + this.len < 0) this.reset(false);
+    }
+    draw() {
+      const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.len);
+      grad.addColorStop(0, this.color + '0)');
+      grad.addColorStop(0.5, this.color + this.alpha + ')');
+      grad.addColorStop(1, this.color + '0)');
+      ctx.beginPath();
+      ctx.moveTo(this.x, this.y);
+      ctx.lineTo(this.x, this.y + this.len);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+  }
+
+  const particles = Array.from({length: 120}, () => new Particle());
+  const streaks   = Array.from({length: 18},  () => new Streak());
+
+  function frame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    streaks.forEach(s => { s.update(); s.draw(); });
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
 </body>
 </html>
