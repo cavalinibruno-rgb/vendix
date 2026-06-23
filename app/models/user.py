@@ -25,9 +25,49 @@ class User(db.Model, UserMixin):
     def is_master(self):
         return self.role == 'master'
 
+    @property
+    def is_employee(self):
+        return False
+
     def __repr__(self):
         return f'<User {self.username}>'
 
 @login_manager.user_loader
 def load_user(user_id):
+    # Suporte a Employee login: prefixo "e_<id>" vs User: "<id>"
+    if str(user_id).startswith('e_'):
+        from app.models.vale import Employee
+        emp = Employee.query.get(int(user_id[2:]))
+        if emp:
+            return EmployeeLoginProxy(emp)
+        return None
     return User.query.get(int(user_id))
+
+
+class EmployeeLoginProxy:
+    """Adapta Employee para funcionar com Flask-Login."""
+    def __init__(self, emp):
+        self._emp = emp
+        self.id           = f'e_{emp.id}'
+        self.tenant_id    = emp.tenant_id
+        self.username     = emp.username
+        self.email        = None
+        self.display_name = emp.name
+        self.role         = emp.role  # 'caixa'
+        self.is_active    = True
+        self.is_anonymous = False
+        self.is_authenticated = True
+
+    @property
+    def is_master(self):
+        return False
+
+    @property
+    def is_employee(self):
+        return True
+
+    def get_id(self):
+        return self.id
+
+    def check_password(self, pwd):
+        return self._emp.check_password(pwd)
