@@ -25,7 +25,7 @@ function createWindow() {
 
   // Após carregar o loading, abre o Vendix
   win.webContents.once('did-finish-load', () => {
-    win.loadURL(VENDIX_URL);
+    win.loadURL(VENDIX_URL + '/login');
   });
 
   win.once('ready-to-show', () => {
