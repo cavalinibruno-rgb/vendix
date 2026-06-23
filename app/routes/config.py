@@ -192,7 +192,12 @@ def alterar_senha():
         flash('As senhas não coincidem.', 'danger')
         return redirect(url_for('config.index') + '#seguranca')
 
-    current_user.password_hash = generate_password_hash(nova_senha)
+    if current_user.is_employee:
+        from app.models.vale import Employee
+        emp = Employee.query.get(current_user._emp.id)
+        emp.set_password(nova_senha)
+    else:
+        current_user.password_hash = generate_password_hash(nova_senha)
     db.session.commit()
     flash('Senha alterada com sucesso!', 'success')
     return redirect(url_for('config.index'))
