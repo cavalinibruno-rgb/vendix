@@ -168,6 +168,7 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Faça login para acessar.'
 
+    from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dashboard_bp
     from app.routes.master import master_bp
@@ -185,6 +186,7 @@ def create_app():
     from app.routes.loja import loja_bp
     from app.routes.pedidos_online import pedidos_online_bp
 
+    app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(master_bp)

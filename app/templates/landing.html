@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendix — Sistema de PDV para Pequenos Negócios</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root { --dark: #1a1a2e; --gold: #c9a84c; --gold2: #b8943d; }
+    * { box-sizing: border-box; }
+    body { background: var(--dark); color: #f0f0f0; font-family: 'Segoe UI', sans-serif; margin: 0; }
+
+    /* NAV */
+    nav { display: flex; justify-content: space-between; align-items: center;
+          padding: 18px 40px; background: rgba(0,0,0,.3); position: sticky; top: 0; z-index: 100;
+          backdrop-filter: blur(8px); border-bottom: 1px solid rgba(201,168,76,.15); }
+    .brand { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: 1px; }
+    .brand span { color: var(--gold); }
+    .btn-login { background: none; border: 2px solid var(--gold); color: var(--gold);
+                 padding: 8px 22px; border-radius: 8px; font-weight: 700; text-decoration: none;
+                 font-size: .9rem; transition: all .2s; }
+    .btn-login:hover { background: var(--gold); color: var(--dark); }
+
+    /* HERO */
+    .hero { text-align: center; padding: 100px 20px 80px;
+            background: radial-gradient(ellipse at top, #2d2d4e 0%, var(--dark) 70%); }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 900; line-height: 1.15;
+               margin-bottom: 20px; }
+    .hero h1 span { color: var(--gold); }
+    .hero p { font-size: 1.1rem; color: #b0b0c0; max-width: 560px; margin: 0 auto 36px; }
+    .btn-cta { background: var(--gold); color: var(--dark); padding: 16px 40px;
+               border-radius: 12px; font-weight: 800; font-size: 1rem; text-decoration: none;
+               display: inline-block; transition: all .2s; border: none; }
+    .btn-cta:hover { background: var(--gold2); color: var(--dark); transform: translateY(-2px); }
+    .hero-sub { margin-top: 18px; font-size: .85rem; color: #888; }
+    .hero-sub a { color: var(--gold); text-decoration: none; }
+
+    /* FEATURES */
+    .features { padding: 80px 20px; max-width: 1100px; margin: 0 auto; }
+    .section-title { text-align: center; font-size: 1.8rem; font-weight: 800; margin-bottom: 12px; }
+    .section-sub { text-align: center; color: #888; margin-bottom: 48px; }
+    .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+    .feat-card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+                 border-radius: 16px; padding: 28px 24px; transition: border-color .2s; }
+    .feat-card:hover { border-color: rgba(201,168,76,.4); }
+    .feat-icon { font-size: 2rem; margin-bottom: 14px; }
+    .feat-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .feat-card p { font-size: .88rem; color: #999; margin: 0; line-height: 1.6; }
+
+    /* COMO FUNCIONA */
+    .como { padding: 80px 20px; background: rgba(255,255,255,.02);
+            border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
+    .como-inner { max-width: 800px; margin: 0 auto; }
+    .steps { display: flex; flex-direction: column; gap: 20px; margin-top: 40px; }
+    .step { display: flex; align-items: flex-start; gap: 20px; }
+    .step-num { background: var(--gold); color: var(--dark); font-weight: 900;
+                width: 36px; height: 36px; border-radius: 50%; display: flex;
+                align-items: center; justify-content: center; flex-shrink: 0; font-size: .9rem; }
+    .step-text h4 { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .step-text p { font-size: .88rem; color: #999; margin: 0; }
+
+    /* PLANOS */
+    .planos { padding: 80px 20px; max-width: 700px; margin: 0 auto; text-align: center; }
+    .plano-card { background: rgba(201,168,76,.08); border: 2px solid var(--gold);
+                  border-radius: 20px; padding: 40px 32px; }
+    .plano-price { font-size: 3rem; font-weight: 900; color: var(--gold); line-height: 1; }
+    .plano-price sup { font-size: 1.2rem; vertical-align: top; margin-top: 10px; }
+    .plano-period { color: #888; font-size: .9rem; margin-bottom: 28px; }
+    .plano-features { list-style: none; padding: 0; text-align: left; margin-bottom: 32px; }
+    .plano-features li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+                          font-size: .9rem; }
+    .plano-features li:last-child { border: none; }
+    .plano-features li::before { content: '✓ '; color: var(--gold); font-weight: 700; }
+
+    /* DOWNLOAD */
+    .download { padding: 80px 20px; text-align: center;
+                background: radial-gradient(ellipse at bottom, #2d2d4e 0%, var(--dark) 70%); }
+    .btn-download { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
+                    color: #fff; padding: 14px 32px; border-radius: 12px; font-weight: 700;
+                    font-size: .95rem; text-decoration: none; display: inline-flex;
+                    align-items: center; gap: 10px; transition: all .2s; margin: 8px; }
+    .btn-download:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+    /* FOOTER */
+    footer { text-align: center; padding: 32px 20px;
+             border-top: 1px solid rgba(255,255,255,.06); color: #555; font-size: .82rem; }
+    footer a { color: var(--gold); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .hero { padding: 70px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="brand">Ven<span>dix</span></div>
+  <a href="/login" class="btn-login">Entrar</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>O PDV completo para<br><span>pequenos negócios</span></h1>
+  <p>Venda mais rápido, gerencie seu estoque e receba pedidos online com um sistema simples e acessível.</p>
+  <a href="https://wa.me/5522997021979?text=Olá!%20Tenho%20interesse%20no%20Vendix." target="_blank" class="btn-cta">
+    Quero testar grátis →
+  </a>
+  <div class="hero-sub">Já tem conta? <a href="/login">Entrar no sistema</a></div>
+</section>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-title">Tudo que você precisa</div>
+  <div class="section-sub">Do PDV ao delivery, em um único sistema.</div>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🛒</div>
+      <h3>PDV Rápido</h3>
+      <p>Registre vendas em segundos, com controle de troco, formas de pagamento e comprovante impresso.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📱</div>
+      <h3>Pedidos Online</h3>
+      <p>Link do cardápio personalizado para seus clientes fazerem pedidos pelo celular, com taxa de entrega por bairro ou GPS.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🚴</div>
+      <h3>Controle de Entregas</h3>
+      <p>Gerencie motoboys, despache pedidos e acompanhe tudo em tempo real.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📦</div>
+      <h3>Estoque</h3>
+      <p>Controle seu estoque com alertas de produtos abaixo do mínimo e histórico de movimentações.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <h3>Relatórios e DRE</h3>
+      <p>Visualize vendas, faturamento, formas de pagamento e resultado financeiro do período.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🖨️</div>
+      <h3>Impressão Automática</h3>
+      <p>Comprovantes e pedidos impressos automaticamente ao aceitar ou finalizar uma venda.</p>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="como">
+  <div class="como-inner">
+    <div class="section-title">Como funciona?</div>
+    <div class="section-sub">Comece a usar em minutos.</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <h4>Fale com a gente pelo WhatsApp</h4>
+          <p>Entre em contato, tire suas dúvidas e faça seu cadastro. Sem burocracia.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <h4>Receba seu acesso</h4>
+          <p>Após a confirmação, você recebe o e-mail e senha para acessar o sistema da sua loja.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          <h4>Cadastre seus produtos</h4>
+          <p>Adicione seus produtos, defina preços e personalize seu cardápio online.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">
+          <h4>Comece a vender</h4>
+          <p>Use o aplicativo de mesa ou acesse pelo navegador. Simples assim.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLANOS -->
+<section class="planos">
+  <div class="section-title">Plano único, sem surpresas</div>
+  <div class="section-sub">Tudo incluído. Sem contrato de fidelidade.</div>
+  <div class="plano-card">
+    <div class="plano-price"><sup>R$</sup>89</div>
+    <div class="plano-period">por mês</div>
+    <ul class="plano-features">
+      <li>PDV completo com impressão</li>
+      <li>Cardápio online com link próprio</li>
+      <li>Pedidos online com taxa por GPS ou bairro</li>
+      <li>Controle de entregas e motoboys</li>
+      <li>Estoque e relatórios financeiros</li>
+      <li>Cupons de desconto</li>
+      <li>Suporte via WhatsApp</li>
+      <li>Aplicativo instalável para Windows</li>
+    </ul>
+    <a href="https://wa.me/5522997021979?text=Olá!%20Quero%20assinar%20o%20Vendix." target="_blank" class="btn-cta" style="width:100%;display:block;text-align:center;">
+      Assinar agora →
+    </a>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="download">
+  <div class="section-title">Aplicativo para Windows</div>
+  <div class="section-sub" style="margin-bottom:32px;">
+    Instale o Vendix no computador da sua loja e use com impressora térmica.
+  </div>
+  <a href="https://wa.me/5522997021979?text=Quero%20fazer%20o%20download%20do%20Vendix." target="_blank" class="btn-download">
+    <i class="bi bi-windows" style="font-size:1.3rem;"></i> Baixar para Windows
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="brand" style="font-size:1.2rem;margin-bottom:8px;">Ven<span style="color:var(--gold);">dix</span></div>
+  <p>Dúvidas? Fale conosco pelo <a href="https://wa.me/5522997021979" target="_blank">WhatsApp</a></p>
+  <p style="margin-top:8px;">© 2025 Vendix. Todos os direitos reservados.</p>
+</footer>
+
+</body>
+</html>
