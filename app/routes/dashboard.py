@@ -22,7 +22,7 @@ def require_active_tenant(f):
         return f(*args, **kwargs)
     return decorated
 
-@dashboard_bp.route('/')
+@dashboard_bp.route('/dashboard')
 @login_required
 @require_active_tenant
 def index():
