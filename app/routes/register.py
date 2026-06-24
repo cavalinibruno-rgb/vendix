@@ -16,12 +16,13 @@ PLANOS = {
         'valor_mensal': 129.90,
         'frequencia': 1,
         'dias': 30,
+        'tipo': 'assinatura',   # cobrança recorrente via preapproval
     },
     'anual': {
         'nome': 'Vendix Anual',
-        'valor_mensal': 99.90,
-        'frequencia': 1,
+        'valor_total': 1198.80,
         'dias': 365,
+        'tipo': 'avista',       # pagamento único via Checkout Pro
     },
 }
 
@@ -115,32 +116,59 @@ def checkout():
     plano_info = PLANOS[plano]
     base_url = os.environ.get('APP_BASE_URL', 'https://vendixapp.com.br')
 
-    preapproval_data = {
-        'reason': plano_info['nome'],
-        'external_reference': str(pending.id),
-        'payer_email': email,
-        'auto_recurring': {
-            'frequency': plano_info['frequencia'],
-            'frequency_type': 'months',
-            'transaction_amount': plano_info['valor_mensal'],
-            'currency_id': 'BRL',
-        },
-        'back_url': f'{base_url}/assinar/sucesso',
-        'status': 'pending',
-        'notification_url': f'{base_url}/assinar/webhook',
-    }
+    if plano_info['tipo'] == 'assinatura':
+        # Mensal: assinatura recorrente via Preapproval
+        payload = {
+            'reason': plano_info['nome'],
+            'external_reference': str(pending.id),
+            'payer_email': email,
+            'auto_recurring': {
+                'frequency': plano_info['frequencia'],
+                'frequency_type': 'months',
+                'transaction_amount': plano_info['valor_mensal'],
+                'currency_id': 'BRL',
+            },
+            'back_url': f'{base_url}/assinar/sucesso',
+            'status': 'pending',
+            'notification_url': f'{base_url}/assinar/webhook',
+        }
+        result = sdk.preapproval().create(payload)
+        if result['status'] not in (200, 201):
+            db.session.rollback()
+            current_app.logger.error(f'[MP preapproval] {result}')
+            return jsonify({'error': 'Erro ao criar assinatura. Tente novamente.'}), 500
+        pending.preference_id = result['response']['id']
+        db.session.commit()
+        return jsonify({'redirect': result['response']['init_point']})
 
-    result = sdk.preapproval().create(preapproval_data)
-    if result['status'] not in (200, 201):
-        db.session.rollback()
-        current_app.logger.error(f'[MP preapproval] {result}')
-        return jsonify({'error': 'Erro ao criar assinatura. Tente novamente.'}), 500
-
-    pending.preference_id = result['response']['id']
-    db.session.commit()
-
-    init_point = result['response']['init_point']
-    return jsonify({'redirect': init_point})
+    else:
+        # Anual: pagamento único via Checkout Pro
+        payload = {
+            'items': [{
+                'title': plano_info['nome'] + ' — Vendix',
+                'quantity': 1,
+                'unit_price': plano_info['valor_total'],
+                'currency_id': 'BRL',
+            }],
+            'payer': {'email': email},
+            'back_urls': {
+                'success': f'{base_url}/assinar/sucesso',
+                'failure': f'{base_url}/assinar/falha',
+                'pending': f'{base_url}/assinar/pendente',
+            },
+            'auto_return': 'approved',
+            'external_reference': str(pending.id),
+            'notification_url': f'{base_url}/assinar/webhook',
+            'statement_descriptor': 'VENDIX',
+        }
+        result = sdk.preference().create(payload)
+        if result['status'] not in (200, 201):
+            db.session.rollback()
+            current_app.logger.error(f'[MP preference] {result}')
+            return jsonify({'error': 'Erro ao criar pagamento. Tente novamente.'}), 500
+        pending.preference_id = result['response']['id']
+        db.session.commit()
+        return jsonify({'redirect': result['response']['init_point']})
 
 
 @register_bp.route('/webhook', methods=['POST'])
@@ -177,7 +205,6 @@ def webhook():
                 _criar_conta(pending)
 
         elif topic == 'payment':
-            # Pagamento recorrente confirmado → renova conta
             resp = sdk.payment().get(resource_id)
             if resp['status'] != 200:
                 return '', 200
@@ -187,10 +214,18 @@ def webhook():
             ext_ref = p.get('external_reference')
             if not ext_ref:
                 return '', 200
-            pending = PendingRegistration.query.filter_by(
-                preference_id=p.get('preapproval_id')
-            ).first() or PendingRegistration.query.get(int(ext_ref))
-            if pending:
+            try:
+                pending = PendingRegistration.query.get(int(ext_ref))
+            except Exception:
+                pending = None
+            if not pending:
+                return '', 200
+            if pending.status == 'pending':
+                # Pagamento único (anual) → cria conta
+                pending.payment_id = str(resource_id)
+                _criar_conta(pending)
+            elif pending.status == 'created':
+                # Cobrança recorrente (mensal) → renova
                 _renovar_conta(pending)
 
     except Exception as e:
