@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete seu cadastro — Vendix</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root { --dark: #1a1a2e; --gold: #c9a84c; --gold2: #b8943d; }
+    body { background: var(--dark); color: #f0f0f0; font-family: 'Segoe UI', sans-serif;
+           min-height: 100vh; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; padding: 40px 20px; }
+    .brand { font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .brand span { color: var(--gold); }
+    .card-form { background: rgba(255,255,255,.05); border: 1px solid rgba(201,168,76,.2);
+                 border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 520px; }
+    .card-form h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+    .card-form p.sub { color: #888; font-size: .88rem; margin-bottom: 28px; }
+    .form-label { font-size: .83rem; font-weight: 600; color: #ccc; margin-bottom: 3px; }
+    .form-control, .form-select { background: rgba(255,255,255,.06); border: 1px solid #333;
+                    color: #f0f0f0; border-radius: 10px; padding: 10px 14px; }
+    .form-control:focus, .form-select:focus { background: rgba(255,255,255,.08);
+                          border-color: var(--gold); color: #fff;
+                          box-shadow: 0 0 0 2px rgba(201,168,76,.2); }
+    .form-control::placeholder { color: #555; }
+    .form-select option { background: #1a1a2e; }
+    .btn-salvar { background: var(--gold); color: #1a1a2e; width: 100%; padding: 13px;
+                  border: none; border-radius: 12px; font-weight: 800; font-size: 1rem;
+                  cursor: pointer; transition: all .2s; margin-top: 6px; }
+    .btn-salvar:hover { background: var(--gold2); transform: translateY(-1px); }
+    .divider { border-color: rgba(255,255,255,.08); margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+<div style="text-align:center;margin-bottom:28px;">
+  <div class="brand">Ven<span>dix</span></div>
+  <div style="color:#888;font-size:.85rem;">Bem-vindo, {{ tenant.store_name }}!</div>
+</div>
+
+<div class="card-form">
+  <h2>Complete seu cadastro</h2>
+  <p class="sub">Precisamos de mais algumas informações sobre sua loja para finalizar a configuração.</p>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alert alert-{{ 'danger' if cat == 'error' else cat }} py-2 mb-3" style="font-size:.85rem;">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <form method="POST" action="/completar-cadastro">
+
+    <div class="mb-3">
+      <label class="form-label">Telefone / WhatsApp</label>
+      <input type="tel" name="phone" class="form-control" placeholder="(21) 99999-9999"
+             value="{{ tenant.phone or '' }}" required>
+    </div>
+
+    <hr class="divider">
+    <div class="text-muted small mb-3" style="font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;">
+      <i class="bi bi-geo-alt me-1"></i>Endereço da loja
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">CEP</label>
+      <input type="text" name="cep" id="cep" class="form-control" placeholder="00000-000"
+             value="{{ tenant.cep or '' }}" maxlength="9" required oninput="buscarCep(this.value)">
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-9">
+        <label class="form-label">Rua / Avenida</label>
+        <input type="text" name="street" id="street" class="form-control" placeholder="Ex: Rua das Flores"
+               value="{{ tenant.street or '' }}" required>
+      </div>
+      <div class="col-3">
+        <label class="form-label">Número</label>
+        <input type="text" name="number" class="form-control" placeholder="123"
+               value="{{ tenant.number or '' }}" required>
+      </div>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-6">
+        <label class="form-label">Bairro</label>
+        <input type="text" name="neighborhood" id="neighborhood" class="form-control" placeholder="Centro"
+               value="{{ tenant.neighborhood or '' }}" required>
+      </div>
+      <div class="col-6">
+        <label class="form-label">Cidade</label>
+        <input type="text" name="city" id="city" class="form-control" placeholder="Rio de Janeiro"
+               value="{{ tenant.city or '' }}" required>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label">Estado</label>
+      <select name="state" id="state" class="form-select" required>
+        <option value="">Selecione...</option>
+        {% for uf in ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'] %}
+        <option value="{{ uf }}" {% if tenant.state == uf %}selected{% endif %}>{{ uf }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn-salvar">
+      <i class="bi bi-check-circle me-2"></i>Salvar e entrar no sistema →
+    </button>
+  </form>
+</div>
+
+<script>
+function mascararCep(v) {
+  v = v.replace(/\D/g,'');
+  if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+  return v;
+}
+document.getElementById('cep').addEventListener('input', function() {
+  this.value = mascararCep(this.value);
+});
+
+async function buscarCep(val) {
+  const cep = val.replace(/\D/g,'');
+  if (cep.length !== 8) return;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if (d.erro) return;
+    document.getElementById('street').value       = d.logradouro || '';
+    document.getElementById('neighborhood').value = d.bairro     || '';
+    document.getElementById('city').value         = d.localidade || '';
+    const sel = document.getElementById('state');
+    for (let opt of sel.options) { if (opt.value === d.uf) { sel.value = d.uf; break; } }
+  } catch(e) {}
+}
+</script>
+</body>
+</html>

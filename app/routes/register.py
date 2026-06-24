@@ -49,6 +49,7 @@ def _criar_conta(pending, preapproval_id=None):
         status='active',
         expires_at=datetime.now() + timedelta(days=dias),
         preapproval_id=preapproval_id,
+        profile_complete=False,
     )
     db.session.add(tenant)
     db.session.flush()

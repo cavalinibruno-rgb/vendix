@@ -144,6 +144,13 @@ def _run_migrations(db):
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_data BYTEA",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(32)",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS preapproval_id VARCHAR(128)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS street VARCHAR(256)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS number VARCHAR(16)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS neighborhood VARCHAR(128)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS city VARCHAR(128)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS state VARCHAR(2)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS cep VARCHAR(9)",
         """CREATE TABLE IF NOT EXISTS pending_registrations (
             id SERIAL PRIMARY KEY,
             store_name VARCHAR(128) NOT NULL,
@@ -221,6 +228,7 @@ def create_app():
     from app.routes.pedidos_online import pedidos_online_bp
     from app.routes.register import register_bp
     from app.routes.assinatura import assinatura_bp
+    from app.routes.completar_cadastro import completar_cadastro_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -241,6 +249,22 @@ def create_app():
     app.register_blueprint(pedidos_online_bp)
     app.register_blueprint(register_bp)
     app.register_blueprint(assinatura_bp)
+    app.register_blueprint(completar_cadastro_bp)
+
+    @app.before_request
+    def verificar_perfil_completo():
+        from flask import request as req, redirect, url_for
+        from flask_login import current_user
+        rotas_liberadas = {'completar_cadastro.index', 'auth.logout', 'auth.login', 'static'}
+        if req.endpoint in rotas_liberadas:
+            return
+        if not current_user.is_authenticated:
+            return
+        if current_user.is_master or current_user.is_employee:
+            return
+        tenant = current_user.tenant
+        if tenant and not tenant.profile_complete:
+            return redirect(url_for('completar_cadastro.index'))
 
     @app.context_processor
     def inject_nav_badges():

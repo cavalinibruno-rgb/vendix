@@ -13,9 +13,16 @@ class Tenant(db.Model):
     status        = db.Column(db.String(16), default='active')  # active | suspended | cancelled
     expires_at    = db.Column(db.DateTime, nullable=True)
     settings      = db.Column(db.Text, default='{}')  # JSON de configurações
-    logo_data      = db.Column(db.LargeBinary, nullable=True)
-    logo_mime      = db.Column(db.String(32), nullable=True)
-    preapproval_id = db.Column(db.String(128), nullable=True)  # MP preapproval ID (plano mensal)
+    logo_data        = db.Column(db.LargeBinary, nullable=True)
+    logo_mime        = db.Column(db.String(32), nullable=True)
+    preapproval_id   = db.Column(db.String(128), nullable=True)
+    profile_complete = db.Column(db.Boolean, default=True, nullable=False)
+    street           = db.Column(db.String(256), nullable=True)
+    number           = db.Column(db.String(16), nullable=True)
+    neighborhood     = db.Column(db.String(128), nullable=True)
+    city             = db.Column(db.String(128), nullable=True)
+    state            = db.Column(db.String(2), nullable=True)
+    cep              = db.Column(db.String(9), nullable=True)
     created_at    = db.Column(db.DateTime, default=datetime.now)
 
     users = db.relationship('User', backref='tenant', lazy=True)
