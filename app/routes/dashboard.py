@@ -128,6 +128,12 @@ def desbloquear():
 @login_required
 def evento_toggle():
     from app import db
+    from app.auth_utils import autenticar_operador
+    op_username = request.form.get('op_username', '').strip()
+    op_password = request.form.get('op_password', '').strip()
+    _, ok = autenticar_operador(current_user.tenant_id, op_username, op_password)
+    if not ok:
+        return redirect(url_for('dashboard.index', evento_erro=1))
     tenant = Tenant.query.get(current_user.tenant_id)
     if tenant:
         tenant.event_mode = not tenant.event_mode
