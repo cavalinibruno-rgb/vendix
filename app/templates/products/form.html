@@ -86,8 +86,13 @@
           <div class="row g-3 mb-3" id="stockFields">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Estoque Atual</label>
-              <input type="number" name="stock_quantity" class="form-control"
-                     value="{{ product.stock_quantity if product else '0' }}" min="0">
+              <input type="text" id="stockInput" class="form-control"
+                     value="{{ product.stock_quantity if product else '0' }}"
+                     placeholder="ex: 20*40"
+                     oninput="calcEstoque(this)" onblur="calcEstoque(this)">
+              <input type="hidden" name="stock_quantity" id="stockValue"
+                     value="{{ product.stock_quantity if product else '0' }}">
+              <div id="stockPreview" class="form-text text-warning" style="display:none;"></div>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Estoque Mínimo</label>
@@ -219,5 +224,30 @@ typeSelect.addEventListener('change', () => { toggleCombo(); updateCost(); });
 toggleCombo();
 renderComponents();
 updateCost();
+
+function calcEstoque(el) {
+  const raw = el.value.trim();
+  const preview = document.getElementById('stockPreview');
+  const hidden  = document.getElementById('stockValue');
+  try {
+    const result = Function('"use strict"; return (' + raw + ')')();
+    if (typeof result === 'number' && isFinite(result) && result >= 0) {
+      const val = Math.floor(result);
+      hidden.value = val;
+      if (raw !== String(val)) {
+        preview.textContent = '= ' + val;
+        preview.style.display = '';
+      } else {
+        preview.style.display = 'none';
+      }
+    } else {
+      preview.textContent = 'Expressão inválida';
+      preview.style.display = '';
+    }
+  } catch {
+    preview.textContent = 'Expressão inválida';
+    preview.style.display = '';
+  }
+}
 </script>
 {% endblock %}
