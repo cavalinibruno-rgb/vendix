@@ -14,6 +14,12 @@ sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
 def tid():
     return current_user.tenant_id
 
+def _user_id():
+    uid = current_user.id
+    if isinstance(uid, str) and uid.startswith('e_'):
+        return int(uid[2:])
+    return uid
+
 def _caixa_aberto():
     return CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
 
@@ -128,7 +134,7 @@ def confirmar():
                                 type         = 'saida',
                                 quantity     = total_deduct,
                                 motive       = f'Combo "{prod.name}" — {mot}',
-                                user_id      = current_user.id,
+                                user_id      = _user_id(),
                                 user_name    = current_user.display_name or current_user.username,
                             ))
                 else:
@@ -140,7 +146,7 @@ def confirmar():
                         type         = 'saida',
                         quantity     = int(qty),
                         motive       = mot,
-                        user_id      = current_user.id,
+                        user_id      = _user_id(),
                         user_name    = current_user.display_name or current_user.username,
                     ))
 
@@ -308,7 +314,7 @@ def cancelar(sale_id):
                             type         = 'entrada',
                             quantity     = total,
                             motive       = f'Cancelamento combo "{prod.name if prod else ""}" Venda #{sale.id}',
-                            user_id      = current_user.id,
+                            user_id      = _user_id(),
                             user_name    = current_user.display_name or current_user.username,
                         ))
             elif prod:
@@ -320,7 +326,7 @@ def cancelar(sale_id):
                     type         = 'entrada',
                     quantity     = int(item.quantity),
                     motive       = f'Cancelamento Venda #{sale.id} — {motivo}',
-                    user_id      = current_user.id,
+                    user_id      = _user_id(),
                     user_name    = current_user.display_name or current_user.username,
                 ))
 
