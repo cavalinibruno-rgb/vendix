@@ -59,9 +59,10 @@ def novo():
         name        = request.form.get('name', '').strip()
         type_id     = request.form.get('type_id') or None
         brand_id    = request.form.get('brand_id') or None
-        sale_price      = float(request.form.get('sale_price', 0) or 0)
-        sale_price_card = float(request.form.get('sale_price_card', 0) or 0)
-        cost_price      = float(request.form.get('cost_price', 0) or 0)
+        sale_price       = float(request.form.get('sale_price', 0) or 0)
+        sale_price_card  = float(request.form.get('sale_price_card', 0) or 0)
+        sale_price_event = float(request.form.get('sale_price_event', 0) or 0)
+        cost_price       = float(request.form.get('cost_price', 0) or 0)
         stock           = int(request.form.get('stock_quantity', 0) or 0)
         min_stock       = int(request.form.get('min_stock', 0) or 0)
         description     = request.form.get('description', '').strip()
@@ -87,6 +88,7 @@ def novo():
             description=description,
             sale_price=sale_price,
             sale_price_card=sale_price_card,
+            sale_price_event=sale_price_event,
             cost_price=cost_price,
             stock_quantity=stock,
             min_stock=min_stock,
@@ -120,9 +122,10 @@ def editar(product_id):
         product.name           = request.form.get('name', '').strip()
         product.type_id        = request.form.get('type_id') or None
         product.brand_id       = request.form.get('brand_id') or None
-        product.sale_price      = float(request.form.get('sale_price', 0) or 0)
-        product.sale_price_card = float(request.form.get('sale_price_card', 0) or 0)
-        product.cost_price      = float(request.form.get('cost_price', 0) or 0)
+        product.sale_price       = float(request.form.get('sale_price', 0) or 0)
+        product.sale_price_card  = float(request.form.get('sale_price_card', 0) or 0)
+        product.sale_price_event = float(request.form.get('sale_price_event', 0) or 0)
+        product.cost_price       = float(request.form.get('cost_price', 0) or 0)
         product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
         product.min_stock      = int(request.form.get('min_stock', 0) or 0)
         product.description    = request.form.get('description', '').strip()
@@ -224,7 +227,7 @@ def marca_excluir(brand_id):
 def _cols():
     """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
     return [Product.id, Product.name, Product.sale_price, Product.sale_price_card,
-            Product.stock_quantity, Product.type_id, Product.brand_id,
+            Product.sale_price_event, Product.stock_quantity, Product.type_id, Product.brand_id,
             (Product.image_data != None).label('has_image')]
 
 @products_bp.route('/api/buscar')
@@ -287,6 +290,7 @@ def api_todos():
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
         'sale_price_card': r.sale_price_card or 0,
+        'sale_price_event': r.sale_price_event or 0,
         'stock_quantity': r.stock_quantity,
         'thumbnail': thumbs.get(r.id),
         'type_id': r.type_id,

@@ -8,6 +8,19 @@
     <p class="text-muted mb-0">{{ tenant.store_name }} — {{ now.strftime('%d/%m/%Y') if now else '' }}</p>
   </div>
   <div class="d-flex gap-2 align-items-center">
+  {% if not current_user.is_employee %}
+  <form method="post" action="{{ url_for('dashboard.evento_toggle') }}">
+    {% if event_mode %}
+    <button type="submit" class="btn btn-warning fw-semibold">
+      <i class="bi bi-music-note-beamed me-1"></i> Desativar Evento
+    </button>
+    {% else %}
+    <button type="submit" class="btn btn-outline-warning fw-semibold">
+      <i class="bi bi-music-note-beamed me-1"></i> Ativar Evento
+    </button>
+    {% endif %}
+  </form>
+  {% endif %}
   {% if caixa %}
   <a href="{{ url_for('cash.fechar', caixa_id=caixa.id) }}" class="btn btn-outline-danger">
     <i class="bi bi-lock me-1"></i> Fechar Caixa

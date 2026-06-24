@@ -92,6 +92,8 @@ def _run_migrations(db):
         )""",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS cost_price FLOAT DEFAULT 0",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price_card FLOAT DEFAULT 0",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price_event FLOAT DEFAULT 0",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS event_mode BOOLEAN DEFAULT FALSE",
         "ALTER TABLE sale_items ADD COLUMN IF NOT EXISTS cost_price FLOAT DEFAULT 0",
         """CREATE TABLE IF NOT EXISTS combo_items (
             id SERIAL PRIMARY KEY,

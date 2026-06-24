@@ -250,6 +250,13 @@
 {% endblock %}
 
 {% block content %}
+{% if event_mode %}
+<div class="alert alert-warning py-2 mb-3 fw-semibold">
+  <i class="bi bi-music-note-beamed me-2"></i>Modo Evento ativo — preços de evento sendo aplicados.
+  <a href="{{ url_for('dashboard.evento_toggle') }}" class="alert-link float-end" onclick="this.closest('form') && this.closest('form').submit(); return false;">Desativar</a>
+  <form method="post" action="{{ url_for('dashboard.evento_toggle') }}" id="formDesativarEvento" style="display:none;"></form>
+</div>
+{% endif %}
 <!-- Toast de aviso -->
 <div class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index:9999;">
   <div id="avisoToast" class="toast align-items-center text-bg-danger border-0" role="alert" data-bs-autohide="true" data-bs-delay="3500">
@@ -693,6 +700,7 @@ let pgto = null;
 let bairros = [];
 let origem = 'loja';
 
+const EVENT_MODE = {{ 'true' if event_mode else 'false' }};
 let todosProds = [];
 let produtosCache = {};
 let catAtual   = 'todas';
@@ -1185,6 +1193,8 @@ function isCartao() {
 }
 
 function precoParaPgto(prod) {
+  if (EVENT_MODE && prod.sale_price_event && prod.sale_price_event > 0)
+    return prod.sale_price_event;
   if (isCartao() && prod.sale_price_card && prod.sale_price_card > 0)
     return prod.sale_price_card;
   return prod.sale_price;

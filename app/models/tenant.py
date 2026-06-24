@@ -23,6 +23,7 @@ class Tenant(db.Model):
     city             = db.Column(db.String(128), nullable=True)
     state            = db.Column(db.String(2), nullable=True)
     cep              = db.Column(db.String(9), nullable=True)
+    event_mode       = db.Column(db.Boolean, default=False, nullable=False)
     created_at    = db.Column(db.DateTime, default=datetime.now)
 
     users = db.relationship('User', backref='tenant', lazy=True)

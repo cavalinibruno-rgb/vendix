@@ -29,7 +29,10 @@ def nova():
     if not _caixa_aberto():
         flash('Abra o caixa antes de realizar uma venda.', 'warning')
         return redirect(url_for('cash.index'))
-    return render_template('sales/nova.html')
+    from app.models.tenant import Tenant
+    tenant = Tenant.query.get(tid())
+    event_mode = tenant.event_mode if tenant else False
+    return render_template('sales/nova.html', event_mode=event_mode)
 
 @sales_bp.route('/confirmar', methods=['POST'])
 @login_required

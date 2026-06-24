@@ -109,6 +109,7 @@ def index():
         ticket_dia=ticket_dia,
         ticket_mensal=ticket_mensal,
         ticket_geral=ticket_geral,
+        event_mode=tenant.event_mode if tenant else False,
     )
 
 @dashboard_bp.route('/dashboard/desbloquear', methods=['POST'])
@@ -122,6 +123,23 @@ def desbloquear():
         session['dashboard_desbloqueado'] = False
         session['dashboard_erro'] = True
     return redirect(url_for('dashboard.index'))
+
+@dashboard_bp.route('/dashboard/evento/toggle', methods=['POST'])
+@login_required
+def evento_toggle():
+    from app import db
+    tenant = Tenant.query.get(current_user.tenant_id)
+    if tenant:
+        tenant.event_mode = not tenant.event_mode
+        db.session.commit()
+    return redirect(url_for('dashboard.index'))
+
+@dashboard_bp.route('/api/event-mode')
+@login_required
+def api_event_mode():
+    from flask import jsonify
+    tenant = Tenant.query.get(current_user.tenant_id)
+    return jsonify({'event_mode': tenant.event_mode if tenant else False})
 
 @dashboard_bp.route('/dashboard/bloquear')
 @login_required
