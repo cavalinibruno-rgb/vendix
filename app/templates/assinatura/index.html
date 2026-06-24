@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% block title %}Minha Assinatura{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width:680px;">
+
+  <h4 class="fw-bold mb-1"><i class="bi bi-credit-card me-2 text-warning"></i>Minha Assinatura</h4>
+  <p class="text-muted small mb-4">Gerencie seu plano Vendix.</p>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alert alert-{{ 'danger' if cat == 'error' else cat }} alert-dismissible fade show py-2" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Card do plano atual -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+          <div class="text-muted small">Plano atual</div>
+          <div class="fs-5 fw-bold">
+            {% if tenant.plan == 'anual' %}
+              <i class="bi bi-star-fill text-warning me-1"></i>Vendix Anual
+            {% else %}
+              <i class="bi bi-arrow-repeat text-info me-1"></i>Vendix Mensal
+            {% endif %}
+          </div>
+        </div>
+        <div class="text-end">
+          {% if tenant.status == 'active' %}
+            <span class="badge bg-success">Ativo</span>
+          {% elif tenant.status == 'suspended' %}
+            <span class="badge bg-warning text-dark">Suspenso</span>
+          {% else %}
+            <span class="badge bg-secondary">{{ tenant.status }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="row g-3 text-center">
+        <div class="col-6">
+          <div class="p-3 rounded" style="background:rgba(255,255,255,.04);">
+            <div class="text-muted small mb-1">Loja</div>
+            <div class="fw-semibold">{{ tenant.store_name }}</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-3 rounded" style="background:rgba(255,255,255,.04);">
+            <div class="text-muted small mb-1">Acesso até</div>
+            <div class="fw-semibold">
+              {% if tenant.expires_at %}
+                {{ tenant.expires_at.strftime('%d/%m/%Y') }}
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-3 rounded" style="background:rgba(255,255,255,.04);">
+            <div class="text-muted small mb-1">Valor</div>
+            <div class="fw-semibold">
+              {% if tenant.plan == 'anual' %}
+                R$ 99,90<span class="text-muted fw-normal">/mês</span>
+              {% else %}
+                R$ 129,90<span class="text-muted fw-normal">/mês</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="p-3 rounded" style="background:rgba(255,255,255,.04);">
+            <div class="text-muted small mb-1">Cobrança</div>
+            <div class="fw-semibold">
+              {% if tenant.plan == 'anual' %}
+                Anual (12x)
+              {% else %}
+                Mensal automática
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if tenant.plan == 'mensal' and tenant.status == 'active' %}
+  <!-- Upgrade para anual -->
+  <div class="card mb-4 border-warning" style="border-color:rgba(201,168,76,.4) !important;">
+    <div class="card-body">
+      <div class="d-flex align-items-start gap-3">
+        <div style="font-size:2rem;">🥃</div>
+        <div class="flex-grow-1">
+          <div class="fw-bold mb-1">Migrar para o Plano Anual</div>
+          <div class="text-muted small mb-3">
+            Pague <strong>R$ 99,90/mês</strong> (12x de R$ 99,90 = R$ 1.198,80) e economize R$ 360 por ano.
+            A assinatura mensal é cancelada automaticamente.
+          </div>
+          <button class="btn btn-warning fw-bold text-dark" id="btnUpgrade" onclick="fazerUpgrade()">
+            <i class="bi bi-arrow-up-circle me-1"></i>Fazer upgrade para Anual →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if tenant.status == 'active' %}
+  <!-- Cancelamento -->
+  <div class="card border-danger" style="border-color:rgba(220,53,69,.3) !important;">
+    <div class="card-body">
+      <div class="fw-bold text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Cancelar assinatura</div>
+      <p class="text-muted small mb-3">
+        Ao cancelar, a cobrança automática é interrompida. Seu acesso continua até
+        {% if tenant.expires_at %}{{ tenant.expires_at.strftime('%d/%m/%Y') }}{% else %}o vencimento atual{% endif %}.
+      </p>
+      <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+        Cancelar assinatura
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal confirmar cancelamento -->
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Cancelar assinatura</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body small">
+        Tem certeza? A cobrança mensal será cancelada. Seu acesso permanece ativo até o fim do período pago.
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Voltar</button>
+        <form method="POST" action="{{ url_for('assinatura.cancelar') }}">
+          <button type="submit" class="btn btn-danger btn-sm">Sim, cancelar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tela de aguardando upgrade -->
+<div id="telaUpgrade" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;
+     display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+  <svg viewBox="0 0 64 64" style="width:64px;height:64px;animation:spin 1.4s linear infinite;">
+    <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(201,168,76,.2)" stroke-width="5"/>
+    <circle cx="32" cy="32" r="28" fill="none" stroke="#c9a84c" stroke-width="5"
+            stroke-dasharray="60 120" stroke-linecap="round"/>
+  </svg>
+  <div style="color:#f0f0f0;font-size:1.1rem;font-weight:700;">Aguardando confirmação do pagamento...</div>
+  <div style="color:#888;font-size:.85rem;" id="upgradeMsg">Esta tela atualiza automaticamente.</div>
+  <a href="{{ url_for('assinatura.index') }}" style="color:#666;font-size:.8rem;text-decoration:none;margin-top:8px;">
+    Verificar manualmente
+  </a>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+async function fazerUpgrade() {
+  const btn = document.getElementById('btnUpgrade');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Aguarde...';
+
+  try {
+    const r = await fetch('{{ url_for("assinatura.upgrade_anual") }}', { method: 'POST' });
+    const d = await r.json();
+    if (d.redirect) {
+      window.open(d.redirect, '_blank');
+      document.getElementById('telaUpgrade').style.display = 'flex';
+      iniciarPollingUpgrade();
+    } else {
+      alert(d.error || 'Erro ao processar. Tente novamente.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-arrow-up-circle me-1"></i>Fazer upgrade para Anual →';
+    }
+  } catch(e) {
+    alert('Erro de conexão. Tente novamente.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-arrow-up-circle me-1"></i>Fazer upgrade para Anual →';
+  }
+}
+
+function iniciarPollingUpgrade() {
+  let tentativas = 0;
+  const iv = setInterval(async () => {
+    tentativas++;
+    try {
+      const r = await fetch('{{ url_for("assinatura.status_upgrade") }}');
+      const d = await r.json();
+      if (d.plan === 'anual') {
+        clearInterval(iv);
+        document.getElementById('upgradeMsg').textContent = '✅ Upgrade confirmado! Recarregando...';
+        setTimeout(() => location.reload(), 1500);
+      } else if (tentativas >= 60) {
+        clearInterval(iv);
+        document.getElementById('upgradeMsg').textContent = 'Tempo esgotado. Atualize a página para verificar.';
+      }
+    } catch(e) {}
+  }, 5000);
+}
+</script>
+{% endblock %}

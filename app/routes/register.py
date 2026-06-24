@@ -36,7 +36,7 @@ def _make_slug(store_name):
     return slug
 
 
-def _criar_conta(pending):
+def _criar_conta(pending, preapproval_id=None):
     if pending.status == 'created':
         return
     slug = _make_slug(pending.store_name)
@@ -48,6 +48,7 @@ def _criar_conta(pending):
         plan=pending.plano,
         status='active',
         expires_at=datetime.now() + timedelta(days=dias),
+        preapproval_id=preapproval_id,
     )
     db.session.add(tenant)
     db.session.flush()
@@ -193,7 +194,7 @@ def webhook():
         sdk = mercadopago.SDK(access_token)
 
         if topic == 'preapproval':
-            # Assinatura autorizada → cria conta
+            # Assinatura mensal autorizada → cria conta (novo cliente)
             resp = sdk.preapproval().get(resource_id)
             if resp['status'] != 200:
                 return '', 200
@@ -206,7 +207,7 @@ def webhook():
             pending = PendingRegistration.query.get(int(ext_ref))
             if pending and pending.status == 'pending':
                 pending.payment_id = str(resource_id)
-                _criar_conta(pending)
+                _criar_conta(pending, preapproval_id=str(resource_id))
 
         elif topic == 'payment':
             resp = sdk.payment().get(resource_id)
@@ -215,9 +216,26 @@ def webhook():
             p = resp['response']
             if p.get('status') != 'approved':
                 return '', 200
-            ext_ref = p.get('external_reference')
+            ext_ref = p.get('external_reference') or ''
             if not ext_ref:
                 return '', 200
+
+            # Upgrade de mensal para anual (cliente já existente)
+            if ext_ref.startswith('upgrade_'):
+                try:
+                    tenant_id = int(ext_ref.split('_')[1])
+                    tenant = Tenant.query.get(tenant_id)
+                    if tenant and tenant.plan != 'anual':
+                        tenant.plan = 'anual'
+                        tenant.status = 'active'
+                        base = tenant.expires_at if tenant.expires_at and tenant.expires_at > datetime.now() else datetime.now()
+                        tenant.expires_at = base + timedelta(days=365)
+                        tenant.preapproval_id = None
+                        db.session.commit()
+                except Exception as e:
+                    current_app.logger.error(f'[webhook upgrade] {e}')
+                return '', 200
+
             try:
                 pending = PendingRegistration.query.get(int(ext_ref))
             except Exception:

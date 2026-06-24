@@ -143,6 +143,7 @@ def _run_migrations(db):
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS ends_at TIMESTAMP",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_data BYTEA",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(32)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS preapproval_id VARCHAR(128)",
         """CREATE TABLE IF NOT EXISTS pending_registrations (
             id SERIAL PRIMARY KEY,
             store_name VARCHAR(128) NOT NULL,
@@ -219,6 +220,7 @@ def create_app():
     from app.routes.loja import loja_bp
     from app.routes.pedidos_online import pedidos_online_bp
     from app.routes.register import register_bp
+    from app.routes.assinatura import assinatura_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -238,6 +240,7 @@ def create_app():
     app.register_blueprint(loja_bp)
     app.register_blueprint(pedidos_online_bp)
     app.register_blueprint(register_bp)
+    app.register_blueprint(assinatura_bp)
 
     @app.context_processor
     def inject_nav_badges():
