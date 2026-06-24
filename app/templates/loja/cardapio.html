@@ -260,6 +260,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
         </button>
         <div id="geoStatus" style="font-size:.78rem;text-align:center;margin-bottom:8px;color:#888;"></div>
         {% endif %}
+        <!-- CEP -->
+        <input class="inp" id="cliCep" type="text" inputmode="numeric"
+               placeholder="CEP (opcional)" maxlength="9" style="margin-bottom:8px;"
+               oninput="mascaraCep(this); buscarCepLoja(this.value)">
         <!-- Rua -->
         <input class="inp" id="cliEnd" type="text"
                placeholder="Rua *" autocomplete="street-address">
@@ -716,6 +720,39 @@ function fmt(n) { return parseFloat(n||0).toFixed(2).replace('.',','); }
 
 // Inicia com troco visível (dinheiro padrão)
 document.getElementById('trocoBox').style.display = '';
+
+// CEP autocomplete
+function mascaraCep(el) {
+  let v = el.value.replace(/\D/g,'');
+  if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+  el.value = v;
+}
+async function buscarCepLoja(val) {
+  const cep = val.replace(/\D/g,'');
+  if (cep.length !== 8) return;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if (d.erro) return;
+    if (d.logradouro) document.getElementById('cliEnd').value = d.logradouro;
+    const bairroText = document.getElementById('cliBairroText');
+    const bairroSel  = document.getElementById('bairroSel');
+    if (bairroText && d.bairro) bairroText.value = d.bairro;
+    if (bairroSel  && d.bairro) {
+      // tenta encontrar opção com nome parecido (case insensitive)
+      for (let opt of bairroSel.options) {
+        if (opt.text.toLowerCase().includes(d.bairro.toLowerCase())) {
+          bairroSel.value = opt.value;
+          onBairroChange();
+          break;
+        }
+      }
+    }
+    // foca no campo número após autopreenchimento
+    const numEl = document.getElementById('cliNum');
+    if (numEl) setTimeout(() => numEl.focus(), 100);
+  } catch(e) {}
+}
 </script>
 </body>
 </html>
