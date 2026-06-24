@@ -123,6 +123,32 @@
   </div>
 </div>
 
+<!-- TELA DE AGUARDANDO PAGAMENTO -->
+<div id="telaAguardando" style="display:none;text-align:center;max-width:440px;width:100%;">
+  <div style="font-size:3rem;margin-bottom:16px;">🥃</div>
+  <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:8px;">Aguardando pagamento</h2>
+  <p style="color:#888;font-size:.9rem;margin-bottom:28px;">
+    Finalize o pagamento na aba que abrimos.<br>Esta tela atualiza automaticamente.
+  </p>
+
+  <!-- Spinner animado -->
+  <div style="margin:0 auto 28px;width:64px;height:64px;position:relative;">
+    <svg viewBox="0 0 64 64" style="width:64px;height:64px;animation:spin 1.4s linear infinite;">
+      <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(201,168,76,.2)" stroke-width="5"/>
+      <circle cx="32" cy="32" r="28" fill="none" stroke="#c9a84c" stroke-width="5"
+              stroke-dasharray="60 120" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <div style="color:#666;font-size:.8rem;margin-bottom:24px;" id="statusMsg">Verificando pagamento...</div>
+
+  <a href="/" style="color:#888;font-size:.82rem;text-decoration:none;">← Voltar ao site</a>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 <script>
 function selectPlan(plano, el) {
   document.querySelectorAll('.plan-opt').forEach(e => e.classList.remove('active'));
@@ -164,8 +190,11 @@ async function irParaPagamento() {
   try {
     const r = await fetch('/assinar/checkout', { method: 'POST', body: form });
     const d = await r.json();
-    if (d.redirect) {
-      window.location.href = d.redirect;
+    if (d.redirect && d.pending_id) {
+      window.open(d.redirect, '_blank');
+      document.querySelector('.card-form').style.display = 'none';
+      document.getElementById('telaAguardando').style.display = 'block';
+      iniciarPolling(d.pending_id);
     } else {
       err.textContent = d.error || 'Erro ao processar. Tente novamente.';
       err.style.display = 'block';
@@ -178,6 +207,25 @@ async function irParaPagamento() {
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Ir para o pagamento →';
   }
+}
+
+function iniciarPolling(pendingId) {
+  let tentativas = 0;
+  const intervalo = setInterval(async () => {
+    tentativas++;
+    try {
+      const r = await fetch(`/assinar/status/${pendingId}`);
+      const d = await r.json();
+      if (d.status === 'created') {
+        clearInterval(intervalo);
+        document.getElementById('statusMsg').textContent = '✅ Pagamento confirmado! Redirecionando...';
+        setTimeout(() => { window.location.href = '/login'; }, 1500);
+      } else if (tentativas >= 60) {
+        clearInterval(intervalo);
+        document.getElementById('statusMsg').textContent = 'Tempo esgotado. Verifique seu e-mail ou entre em contato.';
+      }
+    } catch(e) {}
+  }, 5000);
 }
 </script>
 </body>

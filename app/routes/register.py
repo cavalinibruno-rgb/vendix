@@ -139,7 +139,7 @@ def checkout():
             return jsonify({'error': 'Erro ao criar assinatura. Tente novamente.'}), 500
         pending.preference_id = result['response']['id']
         db.session.commit()
-        return jsonify({'redirect': result['response']['init_point']})
+        return jsonify({'redirect': result['response']['init_point'], 'pending_id': pending.id})
 
     else:
         # Anual: pagamento único via Checkout Pro
@@ -172,7 +172,7 @@ def checkout():
             return jsonify({'error': 'Erro ao criar pagamento. Tente novamente.'}), 500
         pending.preference_id = result['response']['id']
         db.session.commit()
-        return jsonify({'redirect': result['response']['init_point']})
+        return jsonify({'redirect': result['response']['init_point'], 'pending_id': pending.id})
 
 
 @register_bp.route('/webhook', methods=['POST'])
@@ -271,6 +271,12 @@ def sucesso():
         tenant = Tenant.query.filter_by(email=pending.email).first()
 
     return render_template('register/sucesso.html', pending=pending, tenant=tenant, status=status)
+
+
+@register_bp.route('/status/<int:pending_id>')
+def status(pending_id):
+    pending = PendingRegistration.query.get_or_404(pending_id)
+    return jsonify({'status': pending.status, 'email': pending.email if pending.status == 'created' else None})
 
 
 @register_bp.route('/falha')
