@@ -160,6 +160,7 @@ def checkout():
             'external_reference': str(pending.id),
             'notification_url': f'{base_url}/assinar/webhook',
             'statement_descriptor': 'VENDIX',
+            'payment_methods': {'installments': 1},
         }
         result = sdk.preference().create(payload)
         if result['status'] not in (200, 201):
