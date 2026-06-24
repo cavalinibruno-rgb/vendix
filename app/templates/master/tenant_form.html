@@ -39,6 +39,46 @@
               <option value="365">365 dias (1 ano)</option>
             </select>
           </div>
+
+          <hr class="my-4">
+          <div class="text-muted small fw-semibold mb-3">
+            <i class="bi bi-geo-alt me-1 text-warning"></i>Endereço da Loja <span class="fw-normal">(opcional)</span>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">CEP</label>
+            <input type="text" name="cep" id="cep" class="form-control" placeholder="00000-000" maxlength="9" oninput="buscarCep(this.value)">
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-9">
+              <label class="form-label fw-semibold">Rua / Avenida</label>
+              <input type="text" name="street" id="street" class="form-control" placeholder="Ex: Rua das Flores">
+            </div>
+            <div class="col-3">
+              <label class="form-label fw-semibold">Número</label>
+              <input type="text" name="number" class="form-control" placeholder="123">
+            </div>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Bairro</label>
+              <input type="text" name="neighborhood" id="neighborhood" class="form-control" placeholder="Centro">
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Cidade</label>
+              <input type="text" name="city" id="city" class="form-control" placeholder="Rio de Janeiro">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Estado</label>
+            <select name="state" id="state" class="form-select">
+              <option value="">Selecione...</option>
+              {% for uf in ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'] %}
+              <option value="{{ uf }}">{{ uf }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
           <div class="d-flex gap-2">
             <a href="{{ url_for('master.dashboard') }}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left me-1"></i>Voltar
@@ -52,4 +92,30 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('cep').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g,'');
+  if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+  this.value = v;
+  if (v.replace(/\D/g,'').length === 8) buscarCep(v);
+});
+
+async function buscarCep(val) {
+  const cep = val.replace(/\D/g,'');
+  if (cep.length !== 8) return;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if (d.erro) return;
+    document.getElementById('street').value       = d.logradouro || '';
+    document.getElementById('neighborhood').value = d.bairro     || '';
+    document.getElementById('city').value         = d.localidade || '';
+    const sel = document.getElementById('state');
+    for (let opt of sel.options) { if (opt.value === d.uf) { sel.value = d.uf; break; } }
+  } catch(e) {}
+}
+</script>
 {% endblock %}

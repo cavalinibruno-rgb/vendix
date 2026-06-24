@@ -31,11 +31,17 @@ def dashboard():
 @master_required
 def tenant_novo():
     if request.method == 'POST':
-        store_name = request.form.get('store_name', '').strip()
-        email      = request.form.get('email', '').strip().lower()
-        phone      = request.form.get('phone', '').strip()
-        password   = request.form.get('password', '').strip()
-        dias       = int(request.form.get('dias', 30))
+        store_name   = request.form.get('store_name', '').strip()
+        email        = request.form.get('email', '').strip().lower()
+        phone        = request.form.get('phone', '').strip()
+        password     = request.form.get('password', '').strip()
+        dias         = int(request.form.get('dias', 30))
+        cep          = request.form.get('cep', '').strip()
+        street       = request.form.get('street', '').strip()
+        number       = request.form.get('number', '').strip()
+        neighborhood = request.form.get('neighborhood', '').strip()
+        city         = request.form.get('city', '').strip()
+        state        = request.form.get('state', '').strip().upper()
 
         # Gera slug sem acentos ou caracteres especiais
         slug_base = unicodedata.normalize('NFKD', store_name).encode('ascii', 'ignore').decode()
@@ -57,7 +63,14 @@ def tenant_novo():
                 email=email,
                 phone=phone,
                 status='active',
-                expires_at=datetime.now() + timedelta(days=dias)
+                expires_at=datetime.now() + timedelta(days=dias),
+                profile_complete=True,
+                cep=cep or None,
+                street=street or None,
+                number=number or None,
+                neighborhood=neighborhood or None,
+                city=city or None,
+                state=state or None,
             )
             db.session.add(tenant)
             db.session.flush()
