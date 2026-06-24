@@ -89,7 +89,7 @@
               <input type="text" id="stockInput" class="form-control"
                      value="{{ product.stock_quantity if product else '0' }}"
                      placeholder="ex: 20*40"
-                     oninput="calcEstoque(this)" onblur="calcEstoque(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();resolverEstoque(this);}">
+                     oninput="calcEstoque(this)" onblur="calcEstoque(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();resolverEstoque(this);}" onfocus="if(this.value==='0')this.value=''">
               <input type="hidden" name="stock_quantity" id="stockValue"
                      value="{{ product.stock_quantity if product else '0' }}">
               <div id="stockPreview" class="form-text text-warning" style="display:none;"></div>
