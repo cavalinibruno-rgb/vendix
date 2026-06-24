@@ -22,9 +22,12 @@
     .plan-opt:hover { border-color: #555; }
     .plan-opt.active { border-color: var(--gold); background: rgba(201,168,76,.08); }
     .plan-opt .plan-label { font-size: .7rem; font-weight: 700; color: #888; text-transform: uppercase;
-                             letter-spacing: .08em; margin-bottom: 6px; }
-    .plan-opt .plan-price { font-size: 1.5rem; font-weight: 900; color: var(--gold); line-height: 1; }
-    .plan-opt .plan-price sup { font-size: .8rem; vertical-align: top; margin-top: 4px; }
+                             letter-spacing: .08em; margin-bottom: 8px; }
+    .plan-opt .plan-price-wrap { display: flex; align-items: flex-end; justify-content: center;
+                                  gap: 2px; line-height: 1; margin-bottom: 4px; }
+    .plan-opt .plan-currency { font-size: .85rem; font-weight: 800; color: var(--gold); margin-bottom: 4px; }
+    .plan-opt .plan-amount  { font-size: 1.9rem; font-weight: 900; color: var(--gold); line-height: 1; }
+    .plan-opt .plan-cents   { font-size: .95rem; font-weight: 700; color: var(--gold); margin-bottom: 3px; }
     .plan-opt .plan-price-sub { font-size: .72rem; color: #999; margin-top: 4px; }
     .plan-opt .badge-best { display: inline-block; background: var(--gold); color: #1a1a2e;
                              font-size: .65rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;
@@ -65,15 +68,23 @@
   <!-- PLANOS -->
   <div class="plan-toggle">
     <div class="plan-opt {% if plano == 'mensal' %}active{% endif %}" onclick="selectPlan('mensal', this)">
-      <div class="badge-best" style="visibility:hidden;">placeholder</div>
+      <div class="badge-best" style="visibility:hidden;">-</div>
       <div class="plan-label">Mensal</div>
-      <div class="plan-price"><sup>R$</sup>129<small style="font-size:.9rem;">,90</small></div>
+      <div class="plan-price-wrap">
+        <span class="plan-currency">R$</span>
+        <span class="plan-amount">129</span>
+        <span class="plan-cents">,90</span>
+      </div>
       <div class="plan-price-sub">por mês</div>
     </div>
     <div class="plan-opt {% if plano == 'anual' %}active{% endif %}" onclick="selectPlan('anual', this)">
       <div class="badge-best">🏆 MELHOR VALOR</div>
       <div class="plan-label">Anual</div>
-      <div class="plan-price"><sup>R$</sup>99<small style="font-size:.9rem;">,90</small></div>
+      <div class="plan-price-wrap">
+        <span class="plan-currency">R$</span>
+        <span class="plan-amount">99</span>
+        <span class="plan-cents">,90</span>
+      </div>
       <div class="plan-price-sub">12x · R$ 1.198,80/ano</div>
     </div>
   </div>
