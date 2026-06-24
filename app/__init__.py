@@ -143,6 +143,17 @@ def _run_migrations(db):
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS ends_at TIMESTAMP",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_data BYTEA",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(32)",
+        """CREATE TABLE IF NOT EXISTS pending_registrations (
+            id SERIAL PRIMARY KEY,
+            store_name VARCHAR(128) NOT NULL,
+            email VARCHAR(128) NOT NULL,
+            password_hash VARCHAR(256) NOT NULL,
+            plano VARCHAR(16) NOT NULL,
+            preference_id VARCHAR(128),
+            payment_id VARCHAR(128),
+            status VARCHAR(16) DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
         # Índices de performance
         "CREATE INDEX IF NOT EXISTS idx_sales_tenant_id ON sales(tenant_id)",
         "CREATE INDEX IF NOT EXISTS idx_sales_tenant_created ON sales(tenant_id, created_at)",
@@ -207,6 +218,7 @@ def create_app():
     from app.routes.dre import dre_bp
     from app.routes.loja import loja_bp
     from app.routes.pedidos_online import pedidos_online_bp
+    from app.routes.register import register_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -225,6 +237,7 @@ def create_app():
     app.register_blueprint(dre_bp)
     app.register_blueprint(loja_bp)
     app.register_blueprint(pedidos_online_bp)
+    app.register_blueprint(register_bp)
 
     @app.context_processor
     def inject_nav_badges():
@@ -250,6 +263,7 @@ def create_app():
         from app.models.coupon import Coupon  # noqa: F401
         from app.models.customer_address import CustomerAddress  # noqa: F401
         from app.models.pedido_online import PedidoOnline  # noqa: F401
+        from app.models.pending_registration import PendingRegistration  # noqa: F401
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master
