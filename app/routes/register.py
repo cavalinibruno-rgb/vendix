@@ -3,15 +3,26 @@ from app import db
 from app.models.pending_registration import PendingRegistration
 from app.models.tenant import Tenant
 from app.models.user import User
-from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
-import os, re, unicodedata, hmac, hashlib, json
+import os, re, unicodedata
 
 register_bp = Blueprint('register', __name__, url_prefix='/assinar')
 
+# Mensal: R$129,90/mês sem fidelidade
+# Anual:  R$99,90/mês com fidelidade de 12 meses
 PLANOS = {
-    'mensal': {'nome': 'Plano Mensal', 'preco': 129.90, 'dias': 30},
-    'anual':  {'nome': 'Plano Anual',  'preco': 1198.80, 'dias': 365},
+    'mensal': {
+        'nome': 'Vendix Mensal',
+        'valor_mensal': 129.90,
+        'frequencia': 1,
+        'dias': 30,
+    },
+    'anual': {
+        'nome': 'Vendix Anual',
+        'valor_mensal': 99.90,
+        'frequencia': 1,
+        'dias': 365,
+    },
 }
 
 
@@ -28,14 +39,14 @@ def _criar_conta(pending):
     if pending.status == 'created':
         return
     slug = _make_slug(pending.store_name)
-    plano_info = PLANOS.get(pending.plano, PLANOS['mensal'])
+    dias = PLANOS.get(pending.plano, PLANOS['mensal'])['dias']
     tenant = Tenant(
         slug=slug,
         store_name=pending.store_name,
         email=pending.email,
         plan=pending.plano,
         status='active',
-        expires_at=datetime.now() + timedelta(days=plano_info['dias']),
+        expires_at=datetime.now() + timedelta(days=dias),
     )
     db.session.add(tenant)
     db.session.flush()
@@ -49,6 +60,19 @@ def _criar_conta(pending):
     )
     db.session.add(user)
     pending.status = 'created'
+    db.session.commit()
+
+
+def _renovar_conta(pending):
+    """Renova a data de expiração quando um pagamento recorrente é confirmado."""
+    tenant = Tenant.query.filter_by(email=pending.email).first()
+    if not tenant:
+        return
+    dias = PLANOS.get(pending.plano, PLANOS['mensal'])['dias']
+    agora = datetime.now()
+    base = tenant.expires_at if tenant.expires_at and tenant.expires_at > agora else agora
+    tenant.expires_at = base + timedelta(days=dias)
+    tenant.status = 'active'
     db.session.commit()
 
 
@@ -72,6 +96,11 @@ def checkout():
     if Tenant.query.filter_by(email=email).first():
         return jsonify({'error': 'E-mail já cadastrado. Acesse o sistema para entrar.'}), 400
 
+    access_token = os.environ.get('MP_ACCESS_TOKEN', '')
+    if not access_token:
+        return jsonify({'error': 'Pagamento indisponível no momento.'}), 500
+
+    from werkzeug.security import generate_password_hash
     pending = PendingRegistration(
         store_name    = store_name,
         email         = email,
@@ -81,77 +110,89 @@ def checkout():
     db.session.add(pending)
     db.session.flush()
 
-    access_token = os.environ.get('MP_ACCESS_TOKEN', '')
-    if not access_token:
-        db.session.rollback()
-        return jsonify({'error': 'Pagamento indisponível no momento.'}), 500
-
     import mercadopago
     sdk = mercadopago.SDK(access_token)
     plano_info = PLANOS[plano]
     base_url = os.environ.get('APP_BASE_URL', 'https://vendixapp.com.br')
 
-    preference_data = {
-        'items': [{
-            'title': plano_info['nome'] + ' — Vendix',
-            'quantity': 1,
-            'unit_price': plano_info['preco'],
-            'currency_id': 'BRL',
-        }],
-        'payer': {'email': email},
-        'back_urls': {
-            'success': f'{base_url}/assinar/sucesso',
-            'failure': f'{base_url}/assinar/falha',
-            'pending': f'{base_url}/assinar/pendente',
-        },
-        'auto_return': 'approved',
+    preapproval_data = {
+        'reason': plano_info['nome'],
         'external_reference': str(pending.id),
+        'payer_email': email,
+        'auto_recurring': {
+            'frequency': plano_info['frequencia'],
+            'frequency_type': 'months',
+            'transaction_amount': plano_info['valor_mensal'],
+            'currency_id': 'BRL',
+        },
+        'back_url': f'{base_url}/assinar/sucesso',
+        'status': 'pending',
         'notification_url': f'{base_url}/assinar/webhook',
-        'statement_descriptor': 'VENDIX',
-        'installments': 12 if plano == 'anual' else 1,
     }
-    result = sdk.preference().create(preference_data)
-    if result['status'] != 201:
+
+    result = sdk.preapproval().create(preapproval_data)
+    if result['status'] not in (200, 201):
         db.session.rollback()
-        return jsonify({'error': 'Erro ao criar preferência de pagamento.'}), 500
+        current_app.logger.error(f'[MP preapproval] {result}')
+        return jsonify({'error': 'Erro ao criar assinatura. Tente novamente.'}), 500
 
     pending.preference_id = result['response']['id']
     db.session.commit()
 
-    is_sandbox = 'TEST' in access_token.upper() or access_token.startswith('TEST')
-    init_point = result['response']['sandbox_init_point' if is_sandbox else 'init_point']
+    init_point = result['response']['init_point']
     return jsonify({'redirect': init_point})
 
 
 @register_bp.route('/webhook', methods=['POST'])
 def webhook():
-    data = request.get_json(silent=True) or {}
+    data  = request.get_json(silent=True) or {}
     topic = data.get('type') or request.args.get('topic', '')
     resource_id = (data.get('data') or {}).get('id') or request.args.get('id')
 
-    if topic not in ('payment', 'merchant_order'):
+    if not resource_id:
         return '', 200
 
     access_token = os.environ.get('MP_ACCESS_TOKEN', '')
-    if not access_token or not resource_id:
+    if not access_token:
         return '', 200
 
     try:
         import mercadopago
         sdk = mercadopago.SDK(access_token)
-        payment = sdk.payment().get(resource_id)
-        if payment['status'] != 200:
-            return '', 200
-        p = payment['response']
-        if p.get('status') != 'approved':
-            return '', 200
-        ext_ref = p.get('external_reference')
-        if not ext_ref:
-            return '', 200
-        pending = PendingRegistration.query.get(int(ext_ref))
-        if pending and pending.status == 'pending':
-            pending.payment_id = str(resource_id)
-            _criar_conta(pending)
+
+        if topic == 'preapproval':
+            # Assinatura autorizada → cria conta
+            resp = sdk.preapproval().get(resource_id)
+            if resp['status'] != 200:
+                return '', 200
+            pa = resp['response']
+            if pa.get('status') != 'authorized':
+                return '', 200
+            ext_ref = pa.get('external_reference')
+            if not ext_ref:
+                return '', 200
+            pending = PendingRegistration.query.get(int(ext_ref))
+            if pending and pending.status == 'pending':
+                pending.payment_id = str(resource_id)
+                _criar_conta(pending)
+
+        elif topic == 'payment':
+            # Pagamento recorrente confirmado → renova conta
+            resp = sdk.payment().get(resource_id)
+            if resp['status'] != 200:
+                return '', 200
+            p = resp['response']
+            if p.get('status') != 'approved':
+                return '', 200
+            ext_ref = p.get('external_reference')
+            if not ext_ref:
+                return '', 200
+            pending = PendingRegistration.query.filter_by(
+                preference_id=p.get('preapproval_id')
+            ).first() or PendingRegistration.query.get(int(ext_ref))
+            if pending:
+                _renovar_conta(pending)
+
     except Exception as e:
         current_app.logger.error(f'[webhook MP] {e}')
 
@@ -160,11 +201,11 @@ def webhook():
 
 @register_bp.route('/sucesso')
 def sucesso():
-    payment_id   = request.args.get('payment_id')
-    ext_ref      = request.args.get('external_reference')
-    status       = request.args.get('status')
-    pending      = None
-    tenant       = None
+    preapproval_id = request.args.get('preapproval_id') or request.args.get('collection_id')
+    ext_ref        = request.args.get('external_reference')
+    status         = request.args.get('status', '')
+    pending        = None
+    tenant         = None
 
     if ext_ref:
         try:
@@ -172,15 +213,20 @@ def sucesso():
         except Exception:
             pass
 
-    # Se o webhook ainda não criou a conta, tenta criar agora
-    if pending and pending.status == 'pending' and status == 'approved':
-        if payment_id:
-            pending.payment_id = payment_id
-        try:
-            _criar_conta(pending)
-        except Exception as e:
-            current_app.logger.error(f'[sucesso] erro ao criar conta: {e}')
-            db.session.rollback()
+    # Tenta criar conta caso o webhook ainda não tenha chegado
+    if pending and pending.status == 'pending':
+        access_token = os.environ.get('MP_ACCESS_TOKEN', '')
+        if access_token and preapproval_id:
+            try:
+                import mercadopago
+                sdk = mercadopago.SDK(access_token)
+                resp = sdk.preapproval().get(preapproval_id)
+                if resp['status'] == 200 and resp['response'].get('status') == 'authorized':
+                    pending.payment_id = preapproval_id
+                    _criar_conta(pending)
+            except Exception as e:
+                current_app.logger.error(f'[sucesso] {e}')
+                db.session.rollback()
 
     if pending and pending.status == 'created':
         tenant = Tenant.query.filter_by(email=pending.email).first()
