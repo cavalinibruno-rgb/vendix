@@ -99,6 +99,10 @@ def entrada():
     produto = Product.query.filter_by(id=product_id, tenant_id=tid()).first_or_404()
     produto.stock_quantity += quantidade
 
+    custo = request.form.get('custo', type=float)
+    if custo is not None and custo >= 0:
+        produto.cost_price = custo
+
     from app.models.stock import StockMovement
     db.session.add(StockMovement(
         tenant_id    = tid(),
