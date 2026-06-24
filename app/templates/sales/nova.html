@@ -704,7 +704,7 @@ fetch('/clientes/bairros/api').then(r => r.json()).then(d => { bairros = d; pree
 
 fetch('/produtos/api/todos').then(r => r.json()).then(lista => {
   todosProds = lista;
-  lista.forEach(p => { produtosCache[p.id] = p; });
+  lista.forEach(p => { produtosCache[String(p.id)] = p; });
   construirAbas(lista);
   construirMarcas(lista);
   aplicarFiltros();
@@ -1202,7 +1202,7 @@ function setPgto(card) {
   }
   // Recalcula preços do carrinho conforme método de pagamento
   carrinho.forEach(item => {
-    const prod = produtosCache[item.product_id];
+    const prod = produtosCache[String(item.product_id)];
     if (prod) {
       item.unit_price = precoParaPgto(prod);
       item.total = item.unit_price * item.quantity;
