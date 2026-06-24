@@ -265,6 +265,26 @@ def create_app():
     app.register_blueprint(download_bp)
 
     @app.before_request
+    def verificar_assinatura_ativa():
+        from flask import request as req, redirect, url_for
+        from flask_login import current_user, logout_user
+        rotas_liberadas = {'auth.login', 'auth.logout', 'static', 'main.index',
+                           'register.form', 'register.checkout', 'register.webhook',
+                           'register.sucesso', 'register.status', 'register.falha',
+                           'register.pendente', 'download.pagina', 'download.arquivo',
+                           'download.latest_yml', 'download.update_file'}
+        if req.endpoint in rotas_liberadas:
+            return
+        if not current_user.is_authenticated or current_user.is_master:
+            return
+        tenant = current_user.tenant
+        if tenant and not tenant.is_active:
+            logout_user()
+            from flask import flash
+            flash('Sua assinatura venceu. Renove para continuar acessando.', 'warning')
+            return redirect(url_for('auth.login'))
+
+    @app.before_request
     def verificar_perfil_completo():
         from flask import request as req, redirect, url_for
         from flask_login import current_user

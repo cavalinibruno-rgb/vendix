@@ -45,3 +45,17 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/api/session-status')
+def session_status():
+    from flask import jsonify
+    from flask_login import current_user
+    if not current_user.is_authenticated:
+        return jsonify({'active': False, 'reason': 'unauthenticated'})
+    if current_user.is_master:
+        return jsonify({'active': True})
+    tenant = current_user.tenant
+    if not tenant or not tenant.is_active:
+        return jsonify({'active': False, 'reason': 'expired'})
+    return jsonify({'active': True})
