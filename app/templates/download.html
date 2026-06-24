@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download — Vendix</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root { --dark: #1a1a2e; --gold: #c9a84c; --gold2: #b8943d; }
+    body { background: var(--dark); color: #f0f0f0; font-family: 'Segoe UI', sans-serif;
+           min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+           justify-content: center; padding: 40px 20px; }
+    #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 520px; text-align: center; }
+    .brand { font-size: 1.8rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .brand span { color: var(--gold); }
+    .card-dl { background: rgba(255,255,255,.05); border: 1px solid rgba(201,168,76,.2);
+               border-radius: 24px; padding: 44px 40px; margin-top: 28px; }
+    .app-icon { width: 88px; height: 88px; background: linear-gradient(135deg,#c9a84c,#7a5c1e);
+                border-radius: 22px; display: flex; align-items: center; justify-content: center;
+                margin: 0 auto 20px; font-size: 2.6rem; box-shadow: 0 8px 32px rgba(201,168,76,.25); }
+    .app-name { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .app-version { color: #888; font-size: .85rem; margin-bottom: 16px; }
+    .app-desc { color: #aaa; font-size: .9rem; margin-bottom: 28px; line-height: 1.6; }
+    .btn-download { background: var(--gold); color: #1a1a2e; padding: 16px 36px; border: none;
+                    border-radius: 14px; font-weight: 800; font-size: 1.05rem;
+                    text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
+                    transition: all .2s; }
+    .btn-download:hover { background: var(--gold2); transform: translateY(-2px);
+                          box-shadow: 0 8px 24px rgba(201,168,76,.3); color: #1a1a2e; }
+    .file-info { color: #555; font-size: .78rem; margin-top: 14px; }
+    .badge-platform { display: inline-block; background: rgba(201,168,76,.12);
+                      border: 1px solid rgba(201,168,76,.25); color: var(--gold);
+                      font-size: .72rem; font-weight: 700; padding: 3px 10px;
+                      border-radius: 20px; margin-bottom: 20px; }
+    .no-release { color: #555; font-size: .95rem; padding: 20px 0; }
+    .history { margin-top: 32px; text-align: left; }
+    .history-title { font-size: .75rem; font-weight: 700; color: #555; text-transform: uppercase;
+                     letter-spacing: .08em; margin-bottom: 12px; }
+    .history-item { display: flex; align-items: center; justify-content: space-between;
+                    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+                    font-size: .83rem; color: #888; }
+    .history-item:last-child { border: none; }
+    .history-ver { font-weight: 700; color: #ccc; }
+    .back-link { color: #666; font-size: .82rem; margin-top: 28px; }
+    .back-link a { color: var(--gold); text-decoration: none; }
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<div class="wrap">
+  <a href="/" style="text-decoration:none;">
+    <div class="brand">Ven<span>dix</span></div>
+  </a>
+  <div style="color:#888;font-size:.85rem;">Sistema para depósitos, bares e lounges</div>
+
+  <div class="card-dl">
+    {% if latest %}
+    <div class="app-icon">🥃</div>
+    <div class="app-name">Vendix App</div>
+    <div class="app-version">Versão {{ latest.version }}</div>
+
+    <div class="badge-platform">
+      {% if latest.platform == 'android' %}<i class="bi bi-android2 me-1"></i>Android
+      {% elif latest.platform == 'ios' %}<i class="bi bi-apple me-1"></i>iOS
+      {% else %}<i class="bi bi-windows me-1"></i>Windows{% endif %}
+    </div>
+
+    {% if latest.description %}
+    <div class="app-desc">{{ latest.description }}</div>
+    {% endif %}
+
+    <a href="{{ url_for('download.arquivo', release_id=latest.id) }}" class="btn-download">
+      <i class="bi bi-download" style="font-size:1.2rem;"></i>
+      Baixar agora
+    </a>
+
+    <div class="file-info">
+      {{ latest.filename }} &nbsp;·&nbsp;
+      {{ '%.1f'|format(latest.file_size / 1024 / 1024) }} MB &nbsp;·&nbsp;
+      {{ latest.uploaded_at.strftime('%d/%m/%Y') }}
+    </div>
+
+    {% if releases|length > 1 %}
+    <div class="history">
+      <div class="history-title">Versões anteriores</div>
+      {% for r in releases[1:] %}
+      <div class="history-item">
+        <div>
+          <span class="history-ver">v{{ r.version }}</span>
+          &nbsp;·&nbsp; {{ r.uploaded_at.strftime('%d/%m/%Y') }}
+        </div>
+        <a href="{{ url_for('download.arquivo', release_id=r.id) }}"
+           style="color:var(--gold);font-size:.8rem;text-decoration:none;">
+          <i class="bi bi-download me-1"></i>Baixar
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="app-icon">📱</div>
+    <div class="no-release">Nenhuma versão disponível para download ainda.<br>Em breve!</div>
+    {% endif %}
+  </div>
+
+  <div class="back-link">
+    <a href="/">← Voltar ao site</a>
+  </div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const GOLD = 'rgba(201,168,76,', SILVER = 'rgba(180,180,220,';
+  class Particle {
+    constructor() { this.reset(true); }
+    reset(i) { this.x=Math.random()*canvas.width; this.y=i?Math.random()*canvas.height:canvas.height+10;
+      this.r=Math.random()*1.8+0.4; this.vy=-(Math.random()*.4+.15); this.vx=(Math.random()-.5)*.25;
+      this.alpha=Math.random()*.5+.15; this.color=Math.random()>.4?GOLD:SILVER; this.pulse=Math.random()*Math.PI*2; }
+    update() { this.y+=this.vy; this.x+=this.vx; this.pulse+=.02; if(this.y<-10)this.reset(false); }
+    draw() { const a=this.alpha*(.8+.2*Math.sin(this.pulse)); ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fillStyle=this.color+a+')'; ctx.fill(); }
+  }
+  class Streak {
+    constructor() { this.reset(true); }
+    reset(i) { this.x=Math.random()*canvas.width; this.y=i?Math.random()*canvas.height:canvas.height+20;
+      this.len=Math.random()*60+20; this.vy=-(Math.random()*.6+.2);
+      this.alpha=Math.random()*.08+.02; this.color=Math.random()>.5?GOLD:SILVER; }
+    update() { this.y+=this.vy; if(this.y+this.len<0)this.reset(false); }
+    draw() { const g=ctx.createLinearGradient(this.x,this.y,this.x,this.y+this.len);
+      g.addColorStop(0,this.color+'0)'); g.addColorStop(.5,this.color+this.alpha+')');
+      g.addColorStop(1,this.color+'0)'); ctx.beginPath(); ctx.moveTo(this.x,this.y);
+      ctx.lineTo(this.x,this.y+this.len); ctx.strokeStyle=g; ctx.lineWidth=.8; ctx.stroke(); }
+  }
+  const particles=Array.from({length:120},()=>new Particle());
+  const streaks=Array.from({length:18},()=>new Streak());
+  function frame() { ctx.clearRect(0,0,canvas.width,canvas.height);
+    streaks.forEach(s=>{s.update();s.draw()}); particles.forEach(p=>{p.update();p.draw()});
+    requestAnimationFrame(frame); }
+  frame();
+})();
+</script>
+</body>
+</html>

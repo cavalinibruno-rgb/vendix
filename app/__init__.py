@@ -144,6 +144,16 @@ def _run_migrations(db):
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_data BYTEA",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(32)",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS preapproval_id VARCHAR(128)",
+        """CREATE TABLE IF NOT EXISTS app_releases (
+            id SERIAL PRIMARY KEY,
+            version VARCHAR(32) NOT NULL,
+            description TEXT,
+            filename VARCHAR(256) NOT NULL,
+            file_data BYTEA NOT NULL,
+            file_size INTEGER NOT NULL,
+            platform VARCHAR(16) DEFAULT 'android',
+            uploaded_at TIMESTAMP DEFAULT NOW()
+        )""",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS profile_complete BOOLEAN DEFAULT TRUE",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS street VARCHAR(256)",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS number VARCHAR(16)",
@@ -203,6 +213,7 @@ def create_app():
         db_url = db_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['MAX_CONTENT_LENGTH'] = 150 * 1024 * 1024  # 150 MB
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -229,6 +240,7 @@ def create_app():
     from app.routes.register import register_bp
     from app.routes.assinatura import assinatura_bp
     from app.routes.completar_cadastro import completar_cadastro_bp
+    from app.routes.download import download_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -250,6 +262,7 @@ def create_app():
     app.register_blueprint(register_bp)
     app.register_blueprint(assinatura_bp)
     app.register_blueprint(completar_cadastro_bp)
+    app.register_blueprint(download_bp)
 
     @app.before_request
     def verificar_perfil_completo():
@@ -291,6 +304,7 @@ def create_app():
         from app.models.customer_address import CustomerAddress  # noqa: F401
         from app.models.pedido_online import PedidoOnline  # noqa: F401
         from app.models.pending_registration import PendingRegistration  # noqa: F401
+        from app.models.app_release import AppRelease  # noqa: F401
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Publicar App — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-phone-fill me-2 text-warning"></i>Publicar App</h1>
+    <p>Faça upload de novas versões do aplicativo Vendix.</p>
+  </div>
+  <a href="/download" target="_blank" class="btn btn-outline-warning btn-sm">
+    <i class="bi bi-box-arrow-up-right me-1"></i>Ver página de download
+  </a>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="alert alert-{{ 'danger' if cat == 'error' else cat }} alert-dismissible fade show py-2">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endwith %}
+
+<div class="row g-4">
+  <!-- Upload -->
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-upload me-2 text-warning"></i>Nova versão</div>
+      <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('download.upload') }}" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Versão <span class="text-danger">*</span></label>
+            <input type="text" name="version" class="form-control" placeholder="Ex: 1.0.0" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Plataforma</label>
+            <select name="platform" class="form-select">
+              <option value="android">Android (.apk)</option>
+              <option value="ios">iOS (.ipa)</option>
+              <option value="windows">Windows (.exe / .msi)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Novidades desta versão</label>
+            <textarea name="description" class="form-control" rows="3"
+                      placeholder="Ex: Correção de bugs, nova tela de vendas..."></textarea>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Arquivo <span class="text-danger">*</span></label>
+            <input type="file" name="arquivo" class="form-control" required
+                   accept=".apk,.ipa,.exe,.msi">
+            <div class="form-text">Tamanho máximo: 150 MB</div>
+          </div>
+          <button type="submit" class="btn btn-warning fw-bold w-100" id="btnUpload">
+            <i class="bi bi-cloud-upload me-2"></i>Publicar versão
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Histórico -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history me-2 text-warning"></i>Versões publicadas</div>
+      {% if releases %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Versão</th>
+              <th>Plataforma</th>
+              <th>Tamanho</th>
+              <th>Publicado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in releases %}
+            <tr>
+              <td>
+                <span class="fw-bold">v{{ r.version }}</span>
+                {% if loop.first %}<span class="badge bg-success ms-1" style="font-size:.65rem;">ATUAL</span>{% endif %}
+              </td>
+              <td>
+                {% if r.platform == 'android' %}<i class="bi bi-android2 text-success me-1"></i>Android
+                {% elif r.platform == 'ios' %}<i class="bi bi-apple me-1"></i>iOS
+                {% else %}<i class="bi bi-windows text-info me-1"></i>Windows{% endif %}
+              </td>
+              <td class="text-muted small">{{ '%.1f'|format(r.file_size / 1024 / 1024) }} MB</td>
+              <td class="text-muted small">{{ r.uploaded_at.strftime('%d/%m/%Y %H:%M') }}</td>
+              <td>
+                <div class="d-flex gap-1">
+                  <a href="{{ url_for('download.arquivo', release_id=r.id) }}"
+                     class="btn btn-sm btn-outline-secondary" title="Baixar">
+                    <i class="bi bi-download"></i>
+                  </a>
+                  <form method="POST" action="{{ url_for('download.excluir_release', release_id=r.id) }}"
+                        onsubmit="return confirm('Remover v{{ r.version }}?')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body text-center text-muted py-5">
+        <i class="bi bi-phone fs-1 d-block mb-2 text-secondary"></i>
+        Nenhuma versão publicada ainda.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+  const btn = document.getElementById('btnUpload');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando... pode levar alguns segundos';
+});
+</script>
+{% endblock %}
