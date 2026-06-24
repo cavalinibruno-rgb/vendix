@@ -82,6 +82,10 @@
           <td class="small text-muted">{{ t.created_at.strftime('%d/%m/%Y') }}</td>
           <td>
             <div class="d-flex gap-1">
+              <button class="btn btn-sm btn-outline-info" title="Adicionar dias"
+                onclick="abrirAdicionarDias({{ t.id }}, '{{ t.store_name }}', '{% if t.expires_at %}{{ t.expires_at.strftime('%d/%m/%Y') }}{% else %}—{% endif %}')">
+                <i class="bi bi-calendar-plus"></i>
+              </button>
               {% if t.status == 'active' %}
               <a href="{{ url_for('master.tenant_suspender', tenant_id=t.id) }}"
                  class="btn btn-sm btn-outline-danger"
@@ -130,6 +134,32 @@
   </div>
 </div>
 
+<!-- Modal Adicionar Dias -->
+<div class="modal fade" id="adicionarDiasModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" id="adicionarDiasForm">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-calendar-plus me-2 text-info"></i>Adicionar Dias</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-1" id="adicionarDiasNome"></p>
+          <p class="text-muted small mb-3">Vencimento atual: <strong id="adicionarDiasVenc"></strong></p>
+          <label class="form-label fw-semibold">Quantos dias adicionar?</label>
+          <input type="number" name="dias" id="adicionarDiasInput" class="form-control form-control-lg text-center"
+                 value="30" min="1" required autocomplete="off"
+                 onfocus="this.select()" onclick="this.select()">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-info fw-semibold text-white">Confirmar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Reativar -->
 <div class="modal fade" id="ativarModal" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -162,6 +192,18 @@ function abrirExcluir(id, nome) {
   document.getElementById('excluirForm').action = `/master/tenant/${id}/excluir`;
   document.getElementById('excluirNome').textContent = nome;
   new bootstrap.Modal(document.getElementById('excluirModal')).show();
+}
+function abrirAdicionarDias(id, nome, venc) {
+  document.getElementById('adicionarDiasForm').action = `/master/tenant/${id}/adicionar-dias`;
+  document.getElementById('adicionarDiasNome').textContent = nome;
+  document.getElementById('adicionarDiasVenc').textContent = venc;
+  document.getElementById('adicionarDiasInput').value = 30;
+  const modal = new bootstrap.Modal(document.getElementById('adicionarDiasModal'));
+  document.getElementById('adicionarDiasModal').addEventListener('shown.bs.modal', function() {
+    const input = document.getElementById('adicionarDiasInput');
+    input.focus(); input.select();
+  }, { once: true });
+  modal.show();
 }
 function abrirAtivar(id, nome) {
   document.getElementById('ativarForm').action = `/master/tenant/${id}/ativar`;

@@ -119,3 +119,18 @@ def tenant_ativar(tenant_id):
     db.session.commit()
     flash(f'Loja "{tenant.store_name}" reativada por {dias} dias.', 'success')
     return redirect(url_for('master.dashboard'))
+
+
+@master_bp.route('/tenant/<int:tenant_id>/adicionar-dias', methods=['POST'])
+@login_required
+@master_required
+def tenant_adicionar_dias(tenant_id):
+    tenant = Tenant.query.get_or_404(tenant_id)
+    dias = int(request.form.get('dias', 30))
+    agora = datetime.now()
+    base = tenant.expires_at if tenant.expires_at and tenant.expires_at > agora else agora
+    tenant.expires_at = base + timedelta(days=dias)
+    tenant.status = 'active'
+    db.session.commit()
+    flash(f'+{dias} dias adicionados para "{tenant.store_name}". Vence em {tenant.expires_at.strftime("%d/%m/%Y")}.', 'success')
+    return redirect(url_for('master.dashboard'))
