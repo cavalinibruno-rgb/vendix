@@ -83,6 +83,7 @@ def index():
     cfg = tenant.get_settings()
     modo_restrito = (
         cfg.get('dashboard_operador_restrito') and
+        current_user.is_employee and
         caixa is not None and
         caixa.operator_employee_id is not None
     )
