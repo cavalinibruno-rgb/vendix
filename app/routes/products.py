@@ -59,11 +59,12 @@ def novo():
         name        = request.form.get('name', '').strip()
         type_id     = request.form.get('type_id') or None
         brand_id    = request.form.get('brand_id') or None
-        sale_price  = float(request.form.get('sale_price', 0) or 0)
-        cost_price  = float(request.form.get('cost_price', 0) or 0)
-        stock       = int(request.form.get('stock_quantity', 0) or 0)
-        min_stock   = int(request.form.get('min_stock', 0) or 0)
-        description = request.form.get('description', '').strip()
+        sale_price      = float(request.form.get('sale_price', 0) or 0)
+        sale_price_card = float(request.form.get('sale_price_card', 0) or 0)
+        cost_price      = float(request.form.get('cost_price', 0) or 0)
+        stock           = int(request.form.get('stock_quantity', 0) or 0)
+        min_stock       = int(request.form.get('min_stock', 0) or 0)
+        description     = request.form.get('description', '').strip()
 
         if not name:
             flash('Nome do produto é obrigatório.', 'danger')
@@ -85,6 +86,7 @@ def novo():
             name=name,
             description=description,
             sale_price=sale_price,
+            sale_price_card=sale_price_card,
             cost_price=cost_price,
             stock_quantity=stock,
             min_stock=min_stock,
@@ -118,8 +120,9 @@ def editar(product_id):
         product.name           = request.form.get('name', '').strip()
         product.type_id        = request.form.get('type_id') or None
         product.brand_id       = request.form.get('brand_id') or None
-        product.sale_price     = float(request.form.get('sale_price', 0) or 0)
-        product.cost_price     = float(request.form.get('cost_price', 0) or 0)
+        product.sale_price      = float(request.form.get('sale_price', 0) or 0)
+        product.sale_price_card = float(request.form.get('sale_price_card', 0) or 0)
+        product.cost_price      = float(request.form.get('cost_price', 0) or 0)
         product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
         product.min_stock      = int(request.form.get('min_stock', 0) or 0)
         product.description    = request.form.get('description', '').strip()
@@ -220,8 +223,8 @@ def marca_excluir(brand_id):
 # ── API busca produtos ────────────────────────────────
 def _cols():
     """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
-    return [Product.id, Product.name, Product.sale_price, Product.stock_quantity,
-            Product.type_id, Product.brand_id,
+    return [Product.id, Product.name, Product.sale_price, Product.sale_price_card,
+            Product.stock_quantity, Product.type_id, Product.brand_id,
             (Product.image_data != None).label('has_image')]
 
 @products_bp.route('/api/buscar')
@@ -240,14 +243,15 @@ def api_buscar():
     tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
     marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
 
-    cost_map = {p.id: p.cost_price for p in Product.query.filter(
+    extra = {p.id: p for p in Product.query.filter(
         Product.id.in_([r.id for r in rows]), Product.tenant_id == tenant_id()
-    ).with_entities(Product.id, Product.cost_price).all()}
+    ).with_entities(Product.id, Product.cost_price, Product.sale_price_card).all()}
 
     return jsonify([{
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
-        'cost_price': cost_map.get(r.id, 0) or 0,
+        'sale_price_card': (extra[r.id].sale_price_card or 0) if r.id in extra else 0,
+        'cost_price': (extra[r.id].cost_price or 0) if r.id in extra else 0,
         'stock_quantity': r.stock_quantity,
         'has_image': bool(r.has_image),
         'type': tipos.get(r.type_id, ''),
@@ -282,6 +286,7 @@ def api_todos():
     return jsonify([{
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
+        'sale_price_card': r.sale_price_card or 0,
         'stock_quantity': r.stock_quantity,
         'thumbnail': thumbs.get(r.id),
         'type_id': r.type_id,

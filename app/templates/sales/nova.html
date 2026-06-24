@@ -694,6 +694,7 @@ let bairros = [];
 let origem = 'loja';
 
 let todosProds = [];
+let produtosCache = {};
 let catAtual   = 'todas';
 let marcaAtual = 'todas';
 let prodModalAtual = null;
@@ -703,6 +704,7 @@ fetch('/clientes/bairros/api').then(r => r.json()).then(d => { bairros = d; pree
 
 fetch('/produtos/api/todos').then(r => r.json()).then(lista => {
   todosProds = lista;
+  lista.forEach(p => { produtosCache[p.id] = p; });
   construirAbas(lista);
   construirMarcas(lista);
   aplicarFiltros();
@@ -800,12 +802,13 @@ function confirmarAddProd() {
     existente.quantity += qtd;
     existente.total = existente.unit_price * existente.quantity;
   } else {
+    const preco = precoParaPgto(prodModalAtual);
     carrinho.push({
       product_id: prodModalAtual.id,
       name: prodModalAtual.name,
-      unit_price: prodModalAtual.sale_price,
+      unit_price: preco,
       quantity: qtd,
-      total: prodModalAtual.sale_price * qtd,
+      total: preco * qtd,
       thumbnail: prodModalAtual.thumbnail || null,
     });
   }
@@ -1177,6 +1180,16 @@ function setOrigem(o) {
 }
 
 // ── Pagamento ─────────────────────────────────────────
+function isCartao() {
+  return pgto === 'cartao_credito' || pgto === 'cartao_debito' || pgto === 'pix';
+}
+
+function precoParaPgto(prod) {
+  if (isCartao() && prod.sale_price_card && prod.sale_price_card > 0)
+    return prod.sale_price_card;
+  return prod.sale_price;
+}
+
 function setPgto(card) {
   if (modoCombinado) cancelarCombinado();
   pgto = card.dataset.pgto;
@@ -1187,6 +1200,16 @@ function setPgto(card) {
     document.getElementById('valorRecebido').value = '';
     calcTroco();
   }
+  // Recalcula preços do carrinho conforme método de pagamento
+  carrinho.forEach(item => {
+    const prod = produtosCache[item.product_id];
+    if (prod) {
+      item.unit_price = precoParaPgto(prod);
+      item.total = item.unit_price * item.quantity;
+    }
+  });
+  renderCarrinho();
+  calcTotais();
 }
 
 function calcTroco() {
