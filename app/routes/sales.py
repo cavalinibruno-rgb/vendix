@@ -144,7 +144,13 @@ def confirmar():
                         user_name    = current_user.display_name or current_user.username,
                     ))
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        from flask import current_app
+        current_app.logger.error(f'[confirmar_venda] {e}')
+        return jsonify({'error': str(e)}), 500
     return jsonify({'sale_id': sale.id})
 
 @sales_bp.route('/')
