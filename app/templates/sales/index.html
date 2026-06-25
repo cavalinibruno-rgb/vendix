@@ -104,9 +104,14 @@
           {% endif %}
           <td class="text-muted small text-nowrap">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
           <td class="pe-4">
-            <a href="{{ url_for('sales.detalhe', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
-              <i class="bi bi-eye"></i>
-            </a>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('sales.detalhe', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-eye"></i>
+              </a>
+              <button class="btn btn-sm btn-outline-secondary" onclick="imprimirVenda({{ s.id }})">
+                <i class="bi bi-printer"></i>
+              </button>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -129,5 +134,19 @@
 {% block scripts %}
 <script>
 // Passa datas para o template via Jinja (no lugar de date.today() no JS)
+
+async function imprimirVenda(saleId) {
+  if (window.electronAPI && window.electronAPI.printRaw) {
+    const printer = localStorage.getItem('vendix_printer');
+    if (!printer) { alert('Nenhuma impressora selecionada. Finalize uma venda primeiro para configurar a impressora.'); return; }
+    const escposUrl = `${window.location.origin}/vendas/${saleId}/escpos`;
+    try {
+      const result = await window.electronAPI.printRaw(escposUrl, printer);
+      if (result && !result.ok) console.error('[imprimir]', result.error);
+    } catch(e) { console.error('[imprimir]', e); }
+  } else {
+    window.open(`/vendas/${saleId}/comprovante?autoprint=1`, '_blank');
+  }
+}
 </script>
 {% endblock %}
