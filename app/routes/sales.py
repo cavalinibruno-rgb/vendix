@@ -359,6 +359,21 @@ def escpos(sale_id):
         d += sep()
         return d
 
+    def endereco_entrega(c):
+        """Monta bloco de endereço completo do cliente."""
+        lines = []
+        rua = c.address or ''
+        num = getattr(c, 'address_number', None) or ''
+        ref = getattr(c, 'address_ref', None) or ''
+        bairro = c.neighborhood.name if c.neighborhood else ''
+        if rua or num:
+            lines.append(f'End: {rua}{"  n° " + num if num else ""}')
+        if bairro:
+            lines.append(f'Bairro: {bairro}')
+        if ref:
+            lines.append(f'Ref: {ref}')
+        return b''.join(lft(l) for l in lines)
+
     parts    = store_name.split(' ', 1)
     dt       = sale.created_at
     date_str = dt.strftime('%d/%m/%Y') if dt else ''
@@ -376,8 +391,8 @@ def escpos(sale_id):
     data  = cabecalho()
     if sale.customer:
         data += lft(f'Cliente: {sale.customer.name}')
-        if sale.delivery_mode == 'entrega' and sale.customer.address:
-            data += lft(f'Entrega: {sale.customer.address}')
+        if sale.delivery_mode == 'entrega':
+            data += endereco_entrega(sale.customer)
         data += sep()
     data += itens_com_combo()
     data += cols('Subtotal', f'R${sale.subtotal:.2f}')
@@ -406,8 +421,8 @@ def escpos(sale_id):
     data += cabecalho()
     if sale.customer:
         data += ctr(sale.customer.name)
-        if sale.delivery_mode == 'entrega' and sale.customer.address:
-            data += lft(f'Entrega: {sale.customer.address}')
+        if sale.delivery_mode == 'entrega':
+            data += endereco_entrega(sale.customer)
         data += sep()
     data += itens_com_combo()
     if sale.notes:

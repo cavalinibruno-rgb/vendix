@@ -30,6 +30,8 @@ def novo():
         phone           = request.form.get('phone', '').strip()
         cep             = request.form.get('cep', '').strip()
         address         = request.form.get('address', '').strip()
+        address_number  = request.form.get('address_number', '').strip()
+        address_ref     = request.form.get('address_ref', '').strip()
         neighborhood_id = request.form.get('neighborhood_id') or None
         notes           = request.form.get('notes', '').strip()
 
@@ -47,6 +49,7 @@ def novo():
         customer = Customer(
             tenant_id=tid(),
             name=name, phone=phone, cep=cep, address=address,
+            address_number=address_number, address_ref=address_ref,
             neighborhood_id=neighborhood_id,
             delivery_fee=fee, notes=notes
         )
@@ -67,6 +70,8 @@ def editar(customer_id):
         customer.phone           = request.form.get('phone', '').strip()
         customer.cep             = request.form.get('cep', '').strip()
         customer.address         = request.form.get('address', '').strip()
+        customer.address_number  = request.form.get('address_number', '').strip()
+        customer.address_ref     = request.form.get('address_ref', '').strip()
         customer.neighborhood_id = request.form.get('neighborhood_id') or None
         customer.notes           = request.form.get('notes', '').strip()
         if customer.neighborhood_id:

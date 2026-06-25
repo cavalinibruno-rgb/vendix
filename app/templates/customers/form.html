@@ -43,8 +43,18 @@
         <div class="form-text" id="bairroMsg"></div>
       </div>
       <div class="mb-3">
-        <label class="form-label fw-semibold">Endereço</label>
-        <input type="text" name="address" id="addressInput" class="form-control" value="{{ customer.address if customer else '' }}" placeholder="Rua, número…">
+        <label class="form-label fw-semibold">Rua / Logradouro</label>
+        <input type="text" name="address" id="addressInput" class="form-control" value="{{ customer.address if customer else '' }}" placeholder="Ex: Rua das Flores">
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-4">
+          <label class="form-label fw-semibold">Número</label>
+          <input type="text" name="address_number" class="form-control" value="{{ customer.address_number if customer else '' }}" placeholder="Ex: 123">
+        </div>
+        <div class="col-8">
+          <label class="form-label fw-semibold">Ponto de Referência</label>
+          <input type="text" name="address_ref" class="form-control" value="{{ customer.address_ref if customer else '' }}" placeholder="Ex: Próximo ao mercado">
+        </div>
       </div>
       <div class="mb-3">
         <label class="form-label fw-semibold">Observações</label>

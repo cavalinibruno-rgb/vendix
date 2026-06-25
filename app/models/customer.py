@@ -22,6 +22,8 @@ class Customer(db.Model):
     phone           = db.Column(db.String(32))
     cep             = db.Column(db.String(9))
     address         = db.Column(db.String(256))
+    address_number  = db.Column(db.String(16))
+    address_ref     = db.Column(db.String(256))
     delivery_fee    = db.Column(db.Float, default=0)
     notes           = db.Column(db.Text)
     created_at      = db.Column(db.DateTime, default=datetime.now)
