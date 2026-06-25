@@ -229,15 +229,12 @@ def fechar(caixa_id):
             try: return float(v)
             except ValueError: return 0.0
         op = {
-            'dinheiro':         fval('dinheiro'),
-            'loja_credito':     fval('loja_credito'),
-            'loja_debito':      fval('loja_debito'),
-            'loja_pix':         fval('loja_pix'),
-            'loja_conta':       fval('loja_conta'),
-            'loja_funcionario': fval('loja_funcionario'),
-            'app_credito':      fval('app_credito'),
-            'app_debito':       fval('app_debito'),
-            'app_pix':          fval('app_pix'),
+            'dinheiro':    fval('dinheiro'),
+            'credito':     fval('credito'),
+            'debito':      fval('debito'),
+            'pix':         fval('pix'),
+            'conta':       fval('conta'),
+            'funcionario': fval('funcionario'),
         }
         total_operador = sum(op.values())
         caixa.closing_amount = total_operador
@@ -280,16 +277,19 @@ def resumo(caixa_id):
 
     def tot(lst, methods): return sum(v.total for v in lst if v.payment_method in methods)
 
+    todas = vendas_loja + vendas_app
+    desp  = Expense.query.filter_by(cash_register_id=caixa.id).all()
+    ret_r = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
+    desp_din = sum(d.amount for d in desp if d.payment_method == 'dinheiro')
+    desp_pix = sum(d.amount for d in desp if d.payment_method == 'pix')
+    ret_tot  = sum(r.amount for r in ret_r)
     sis = {
-        'dinheiro':         tot(todas_vendas, ('dinheiro', 'entrega_dinheiro')),
-        'loja_credito':     tot(vendas_loja, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
-        'loja_debito':      tot(vendas_loja, ('cartao_debito',  'entrega_cartao_debito')),
-        'loja_pix':         tot(vendas_loja, ('pix',      'entrega_pix')),
-        'loja_conta':       tot(vendas_loja, ('conta',)),
-        'loja_funcionario': tot(vendas_loja, ('funcionario',)),
-        'app_credito':      tot(vendas_app,  ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
-        'app_debito':       tot(vendas_app,  ('cartao_debito',  'entrega_cartao_debito')),
-        'app_pix':          tot(vendas_app,  ('pix',      'entrega_pix')),
+        'dinheiro':    caixa.opening_amount + tot(todas, ('dinheiro', 'entrega_dinheiro')) - ret_tot - desp_din,
+        'credito':     tot(todas, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
+        'debito':      tot(todas, ('cartao_debito', 'entrega_cartao_debito')),
+        'pix':         tot(todas, ('pix', 'entrega_pix')) - desp_pix,
+        'conta':       tot(todas, ('conta',)),
+        'funcionario': tot(todas, ('funcionario',)),
     }
 
     op = json.loads(caixa.closing_data) if caixa.closing_data else {k: 0 for k in sis}
@@ -298,24 +298,15 @@ def resumo(caixa_id):
     total_retiradas = sum(r.amount for r in retiradas)
 
     # Desconta retiradas do dinheiro esperado pelo sistema (saem do caixa físico)
-    # Desconta retiradas e despesas em dinheiro do esperado físico
-    retiradas_r       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
-    despesas_r        = Expense.query.filter_by(cash_register_id=caixa.id).all()
-    total_retiradas_r = sum(r.amount for r in retiradas_r)
-    desp_dinheiro_r   = sum(d.amount for d in despesas_r if d.payment_method == 'dinheiro')
-    sis['dinheiro']   = max(0, sis['dinheiro'] - total_retiradas_r - desp_dinheiro_r + caixa.opening_amount)
 
     conferencia = []
     for key, label, icon, color in [
-        ('dinheiro',         'Dinheiro (gaveta)',       'bi-cash',              'text-success'),
-        ('loja_credito',     'Loja — Cartão Crédito',  'bi-credit-card',       'text-primary'),
-        ('loja_debito',      'Loja — Cartão Débito',   'bi-credit-card-2-back','text-primary'),
-        ('loja_pix',         'Loja — Pix',             'bi-qr-code',           'text-info'),
-        ('loja_conta',       'Loja — Conta',           'bi-person-lines-fill', 'text-warning'),
-        ('loja_funcionario', 'Loja — Funcionário',     'bi-person-badge',      'text-secondary'),
-        ('app_credito',      'App — Cartão Crédito',   'bi-credit-card',       'text-primary'),
-        ('app_debito',       'App — Cartão Débito',    'bi-credit-card-2-back','text-primary'),
-        ('app_pix',          'App — Pix',              'bi-qr-code',           'text-info'),
+        ('dinheiro',    'Dinheiro (gaveta)',  'bi-cash',              'text-success'),
+        ('credito',     'Cartão Crédito',    'bi-credit-card',       'text-primary'),
+        ('debito',      'Cartão Débito',     'bi-credit-card-2-back','text-primary'),
+        ('pix',         'Pix',               'bi-qr-code',           'text-info'),
+        ('conta',       'Conta (fiado)',      'bi-person-lines-fill', 'text-warning'),
+        ('funcionario', 'Funcionário (vale)', 'bi-person-badge',      'text-secondary'),
     ]:
         s = sis.get(key, 0)
         o = op.get(key, 0)

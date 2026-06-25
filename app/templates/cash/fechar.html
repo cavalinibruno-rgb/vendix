@@ -25,37 +25,20 @@
 <form method="post">
   <div class="row g-4">
 
-    <!-- Coluna esquerda: Dinheiro + Loja -->
+    <!-- Coluna esquerda: campos de fechamento -->
     <div class="col-md-6 d-flex flex-column gap-3">
-
-      <!-- Dinheiro (gaveta única) -->
-      <div class="card">
-        <div class="card-header fw-semibold"><i class="bi bi-cash me-2 text-success"></i>Dinheiro na Gaveta</div>
-        <div class="card-body">
-          <label class="form-label fw-semibold">Valor contado na gaveta</label>
-          <div class="input-group">
-            <span class="input-group-text">R$</span>
-            <input type="text" name="dinheiro" id="dinheiro" class="form-control campo-valor form-control-lg"
-                   value="0,00" inputmode="decimal" autocomplete="off"
-                   onfocus="if(this.value==='0,00')this.value=''"
-                   onblur="if(this.value==='')this.value='0,00'"
-                   oninput="calcTotal()">
-          </div>
-        </div>
-      </div>
-
-      <!-- Loja (cartão, pix, conta, funcionário) -->
       <div class="card flex-fill">
-        <div class="card-header fw-semibold"><i class="bi bi-shop me-2 text-warning"></i>Loja</div>
+        <div class="card-header fw-semibold"><i class="bi bi-cash-stack me-2 text-warning"></i>Informe os valores</div>
         <div class="card-body">
-          {% set campos_loja = [
-            ('loja_credito',      'bi-credit-card',        'text-primary',   'Cartão Crédito'),
-            ('loja_debito',       'bi-credit-card-2-back', 'text-primary',   'Cartão Débito'),
-            ('loja_pix',          'bi-qr-code',            'text-info',      'Pix'),
-            ('loja_conta',        'bi-person-lines-fill',  'text-warning',   'Conta (fiado)'),
-            ('loja_funcionario',  'bi-person-badge',       'text-secondary', 'Funcionário (vale)'),
+          {% set campos = [
+            ('dinheiro',     'bi-cash',              'text-success',   'Dinheiro (gaveta)'),
+            ('credito',      'bi-credit-card',        'text-primary',   'Cartão Crédito'),
+            ('debito',       'bi-credit-card-2-back', 'text-primary',   'Cartão Débito'),
+            ('pix',          'bi-qr-code',            'text-info',      'Pix'),
+            ('conta',        'bi-person-lines-fill',  'text-warning',   'Conta (fiado)'),
+            ('funcionario',  'bi-person-badge',       'text-secondary', 'Funcionário (vale)'),
           ] %}
-          {% for name, icon, color, label in campos_loja %}
+          {% for name, icon, color, label in campos %}
           <div class="mb-3">
             <label class="form-label"><i class="bi {{ icon }} me-1 {{ color }}"></i>{{ label }}</label>
             <div class="input-group">
@@ -72,33 +55,8 @@
       </div>
     </div>
 
-    <!-- Coluna direita: App + resumo -->
+    <!-- Coluna direita: resumo -->
     <div class="col-md-6 d-flex flex-column gap-3">
-
-      <!-- App -->
-      <div class="card">
-        <div class="card-header fw-semibold"><i class="bi bi-phone me-2 text-secondary"></i>App</div>
-        <div class="card-body">
-          {% set campos_app = [
-            ('app_credito',  'bi-credit-card',        'text-primary', 'Cartão Crédito'),
-            ('app_debito',   'bi-credit-card-2-back', 'text-primary', 'Cartão Débito'),
-            ('app_pix',      'bi-qr-code',            'text-info',    'Pix'),
-          ] %}
-          {% for name, icon, color, label in campos_app %}
-          <div class="mb-3">
-            <label class="form-label"><i class="bi {{ icon }} me-1 {{ color }}"></i>{{ label }}</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              <input type="text" name="{{ name }}" id="{{ name }}" class="form-control campo-valor"
-                     value="0,00" inputmode="decimal" autocomplete="off"
-                     onfocus="if(this.value==='0,00')this.value=''"
-                     onblur="if(this.value==='')this.value='0,00'"
-                     oninput="calcTotal()">
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
 
       <!-- Retiradas -->
       {% if retiradas %}
