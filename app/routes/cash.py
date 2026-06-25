@@ -13,6 +13,13 @@ from sqlalchemy import func
 
 cash_bp = Blueprint('cash', __name__, url_prefix='/caixa')
 
+def _user_id():
+    uid = current_user.id
+    if isinstance(uid, str) and uid.startswith('e_'):
+        return int(uid[2:])
+    return uid
+
+
 def tid():
     return current_user.tenant_id
 
@@ -75,7 +82,7 @@ def abrir():
 
     caixa = CashRegister(
         tenant_id            = tid(),
-        opened_by            = current_user.id,
+        opened_by            = _user_id(),
         opening_amount       = valor,
         operator_employee_id = operator_employee_id,
         operator_name        = operator_name,
@@ -233,7 +240,7 @@ def fechar(caixa_id):
         total_operador = sum(op.values())
         caixa.closing_amount = total_operador
         caixa.closing_data   = json.dumps(op)
-        caixa.closed_by      = current_user.id
+        caixa.closed_by      = _user_id()
         caixa.closed_at      = datetime.now()
         caixa.status         = 'closed'
         caixa.notes          = request.form.get('notes', '')
