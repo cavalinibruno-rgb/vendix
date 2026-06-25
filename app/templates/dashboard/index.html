@@ -8,7 +8,7 @@
     <p class="text-muted mb-0">{{ tenant.store_name }} — {{ now.strftime('%d/%m/%Y') if now else '' }}</p>
   </div>
   <div class="d-flex gap-2 align-items-center">
-  {% if not current_user.is_master %}
+  {% if not current_user.is_master and evento_visivel %}
   {% if event_mode %}
   <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEvento">
     <i class="bi bi-music-note-beamed me-1"></i> Desativar Evento

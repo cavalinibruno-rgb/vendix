@@ -69,6 +69,17 @@ def dashboard_operador():
     flash('Configuração salva.', 'success')
     return redirect(url_for('config.index'))
 
+@config_bp.route('/modo-evento', methods=['POST'])
+@login_required
+def modo_evento():
+    tenant = current_user.tenant
+    cfg = tenant.get_settings()
+    cfg['modo_evento_visivel'] = 'modo_evento_visivel' in request.form
+    tenant.save_settings(cfg)
+    db.session.commit()
+    flash('Configuração de Modo Evento salva.', 'success')
+    return redirect(url_for('config.index'))
+
 @config_bp.route('/cupons/criar', methods=['POST'])
 @login_required
 def criar_cupom():

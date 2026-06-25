@@ -305,6 +305,30 @@
     </div>
     {% endif %}{# /is_employee dashboard operador #}
 
+    {% if not current_user.is_employee %}
+    <div class="card">
+      <div class="card-header py-2"><i class="bi bi-music-note-beamed me-2 text-warning"></i>Modo Evento</div>
+      <div class="card-body p-3">
+        <form method="post" action="{{ url_for('config.modo_evento') }}">
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" name="modo_evento_visivel" id="swEvento"
+                   {% if cfg.get('modo_evento_visivel') %}checked{% endif %}>
+            <label class="form-check-label fw-semibold small" for="swEvento">
+              Habilitar Modo Evento no sistema
+            </label>
+          </div>
+          <div class="text-muted small mb-2">
+            Quando ativo, exibe o botão <strong>Ativar Evento</strong> na dashboard e no PDV,
+            permitindo aplicar preços de evento em todos os produtos com um clique.
+          </div>
+          <button type="submit" class="btn btn-warning btn-sm fw-semibold">
+            <i class="bi bi-floppy me-1"></i>Salvar
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- Alterar Senha -->
     <div class="card" id="seguranca">
       <div class="card-header py-2"><i class="bi bi-lock me-2 text-warning"></i>Segurança — Alterar Senha</div>

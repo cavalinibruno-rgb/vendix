@@ -32,7 +32,8 @@ def nova():
     from app.models.tenant import Tenant
     tenant = Tenant.query.get(tid())
     event_mode = tenant.event_mode if tenant else False
-    return render_template('sales/nova.html', event_mode=event_mode)
+    evento_visivel = tenant.get_settings().get('modo_evento_visivel', False) if tenant else False
+    return render_template('sales/nova.html', event_mode=event_mode, evento_visivel=evento_visivel)
 
 @sales_bp.route('/confirmar', methods=['POST'])
 @login_required

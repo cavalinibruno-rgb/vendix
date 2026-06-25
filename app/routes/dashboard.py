@@ -110,6 +110,7 @@ def index():
         ticket_mensal=ticket_mensal,
         ticket_geral=ticket_geral,
         event_mode=tenant.event_mode if tenant else False,
+        evento_visivel=tenant.get_settings().get('modo_evento_visivel', False) if tenant else False,
     )
 
 @dashboard_bp.route('/dashboard/desbloquear', methods=['POST'])
