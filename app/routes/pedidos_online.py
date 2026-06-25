@@ -16,6 +16,12 @@ pedidos_online_bp = Blueprint('pedidos_online', __name__, url_prefix='/pedidos-o
 def tid():
     return current_user.tenant_id
 
+def _user_id():
+    uid = current_user.id
+    if isinstance(uid, str) and uid.startswith('e_'):
+        return int(uid[2:])
+    return uid
+
 
 @pedidos_online_bp.route('/')
 @login_required
@@ -88,7 +94,7 @@ def aceitar(pedido_id):
                             tenant_id=tid(), product_id=comp.id, product_name=comp.name,
                             type='saida', quantity=deduct,
                             motive=f'Pedido Online #{pedido.id} — combo "{prod.name}"',
-                            user_id=current_user.id,
+                            user_id=_user_id(),
                             user_name=current_user.display_name or current_user.username,
                         ))
             else:

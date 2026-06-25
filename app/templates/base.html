@@ -549,16 +549,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (d.ok) {
           stopAlarm();
           bootstrap.Modal.getInstance(document.getElementById('modalNovoPedido')).hide();
-          // Impressão via iframe oculto (funciona no Electron sem atualização)
           if (d.sale_id) {
-            const fr = document.createElement('iframe');
-            fr.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;';
-            fr.src = `/vendas/${d.sale_id}/comprovante`;
-            document.body.appendChild(fr);
-            fr.onload = () => {
-              fr.contentWindow.print();
-              setTimeout(() => fr.remove(), 5000);
-            };
+            if (window.electronAPI && window.electronAPI.printRaw) {
+              const printer = localStorage.getItem('vendix_printer');
+              if (printer) {
+                window.electronAPI.printRaw(`${window.location.origin}/vendas/${d.sale_id}/escpos`, printer)
+                  .catch(e => console.error('[print pedido]', e));
+              }
+            } else {
+              window.open(`/vendas/${d.sale_id}/comprovante?autoprint=1`, '_blank');
+            }
           }
           // Se estiver na página de Entregas, recarrega para mostrar o novo pedido
           if (window.location.pathname.startsWith('/entregas')) {
