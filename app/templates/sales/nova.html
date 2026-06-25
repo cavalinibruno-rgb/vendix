@@ -1193,6 +1193,7 @@ function isCartao() {
 }
 
 function precoParaPgto(prod) {
+  if (origem !== 'loja') return prod.sale_price;
   if (EVENT_MODE && prod.sale_price_event && prod.sale_price_event > 0)
     return prod.sale_price_event;
   if (isCartao() && prod.sale_price_card && prod.sale_price_card > 0)
