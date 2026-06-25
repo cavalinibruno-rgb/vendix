@@ -1586,11 +1586,42 @@ function finalizarVenda() {
   .then(r => r.json())
   .then(d => {
     if (d.sale_id) {
-      window.location.href = `/vendas/${d.sale_id}/comprovante?autoprint=1`;
+      const url = `${window.location.origin}/vendas/${d.sale_id}/comprovante`;
+      if (window.electronAPI && window.electronAPI.printSilent) {
+        // Electron: imprime silenciosamente na impressora padrão
+        window.electronAPI.printSilent(url);
+        limparVenda();
+      } else {
+        // Navegador: abre comprovante com autoprint
+        window.location.href = url + '?autoprint=1';
+      }
     }
     else aviso('Erro: ' + (d.error || 'desconhecido'));
   })
   .catch(() => aviso('Erro ao finalizar venda.'));
+}
+
+// ── Reset PDV após venda (Electron) ───────────────────
+function limparVenda() {
+  carrinho = [];
+  pgto = '';
+  clienteAtual = null;
+  selectedEmployeeId = null;
+  document.getElementById('searchInput').value = '';
+  document.getElementById('obsVenda').value = '';
+  document.getElementById('valorRecebido').value = '';
+  document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
+  document.getElementById('subCartaoLoja').classList.add('d-none');
+  document.getElementById('subCartaoLoja').classList.remove('d-flex');
+  document.getElementById('subCartaoEntrega').classList.add('d-none');
+  document.getElementById('subCartaoEntrega').classList.remove('d-flex');
+  document.getElementById('subFuncionario').classList.add('d-none');
+  const nomeCliente = document.getElementById('nomeCliente');
+  if (nomeCliente) nomeCliente.textContent = 'Nenhum';
+  renderCarrinho();
+  calcTotais();
+  const aviso = document.getElementById('avisoVenda');
+  if (aviso) { aviso.textContent = '✓ Venda finalizada! Imprimindo...'; aviso.className = 'alert alert-success mt-2'; setTimeout(() => { aviso.textContent = ''; aviso.className = ''; }, 3000); }
 }
 
 // ── Util ──────────────────────────────────────────────
