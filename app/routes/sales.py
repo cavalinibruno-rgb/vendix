@@ -317,7 +317,7 @@ def cancelar(sale_id):
         return redirect(url_for('sales.detalhe', sale_id=sale_id))
     sale.status = 'cancelled'
     sale.cancelled_at = datetime.now()
-    sale.cancelled_by_id = current_user.id
+    sale.cancelled_by_id = _user_id()
     sale.cancelled_by_name = nome_resp
     sale.cancel_reason = motivo
 
