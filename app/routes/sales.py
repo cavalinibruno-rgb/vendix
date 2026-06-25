@@ -376,6 +376,8 @@ def escpos(sale_id):
     data  = cabecalho()
     if sale.customer:
         data += lft(f'Cliente: {sale.customer.name}')
+        if sale.delivery_mode == 'entrega' and sale.customer.address:
+            data += lft(f'Entrega: {sale.customer.address}')
         data += sep()
     data += itens_com_combo()
     data += cols('Subtotal', f'R${sale.subtotal:.2f}')
@@ -404,6 +406,8 @@ def escpos(sale_id):
     data += cabecalho()
     if sale.customer:
         data += ctr(sale.customer.name)
+        if sale.delivery_mode == 'entrega' and sale.customer.address:
+            data += lft(f'Entrega: {sale.customer.address}')
         data += sep()
     data += itens_com_combo()
     if sale.notes:
