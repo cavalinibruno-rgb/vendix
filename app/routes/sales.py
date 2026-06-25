@@ -376,10 +376,10 @@ def escpos(sale_id):
             d += lft(f'Cliente: {cli_nome}')
         if sale.delivery_mode == 'entrega':
             if cli_end:
-                # Pedido online: endereço já vem como string completa
-                for linha in cli_end.split(', '):
-                    if linha.strip():
-                        d += lft(f'End: {linha.strip()}')
+                # Pedido online: formato "Rua: X | Número: Y | Bairro: Z | ..."
+                for parte in cli_end.split(' | '):
+                    if parte.strip():
+                        d += lft(parte.strip())
             elif sale.customer:
                 c = sale.customer
                 rua    = c.address or ''
