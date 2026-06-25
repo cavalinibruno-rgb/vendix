@@ -128,9 +128,14 @@
               <td class="text-end text-muted small">{{ '%.0f'|format(total_dinheiro / total_geral * 100) }}%</td>
             </tr>
             <tr>
-              <td><i class="bi bi-credit-card me-2 text-primary"></i>Cartão</td>
-              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_cartao) }}</td>{% endif %}
-              <td class="text-end text-muted small">{{ '%.0f'|format(total_cartao / total_geral * 100) }}%</td>
+              <td><i class="bi bi-credit-card me-2 text-primary"></i>Crédito</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_credito) }}</td>{% endif %}
+              <td class="text-end text-muted small">{{ '%.0f'|format(total_credito / total_geral * 100) }}%</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-credit-card-2-back me-2 text-primary"></i>Débito</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_debito) }}</td>{% endif %}
+              <td class="text-end text-muted small">{{ '%.0f'|format(total_debito / total_geral * 100) }}%</td>
             </tr>
             <tr>
               <td><i class="bi bi-qr-code me-2 text-info"></i>Pix</td>
@@ -227,6 +232,8 @@
               <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
               <td>
                 {% if v.payment_method in ('dinheiro', 'entrega_dinheiro') %}<span class="badge bg-success">Dinheiro</span>
+                {% elif v.payment_method in ('cartao_credito', 'entrega_cartao_credito') %}<span class="badge bg-primary">Crédito</span>
+                {% elif v.payment_method in ('cartao_debito', 'entrega_cartao_debito') %}<span class="badge bg-primary">Débito</span>
                 {% elif v.payment_method in ('cartao', 'entrega_cartao') %}<span class="badge bg-primary">Cartão</span>
                 {% elif v.payment_method in ('pix', 'entrega_pix') %}<span class="badge bg-info text-dark">Pix</span>
                 {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}

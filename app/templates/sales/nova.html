@@ -440,6 +440,15 @@
             <i class="bi bi-person-lines-fill"></i>Conta
           </div>
         </div>
+        <!-- Sub-seleção crédito/débito (loja) -->
+        <div id="subCartaoLoja" style="display:none;" class="d-flex gap-2 mt-2">
+          <button type="button" class="btn btn-sm btn-outline-primary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('cartao_credito','Crédito',this,'subCartaoLoja')">
+            <i class="bi bi-credit-card me-1"></i>Crédito
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('cartao_debito','Débito',this,'subCartaoLoja')">
+            <i class="bi bi-credit-card-2-back me-1"></i>Débito
+          </button>
+        </div>
         <div id="pgtoApp" class="pgto-grid mt-2" style="display:none;">
           <div class="pgto-card" data-pgto="pelo_app" data-label="Pelo app" onclick="handlePgtoClick(this)">
             <i class="bi bi-phone"></i>Pelo app
@@ -453,6 +462,15 @@
           <div class="pgto-card" data-pgto="entrega_pix" data-label="Pix" onclick="handlePgtoClick(this)">
             <i class="bi bi-qr-code"></i>Pix<span class="pgto-sub">na entrega</span>
           </div>
+        </div>
+        <!-- Sub-seleção crédito/débito (entrega) -->
+        <div id="subCartaoEntrega" style="display:none;" class="d-flex gap-2 mt-2">
+          <button type="button" class="btn btn-sm btn-outline-primary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('entrega_cartao_credito','Crédito (entrega)',this,'subCartaoEntrega')">
+            <i class="bi bi-credit-card me-1"></i>Crédito
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('entrega_cartao_debito','Débito (entrega)',this,'subCartaoEntrega')">
+            <i class="bi bi-credit-card-2-back me-1"></i>Débito
+          </button>
         </div>
 
         <!-- Campos combinados -->
@@ -1189,7 +1207,23 @@ function setOrigem(o) {
 
 // ── Pagamento ─────────────────────────────────────────
 function isCartao() {
-  return pgto === 'cartao' || pgto === 'entrega_cartao';
+  return ['cartao','cartao_credito','cartao_debito','entrega_cartao','entrega_cartao_credito','entrega_cartao_debito'].includes(pgto);
+}
+
+function selecionarSubCartao(valor, label, btn, subId) {
+  document.querySelectorAll(`#${subId} .sub-cartao-btn`).forEach(b => {
+    b.classList.remove('btn-primary','btn-secondary');
+    b.classList.add(b === btn ? 'btn-primary' : 'btn-outline-secondary');
+  });
+  btn.classList.remove('btn-outline-primary','btn-outline-secondary');
+  btn.classList.add('btn-primary');
+  pgto = valor;
+  // Recalcula preços do carrinho
+  carrinho.forEach(item => {
+    const prod = produtosCache[String(item.product_id)];
+    if (prod) { item.unit_price = precoParaPgto(prod); item.total = item.unit_price * item.quantity; }
+  });
+  renderCarrinho(); calcTotais();
 }
 
 function precoParaPgto(prod) {
@@ -1205,19 +1239,29 @@ function setPgto(card) {
   if (modoCombinado) cancelarCombinado();
   pgto = card.dataset.pgto;
   document.querySelectorAll('.pgto-card').forEach(c => c.classList.toggle('active', c === card));
+
+  // Mostra sub-seleção crédito/débito se clicou em Cartão
+  const subLoja    = document.getElementById('subCartaoLoja');
+  const subEntrega = document.getElementById('subCartaoEntrega');
+  if (subLoja)    subLoja.style.display    = (pgto === 'cartao') ? '' : 'none';
+  if (subEntrega) subEntrega.style.display = (pgto === 'entrega_cartao') ? '' : 'none';
+  // Reseta sub-seleção
+  if (pgto === 'cartao' || pgto === 'entrega_cartao') {
+    document.querySelectorAll('.sub-cartao-btn').forEach(b => {
+      b.classList.remove('btn-primary','btn-secondary');
+      b.classList.add('btn-outline-primary');
+    });
+  }
+
   const isDinheiro = pgto === 'dinheiro' || pgto === 'entrega_dinheiro';
   document.getElementById('campoTroco').style.display = isDinheiro ? '' : 'none';
   if (isDinheiro) {
     document.getElementById('valorRecebido').value = '';
     calcTroco();
   }
-  // Recalcula preços do carrinho conforme método de pagamento
   carrinho.forEach(item => {
     const prod = produtosCache[String(item.product_id)];
-    if (prod) {
-      item.unit_price = precoParaPgto(prod);
-      item.total = item.unit_price * item.quantity;
-    }
+    if (prod) { item.unit_price = precoParaPgto(prod); item.total = item.unit_price * item.quantity; }
   });
   renderCarrinho();
   calcTotais();
@@ -1440,6 +1484,8 @@ function finalizarVenda() {
   }
 
   if (!pgto) { aviso('Selecione a forma de pagamento.'); return; }
+  if (pgto === 'cartao') { aviso('Selecione Crédito ou Débito para o cartão.'); return; }
+  if (pgto === 'entrega_cartao') { aviso('Selecione Crédito ou Débito para o cartão na entrega.'); return; }
   if (pgto === 'conta' && !clienteAtual) { aviso('Para lançar na Conta, selecione um cliente.'); return; }
   if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
     aviso('Informe o nome do app (iFood, Anotaí, etc.)'); return;

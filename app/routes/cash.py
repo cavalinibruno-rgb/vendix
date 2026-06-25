@@ -190,7 +190,9 @@ def fechar(caixa_id):
     vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
 
     total_dinheiro = sum(v.total for v in vendas if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
-    total_cartao   = sum(v.total for v in vendas if v.payment_method in ('cartao', 'entrega_cartao'))
+    total_credito  = sum(v.total for v in vendas if v.payment_method in ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao'))
+    total_debito   = sum(v.total for v in vendas if v.payment_method in ('cartao_debito', 'entrega_cartao_debito'))
+    total_cartao   = total_credito + total_debito
     total_pix      = sum(v.total for v in vendas if v.payment_method in ('pix', 'entrega_pix'))
     total_conta    = sum(v.total for v in vendas if v.payment_method == 'conta')
     total_geral    = sum(v.total for v in vendas)
@@ -217,11 +219,13 @@ def fechar(caixa_id):
             except ValueError: return 0.0
         op = {
             'loja_dinheiro': fval('loja_dinheiro'),
-            'loja_cartao':   fval('loja_cartao'),
+            'loja_credito':  fval('loja_credito'),
+            'loja_debito':   fval('loja_debito'),
             'loja_pix':      fval('loja_pix'),
             'loja_conta':    fval('loja_conta'),
             'app_dinheiro':  fval('app_dinheiro'),
-            'app_cartao':    fval('app_cartao'),
+            'app_credito':   fval('app_credito'),
+            'app_debito':    fval('app_debito'),
             'app_pix':       fval('app_pix'),
         }
         total_operador = sum(op.values())
@@ -237,7 +241,9 @@ def fechar(caixa_id):
 
     return render_template('cash/fechar.html',
         caixa=caixa, vendas=vendas,
-        total_dinheiro=total_dinheiro, total_cartao=total_cartao,
+        total_dinheiro=total_dinheiro,
+        total_credito=total_credito, total_debito=total_debito,
+        total_cartao=total_cartao,
         total_pix=total_pix, total_conta=total_conta,
         total_geral=total_geral, esperado_caixa=esperado_caixa,
         retiradas=retiradas, total_retiradas=total_retiradas,
@@ -263,11 +269,13 @@ def resumo(caixa_id):
 
     sis = {
         'loja_dinheiro': tot(vendas_loja, ('dinheiro', 'entrega_dinheiro')),
-        'loja_cartao':   tot(vendas_loja, ('cartao',   'entrega_cartao')),
+        'loja_credito':  tot(vendas_loja, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
+        'loja_debito':   tot(vendas_loja, ('cartao_debito',  'entrega_cartao_debito')),
         'loja_pix':      tot(vendas_loja, ('pix',      'entrega_pix')),
         'loja_conta':    tot(vendas_loja, ('conta',)),
         'app_dinheiro':  tot(vendas_app,  ('dinheiro', 'entrega_dinheiro')),
-        'app_cartao':    tot(vendas_app,  ('cartao',   'entrega_cartao')),
+        'app_credito':   tot(vendas_app,  ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
+        'app_debito':    tot(vendas_app,  ('cartao_debito',  'entrega_cartao_debito')),
         'app_pix':       tot(vendas_app,  ('pix',      'entrega_pix')),
     }
 
@@ -281,13 +289,15 @@ def resumo(caixa_id):
 
     conferencia = []
     for key, label, icon, color in [
-        ('loja_dinheiro', 'Loja — Dinheiro', 'bi-cash',             'text-success'),
-        ('loja_cartao',   'Loja — Cartão',   'bi-credit-card',      'text-primary'),
-        ('loja_pix',      'Loja — Pix',      'bi-qr-code',          'text-info'),
-        ('loja_conta',    'Loja — Conta',    'bi-person-lines-fill','text-warning'),
-        ('app_dinheiro',  'App — Dinheiro',  'bi-cash',             'text-success'),
-        ('app_cartao',    'App — Cartão',    'bi-credit-card',      'text-primary'),
-        ('app_pix',       'App — Pix',       'bi-qr-code',          'text-info'),
+        ('loja_dinheiro', 'Loja — Dinheiro',        'bi-cash',              'text-success'),
+        ('loja_credito',  'Loja — Cartão Crédito',  'bi-credit-card',       'text-primary'),
+        ('loja_debito',   'Loja — Cartão Débito',   'bi-credit-card-2-back','text-primary'),
+        ('loja_pix',      'Loja — Pix',             'bi-qr-code',           'text-info'),
+        ('loja_conta',    'Loja — Conta',           'bi-person-lines-fill', 'text-warning'),
+        ('app_dinheiro',  'App — Dinheiro',         'bi-cash',              'text-success'),
+        ('app_credito',   'App — Cartão Crédito',   'bi-credit-card',       'text-primary'),
+        ('app_debito',    'App — Cartão Débito',    'bi-credit-card-2-back','text-primary'),
+        ('app_pix',       'App — Pix',              'bi-qr-code',           'text-info'),
     ]:
         s = sis.get(key, 0)
         o = op.get(key, 0)

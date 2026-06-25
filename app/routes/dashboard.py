@@ -40,12 +40,14 @@ def index():
     def entra_no_caixa(v):
         if v.source == 'loja' or v.source is None:
             return True
-        return v.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
+        return v.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_cartao_credito', 'entrega_cartao_debito', 'entrega_pix')
 
     vendas_hoje = [v for v in todas_hoje if entra_no_caixa(v)]
 
     total_dinheiro = sum(v.total for v in vendas_hoje if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
-    total_cartao   = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao', 'entrega_cartao'))
+    total_credito  = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao'))
+    total_debito   = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao_debito', 'entrega_cartao_debito'))
+    total_cartao   = total_credito + total_debito
     total_pix      = sum(v.total for v in vendas_hoje if v.payment_method in ('pix', 'entrega_pix'))
     total_conta    = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
     total_geral    = sum(v.total for v in vendas_hoje)
@@ -96,6 +98,7 @@ def index():
         tenant=tenant,
         qtd_vendas=len(vendas_hoje),
         total_dinheiro=total_dinheiro,
+        total_credito=total_credito, total_debito=total_debito,
         total_cartao=total_cartao,
         total_pix=total_pix,
         total_conta=total_conta,

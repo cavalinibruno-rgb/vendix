@@ -32,7 +32,8 @@
         <div class="card-body">
           {% set campos_loja = [
             ('loja_dinheiro', 'bi-cash',              'text-success', 'Dinheiro'),
-            ('loja_cartao',   'bi-credit-card',        'text-primary', 'Cartão'),
+            ('loja_credito',  'bi-credit-card',        'text-primary', 'Cartão Crédito'),
+            ('loja_debito',   'bi-credit-card-2-back', 'text-primary', 'Cartão Débito'),
             ('loja_pix',      'bi-qr-code',            'text-info',    'Pix'),
             ('loja_conta',    'bi-person-lines-fill',  'text-warning', 'Conta (fiado)'),
           ] %}
@@ -59,9 +60,10 @@
         <div class="card-header fw-semibold"><i class="bi bi-phone me-2 text-secondary"></i>App</div>
         <div class="card-body">
           {% set campos_app = [
-            ('app_dinheiro', 'bi-cash',         'text-success', 'Dinheiro'),
-            ('app_cartao',   'bi-credit-card',   'text-primary', 'Cartão'),
-            ('app_pix',      'bi-qr-code',       'text-info',    'Pix'),
+            ('app_dinheiro', 'bi-cash',              'text-success', 'Dinheiro'),
+            ('app_credito',  'bi-credit-card',        'text-primary', 'Cartão Crédito'),
+            ('app_debito',   'bi-credit-card-2-back', 'text-primary', 'Cartão Débito'),
+            ('app_pix',      'bi-qr-code',            'text-info',    'Pix'),
           ] %}
           {% for name, icon, color, label in campos_app %}
           <div class="mb-3">
