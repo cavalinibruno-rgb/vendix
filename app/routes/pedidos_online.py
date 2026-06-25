@@ -103,7 +103,7 @@ def aceitar(pedido_id):
                     tenant_id=tid(), product_id=prod.id, product_name=prod.name,
                     type='saida', quantity=int(qty),
                     motive=f'Pedido Online #{pedido.id}',
-                    user_id=current_user.id,
+                    user_id=_user_id(),
                     user_name=current_user.display_name or current_user.username,
                 ))
 
