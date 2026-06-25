@@ -31,11 +31,12 @@
         <div class="card-header fw-semibold"><i class="bi bi-shop me-2 text-warning"></i>Loja</div>
         <div class="card-body">
           {% set campos_loja = [
-            ('loja_dinheiro', 'bi-cash',              'text-success', 'Dinheiro'),
-            ('loja_credito',  'bi-credit-card',        'text-primary', 'Cartão Crédito'),
-            ('loja_debito',   'bi-credit-card-2-back', 'text-primary', 'Cartão Débito'),
-            ('loja_pix',      'bi-qr-code',            'text-info',    'Pix'),
-            ('loja_conta',    'bi-person-lines-fill',  'text-warning', 'Conta (fiado)'),
+            ('loja_dinheiro',     'bi-cash',              'text-success', 'Dinheiro'),
+            ('loja_credito',      'bi-credit-card',        'text-primary', 'Cartão Crédito'),
+            ('loja_debito',       'bi-credit-card-2-back', 'text-primary', 'Cartão Débito'),
+            ('loja_pix',          'bi-qr-code',            'text-info',    'Pix'),
+            ('loja_conta',        'bi-person-lines-fill',  'text-warning', 'Conta (fiado)'),
+            ('loja_funcionario',  'bi-person-badge',        'text-secondary','Funcionário (vale)'),
           ] %}
           {% for name, icon, color, label in campos_loja %}
           <div class="mb-3">

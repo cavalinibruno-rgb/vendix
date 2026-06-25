@@ -186,6 +186,8 @@ def _run_migrations(db):
         "CREATE INDEX IF NOT EXISTS idx_pedidos_tenant_created ON pedidos_online(tenant_id, created_at)",
         "CREATE INDEX IF NOT EXISTS idx_products_tenant_id ON products(tenant_id)",
         "CREATE INDEX IF NOT EXISTS idx_sale_items_sale_id ON sale_items(sale_id)",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS employee_id INTEGER REFERENCES employees(id)",
+        "ALTER TABLE vales ADD COLUMN IF NOT EXISTS sale_id INTEGER REFERENCES sales(id)",
         """CREATE TABLE IF NOT EXISTS coupons (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

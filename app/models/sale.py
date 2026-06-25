@@ -30,10 +30,12 @@ class Sale(db.Model):
     cashier_name      = db.Column(db.String(128), nullable=True)
     delivered_at      = db.Column(db.DateTime, nullable=True)
     payment_entries   = db.Column(db.Text, nullable=True)  # JSON para pagamento combinado
+    employee_id       = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
     created_at       = db.Column(db.DateTime, default=datetime.now)
 
     items    = db.relationship('SaleItem', backref='sale', lazy=True, cascade='all, delete-orphan')
     customer = db.relationship('Customer', backref='sales', lazy=True)
+    employee = db.relationship('Employee', backref='sales', lazy=True, foreign_keys=[employee_id])
 
 class SaleItem(db.Model):
     __tablename__ = 'sale_items'

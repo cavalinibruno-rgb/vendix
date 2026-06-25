@@ -27,4 +27,5 @@ class Vale(db.Model):
     amount      = db.Column(db.Float, nullable=False)
     date        = db.Column(db.Date, nullable=False, default=datetime.now().date)
     notes       = db.Column(db.Text)
+    sale_id     = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=True)
     created_at  = db.Column(db.DateTime, default=datetime.now)

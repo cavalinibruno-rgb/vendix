@@ -439,6 +439,16 @@
           <div class="pgto-card" data-pgto="conta" data-label="Conta" onclick="handlePgtoClick(this)">
             <i class="bi bi-person-lines-fill"></i>Conta
           </div>
+          <div class="pgto-card" data-pgto="funcionario" data-label="Funcionário" onclick="handlePgtoClick(this)">
+            <i class="bi bi-person-badge"></i>Funcionário
+          </div>
+        </div>
+        <!-- Sub-seleção funcionário (loja) -->
+        <div id="subFuncionario" class="d-none mt-2">
+          <div class="fw-semibold small mb-2 text-muted"><i class="bi bi-person-badge me-1"></i>Selecione o funcionário:</div>
+          <div id="listaFuncionarios" class="d-flex flex-column gap-1">
+            <div class="text-muted small text-center py-2">Carregando...</div>
+          </div>
         </div>
         <!-- Sub-seleção crédito/débito (loja) -->
         <div id="subCartaoLoja" class="d-none gap-2 mt-2">
@@ -1210,6 +1220,42 @@ function isCartao() {
   return ['cartao','cartao_credito','cartao_debito','entrega_cartao','entrega_cartao_credito','entrega_cartao_debito'].includes(pgto);
 }
 
+let selectedEmployeeId = null;
+
+function carregarFuncionarios() {
+  const lista = document.getElementById('listaFuncionarios');
+  if (!lista) return;
+  fetch('/vale/api/funcionarios')
+    .then(r => r.json())
+    .then(data => {
+      if (!data.length) {
+        lista.innerHTML = '<div class="text-muted small text-center py-2">Nenhum funcionário cadastrado.</div>';
+        return;
+      }
+      lista.innerHTML = data.map(e =>
+        `<button type="button" class="btn btn-sm btn-outline-secondary text-start func-btn" data-id="${e.id}" onclick="selecionarFuncionario(${e.id}, '${e.name.replace(/'/g,"\\'")}', this)">
+          <i class="bi bi-person me-1"></i>${e.name}
+        </button>`
+      ).join('');
+      // Restaura seleção anterior se houver
+      if (selectedEmployeeId) {
+        const btn = lista.querySelector(`[data-id="${selectedEmployeeId}"]`);
+        if (btn) btn.classList.replace('btn-outline-secondary', 'btn-success');
+      }
+    })
+    .catch(() => { lista.innerHTML = '<div class="text-danger small">Erro ao carregar funcionários.</div>'; });
+}
+
+function selecionarFuncionario(id, nome, btn) {
+  selectedEmployeeId = id;
+  document.querySelectorAll('.func-btn').forEach(b => {
+    b.classList.remove('btn-success');
+    b.classList.add('btn-outline-secondary');
+  });
+  btn.classList.remove('btn-outline-secondary');
+  btn.classList.add('btn-success');
+}
+
 function selecionarSubCartao(valor, label, btn, subId) {
   document.querySelectorAll(`#${subId} .sub-cartao-btn`).forEach(b => {
     b.classList.remove('btn-primary','btn-secondary');
@@ -1251,12 +1297,24 @@ function setPgto(card) {
     subEntrega.classList.toggle('d-none', pgto !== 'entrega_cartao');
     subEntrega.classList.toggle('d-flex', pgto === 'entrega_cartao');
   }
-  // Reseta sub-seleção
+  // Reseta sub-seleção cartão
   if (pgto === 'cartao' || pgto === 'entrega_cartao') {
     document.querySelectorAll('.sub-cartao-btn').forEach(b => {
       b.classList.remove('btn-primary','btn-secondary');
       b.classList.add('btn-outline-primary');
     });
+  }
+
+  // Mostra painel de funcionários
+  const subFunc = document.getElementById('subFuncionario');
+  if (subFunc) {
+    if (pgto === 'funcionario') {
+      subFunc.classList.remove('d-none');
+      carregarFuncionarios();
+    } else {
+      subFunc.classList.add('d-none');
+      selectedEmployeeId = null;
+    }
   }
 
   const isDinheiro = pgto === 'dinheiro' || pgto === 'entrega_dinheiro';
@@ -1492,6 +1550,7 @@ function finalizarVenda() {
   if (!pgto) { aviso('Selecione a forma de pagamento.'); return; }
   if (pgto === 'cartao') { aviso('Selecione Crédito ou Débito para o cartão.'); return; }
   if (pgto === 'entrega_cartao') { aviso('Selecione Crédito ou Débito para o cartão na entrega.'); return; }
+  if (pgto === 'funcionario' && !selectedEmployeeId) { aviso('Selecione o funcionário.'); return; }
   if (pgto === 'conta' && !clienteAtual) { aviso('Para lançar na Conta, selecione um cliente.'); return; }
   if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
     aviso('Informe o nome do app (iFood, Anotaí, etc.)'); return;
@@ -1515,6 +1574,7 @@ function finalizarVenda() {
                     ? (parseFloat(document.getElementById('valorRecebido').value.replace(',','.')) || 0) : null,
     discount:       getDesconto(carrinho.reduce((s,i)=>s+i.total,0)),
     discount_type:  'value',
+    employee_id:    pgto === 'funcionario' ? selectedEmployeeId : null,
     items: carrinho,
   };
 

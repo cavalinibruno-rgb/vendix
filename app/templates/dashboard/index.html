@@ -147,6 +147,13 @@
               {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_conta) }}</td>{% endif %}
               <td class="text-end text-muted small">{{ '%.0f'|format(total_conta / total_geral * 100) }}%</td>
             </tr>
+            {% if total_funcionario > 0 %}
+            <tr>
+              <td><i class="bi bi-person-badge me-2 text-secondary"></i>Funcionário</td>
+              {% if not modo_restrito %}<td class="text-end">R$ {{ '%.2f'|format(total_funcionario) }}</td>{% endif %}
+              <td class="text-end text-muted small">{{ '%.0f'|format(total_funcionario / total_geral * 100) }}%</td>
+            </tr>
+            {% endif %}
             {% if not modo_restrito %}
             <tr class="table-light fw-semibold">
               <td>Total</td>
@@ -236,6 +243,7 @@
                 {% elif v.payment_method in ('cartao_debito', 'entrega_cartao_debito') %}<span class="badge bg-primary">Débito</span>
                 {% elif v.payment_method in ('cartao', 'entrega_cartao') %}<span class="badge bg-primary">Cartão</span>
                 {% elif v.payment_method in ('pix', 'entrega_pix') %}<span class="badge bg-info text-dark">Pix</span>
+                {% elif v.payment_method == 'funcionario' %}<span class="badge bg-secondary">Funcionário</span>
                 {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
               </td>
               {% if not modo_restrito %}<td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>{% endif %}

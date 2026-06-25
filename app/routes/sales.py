@@ -54,6 +54,7 @@ def confirmar():
     source         = data.get('source', 'loja')
     app_name       = data.get('app_name', '') if source == 'app' else None
     amount_paid    = float(data.get('amount_paid', 0) or 0) or None
+    employee_id    = data.get('employee_id') or None
     items          = data.get('items', [])
     discount_type  = data.get('discount_type') or None   # 'value' | 'percent' | None
     discount_input = float(data.get('discount', 0) or 0)
@@ -98,6 +99,7 @@ def confirmar():
         change_amount    = round(amount_paid - total, 2) if amount_paid and amount_paid > total else None,
         cashier_name     = cashier,
         payment_entries  = payment_entries_json,
+        employee_id      = int(employee_id) if employee_id else None,
     )
     db.session.add(sale)
     db.session.flush()
@@ -161,6 +163,25 @@ def confirmar():
         from flask import current_app
         current_app.logger.error(f'[confirmar_venda] {e}')
         return jsonify({'error': str(e)}), 500
+
+    # Se pagamento funcionário, lança vale automaticamente
+    if payment_method == 'funcionario' and employee_id:
+        from app.models.vale import Vale
+        from datetime import date as _date
+        emp = __import__('app.models.vale', fromlist=['Employee']).Employee.query.filter_by(
+            id=int(employee_id), tenant_id=tid()).first()
+        if emp:
+            vale = Vale(
+                tenant_id   = tid(),
+                employee_id = emp.id,
+                amount      = total,
+                date        = _date.today(),
+                notes       = f'Venda #{sale.id} — PDV',
+                sale_id     = sale.id,
+            )
+            db.session.add(vale)
+            db.session.commit()
+
     return jsonify({'sale_id': sale.id})
 
 @sales_bp.route('/')

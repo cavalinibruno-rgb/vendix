@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models.vale import Employee, Vale
@@ -35,6 +35,12 @@ def index():
         employees=employees, totais=totais, total_geral=total_geral,
         mes=mes, ano=ano, meses=meses, motoboys=motoboys,
     )
+
+@vale_bp.route('/api/funcionarios')
+@login_required
+def api_funcionarios():
+    employees = Employee.query.filter_by(tenant_id=tid()).order_by(Employee.name).all()
+    return jsonify([{'id': e.id, 'name': e.name, 'role': e.role} for e in employees])
 
 @vale_bp.route('/funcionario/novo', methods=['POST'])
 @login_required

@@ -45,12 +45,13 @@ def index():
     vendas_hoje = [v for v in todas_hoje if entra_no_caixa(v)]
 
     total_dinheiro = sum(v.total for v in vendas_hoje if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
-    total_credito  = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao'))
-    total_debito   = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao_debito', 'entrega_cartao_debito'))
-    total_cartao   = total_credito + total_debito
-    total_pix      = sum(v.total for v in vendas_hoje if v.payment_method in ('pix', 'entrega_pix'))
-    total_conta    = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
-    total_geral    = sum(v.total for v in vendas_hoje)
+    total_credito     = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao'))
+    total_debito      = sum(v.total for v in vendas_hoje if v.payment_method in ('cartao_debito', 'entrega_cartao_debito'))
+    total_cartao      = total_credito + total_debito
+    total_pix         = sum(v.total for v in vendas_hoje if v.payment_method in ('pix', 'entrega_pix'))
+    total_conta       = sum(v.total for v in vendas_hoje if v.payment_method == 'conta')
+    total_funcionario = sum(v.total for v in vendas_hoje if v.payment_method == 'funcionario')
+    total_geral       = sum(v.total for v in vendas_hoje)
 
     # Ticket médio do dia
     ticket_dia = (total_geral / len(vendas_hoje)) if vendas_hoje else 0
@@ -102,6 +103,7 @@ def index():
         total_cartao=total_cartao,
         total_pix=total_pix,
         total_conta=total_conta,
+        total_funcionario=total_funcionario,
         total_geral=total_geral,
         caixa=caixa,
         ultimas_vendas=ultimas_vendas,
