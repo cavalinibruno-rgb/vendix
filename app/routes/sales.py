@@ -307,6 +307,14 @@ def escpos(sale_id):
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
     store_name = current_user.tenant.store_name or 'Vendix'
 
+    # Monta mapa de composição para combos
+    combo_map = {}
+    for item in sale.items:
+        if item.product_id:
+            ci_list = ComboItem.query.filter_by(combo_id=item.product_id).all()
+            if ci_list:
+                combo_map[item.product_id] = ci_list
+
     W = 42
     INIT   = b'\x1b@'
     CENTER = b'\x1ba\x01'
@@ -325,6 +333,32 @@ def escpos(sale_id):
         return LEFT + enc(l.ljust(W - len(r)) + r) + NL
     def sep(c='-'): return LEFT + enc(c * W) + NL
 
+    def cabecalho():
+        d  = INIT + BON
+        d += CENTER + enc(parts[0].upper().center(W)) + NL
+        if len(parts) > 1:
+            d += ctr(f'* {parts[1].upper()} *')
+        d += sep('=')
+        d += CENTER + BIG + enc(f'PEDIDO #{sale.id}'.center(W // 2)) + NORM + NL
+        d += ctr(f'{date_str}  |  {time_str}')
+        d += sep('=')
+        return d
+
+    def itens_com_combo():
+        d  = LEFT + enc('PRODUTO'.ljust(W-20) + 'QTD'.center(8) + 'TOTAL'.rjust(12)) + NL
+        d += sep()
+        for item in sale.items:
+            nm = item.product_name[:W-20]
+            d += LEFT + enc(nm.ljust(W-20) + str(int(item.quantity)).center(8) + f'R${item.total:.2f}'.rjust(12)) + NL
+            # Composição do combo
+            if item.product_id and item.product_id in combo_map:
+                for ci in combo_map[item.product_id]:
+                    comp_name = f'  - {ci.component.name}'[:W-6]
+                    comp_qty  = f'{int(ci.quantity * item.quantity)}x'.rjust(6)
+                    d += LEFT + enc(comp_name.ljust(W-6) + comp_qty) + NL
+        d += sep()
+        return d
+
     parts    = store_name.split(' ', 1)
     dt       = sale.created_at
     date_str = dt.strftime('%d/%m/%Y') if dt else ''
@@ -338,23 +372,12 @@ def escpos(sale_id):
         'combinado':'Combinado',
     }
 
-    data  = INIT + BON
-    data += CENTER + enc(parts[0].upper().center(W)) + NL
-    if len(parts) > 1:
-        data += ctr(f'* {parts[1].upper()} *')
-    data += sep('=')
-    data += CENTER + BIG + enc(f'PEDIDO #{sale.id}'.center(W // 2)) + NORM + NL
-    data += ctr(f'{date_str}  |  {time_str}')
-    data += sep('=')
+    # ── VIA 1: CAIXA (itens + pagamento) ─────────────────────────────────────
+    data  = cabecalho()
     if sale.customer:
         data += lft(f'Cliente: {sale.customer.name}')
         data += sep()
-    data += LEFT + enc('PRODUTO'.ljust(W-20) + 'QTD'.center(8) + 'TOTAL'.rjust(12)) + NL
-    data += sep()
-    for item in sale.items:
-        nm = item.product_name[:W-20]
-        data += LEFT + enc(nm.ljust(W-20) + str(int(item.quantity)).center(8) + f'R${item.total:.2f}'.rjust(12)) + NL
-    data += sep()
+    data += itens_com_combo()
     data += cols('Subtotal', f'R${sale.subtotal:.2f}')
     if sale.delivery_fee and sale.delivery_fee > 0:
         data += cols('Taxa Entrega', f'R${sale.delivery_fee:.2f}')
@@ -374,6 +397,19 @@ def escpos(sale_id):
     data += sep()
     data += ctr('Obrigado pela preferencia!')
     data += ctr('Volte sempre!')
+    data += NL * 4
+    data += CUT
+
+    # ── VIA 2: CLIENTE (somente itens) ───────────────────────────────────────
+    data += cabecalho()
+    if sale.customer:
+        data += ctr(sale.customer.name)
+        data += sep()
+    data += itens_com_combo()
+    if sale.notes:
+        data += lft(f'Obs: {sale.notes}')
+        data += sep()
+    data += ctr('Obrigado pela preferencia!')
     data += NL * 4
     data += CUT
 
