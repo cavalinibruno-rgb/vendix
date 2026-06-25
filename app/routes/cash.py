@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.cash import CashRegister
 from app.models.cash_withdrawal import CashWithdrawal
+from app.models.expense import Expense, CATEGORIAS
 from app.models.sale import Sale
 from app.models.vale import Employee
 from app.auth_utils import autenticar_operador
@@ -35,11 +36,17 @@ def index():
                                   .order_by(CashRegister.closed_at.desc()).limit(30).all()
     retiradas = []
     total_retiradas = 0.0
+    despesas = []
+    total_despesas = 0.0
     if caixa:
         retiradas = CashWithdrawal.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
         total_retiradas = sum(r.amount for r in retiradas)
+        despesas = Expense.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).order_by(Expense.created_at).all()
+        total_despesas = sum(d.amount for d in despesas)
     return render_template('cash/index.html', caixa=caixa, historico=historico,
-                           retiradas=retiradas, total_retiradas=total_retiradas)
+                           retiradas=retiradas, total_retiradas=total_retiradas,
+                           despesas=despesas, total_despesas=total_despesas,
+                           categorias=CATEGORIAS)
 
 @cash_bp.route('/abrir', methods=['POST'])
 @login_required
@@ -119,6 +126,53 @@ def retirada():
     db.session.add(w)
     db.session.commit()
     flash(f'Retirada de R$ {valor:.2f} registrada por {nome_resp}.', 'success')
+    return redirect(url_for('cash.index'))
+
+@cash_bp.route('/despesa', methods=['POST'])
+@login_required
+def despesa():
+    from datetime import date
+    caixa = caixa_aberto()
+    if not caixa:
+        flash('Nenhum caixa aberto.', 'warning')
+        return redirect(url_for('cash.index'))
+
+    def fval(name):
+        v = request.form.get(name, '0').replace(',', '.').strip() or '0'
+        try: return float(v)
+        except ValueError: return 0.0
+
+    valor          = fval('amount')
+    categoria      = request.form.get('categoria', '').strip()
+    descricao      = request.form.get('descricao', '').strip()
+    pagamento      = request.form.get('payment_method', 'dinheiro')
+    op_username    = request.form.get('op_username', '').strip()
+    op_password    = request.form.get('op_password', '').strip()
+
+    if valor <= 0:
+        flash('Informe um valor válido.', 'danger')
+        return redirect(url_for('cash.index'))
+    if not categoria:
+        flash('Selecione uma categoria.', 'danger')
+        return redirect(url_for('cash.index'))
+
+    nome_resp, ok = autenticar_operador(tid(), op_username, op_password)
+    if not ok:
+        flash('Usuário ou senha incorretos.', 'danger')
+        return redirect(url_for('cash.index'))
+
+    db.session.add(Expense(
+        tenant_id        = tid(),
+        cash_register_id = caixa.id,
+        date             = date.today(),
+        category         = categoria,
+        description      = descricao or None,
+        amount           = valor,
+        payment_method   = pagamento,
+        operator_name    = nome_resp,
+    ))
+    db.session.commit()
+    flash(f'Despesa de R$ {valor:.2f} registrada por {nome_resp}.', 'success')
     return redirect(url_for('cash.index'))
 
 @cash_bp.route('/<int:caixa_id>/fechar', methods=['GET', 'POST'])

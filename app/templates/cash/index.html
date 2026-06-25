@@ -18,6 +18,9 @@
     {% endif %}
   </div>
   <div class="ms-auto d-flex gap-2">
+    <button class="btn btn-outline-danger fw-semibold" data-bs-toggle="modal" data-bs-target="#modalDespesa">
+      <i class="bi bi-receipt me-1"></i> Despesa
+    </button>
     <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalRetirada">
       <i class="bi bi-cash-coin me-1"></i> Retirada
     </button>
@@ -130,6 +133,93 @@
   </div>
 </div>
 {% endif %}
+
+<!-- Despesas do caixa atual -->
+{% if despesas %}
+<div class="card mb-4">
+  <div class="card-header fw-semibold d-flex justify-content-between">
+    <span><i class="bi bi-receipt me-2 text-danger"></i>Despesas neste caixa</span>
+    <span class="text-danger fw-bold">- R$ {{ '%.2f'|format(total_despesas) }}</span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0">
+      <thead class="table-light">
+        <tr><th>Horário</th><th>Categoria</th><th>Descrição</th><th>Pagamento</th><th>Operador</th><th class="text-end">Valor</th></tr>
+      </thead>
+      <tbody>
+        {% for d in despesas %}
+        <tr>
+          <td class="text-muted small">{{ d.created_at.strftime('%H:%M') }}</td>
+          <td>{{ d.category }}</td>
+          <td class="text-muted small">{{ d.description or '—' }}</td>
+          <td><span class="badge bg-secondary">{{ 'PIX' if d.payment_method == 'pix' else 'Dinheiro' }}</span></td>
+          <td class="text-muted small">{{ d.operator_name or '—' }}</td>
+          <td class="text-end text-danger fw-semibold">- R$ {{ '%.2f'|format(d.amount) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Modal Despesa -->
+<div class="modal fade" id="modalDespesa" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-receipt me-2 text-danger"></i>Registrar Despesa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" action="{{ url_for('cash.despesa') }}">
+        <div class="modal-body">
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Valor (R$)</label>
+              <input type="text" name="amount" class="form-control" placeholder="0,00" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Forma de Pagamento</label>
+              <select name="payment_method" class="form-select">
+                <option value="dinheiro">Dinheiro</option>
+                <option value="pix">PIX</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Categoria</label>
+            <select name="categoria" class="form-select" required>
+              <option value="">— Selecione —</option>
+              {% for cat in categorias %}
+              <option value="{{ cat }}">{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Descrição <span class="text-muted fw-normal">(opcional)</span></label>
+            <input type="text" name="descricao" class="form-control" placeholder="Ex: Compra de lâmpada">
+          </div>
+          <hr>
+          <p class="text-muted small mb-2">Confirme com usuário e senha do operador:</p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Usuário</label>
+            <input type="text" name="op_username" class="form-control" autocomplete="off" required>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-semibold">Senha</label>
+            <input type="password" name="op_password" class="form-control" autocomplete="off" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger fw-semibold">
+            <i class="bi bi-receipt me-1"></i>Registrar Despesa
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Retirada -->
 <div class="modal fade" id="modalRetirada" tabindex="-1">
