@@ -372,6 +372,8 @@ def escpos(sale_id):
             lines.append(f'Bairro: {bairro}')
         if ref:
             lines.append(f'Ref: {ref}')
+        if c.phone:
+            lines.append(f'Tel: {c.phone}')
         return b''.join(lft(l) for l in lines)
 
     parts    = store_name.split(' ', 1)
