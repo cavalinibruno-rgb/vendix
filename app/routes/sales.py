@@ -304,8 +304,15 @@ def comprovante(sale_id):
 @login_required
 def escpos(sale_id):
     import base64
+    from app.models.pedido_online import PedidoOnline
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
     store_name = current_user.tenant.store_name or 'Vendix'
+
+    # Dados do cliente — pode vir do cadastro ou do pedido online
+    pedido_online = PedidoOnline.query.filter_by(sale_id=sale_id, tenant_id=tid()).first()
+    cli_nome  = (sale.customer.name  if sale.customer else None) or (pedido_online.cliente_nome if pedido_online else None)
+    cli_tel   = (sale.customer.phone if sale.customer else None) or (pedido_online.cliente_tel  if pedido_online else None)
+    cli_end   = pedido_online.endereco if pedido_online else None
 
     # Monta mapa de composição para combos
     combo_map = {}
@@ -360,22 +367,34 @@ def escpos(sale_id):
         d += sep()
         return d
 
-    def endereco_entrega(c):
-        """Monta bloco de endereço completo do cliente."""
-        lines = []
-        rua = c.address or ''
-        num = getattr(c, 'address_number', None) or ''
-        ref = getattr(c, 'address_ref', None) or ''
-        bairro = c.neighborhood.name if c.neighborhood else ''
-        if rua or num:
-            lines.append(f'End: {rua}{"  n° " + num if num else ""}')
-        if bairro:
-            lines.append(f'Bairro: {bairro}')
-        if ref:
-            lines.append(f'Ref: {ref}')
-        if c.phone:
-            lines.append(f'Tel: {c.phone}')
-        return b''.join(lft(l) for l in lines)
+    def bloco_cliente():
+        """Monta bloco nome + endereço + telefone para as duas vias."""
+        d = b''
+        if not cli_nome and not cli_end:
+            return d
+        if cli_nome:
+            d += lft(f'Cliente: {cli_nome}')
+        if sale.delivery_mode == 'entrega':
+            if cli_end:
+                # Pedido online: endereço já vem como string completa
+                for linha in cli_end.split(', '):
+                    if linha.strip():
+                        d += lft(f'End: {linha.strip()}')
+            elif sale.customer:
+                c = sale.customer
+                rua    = c.address or ''
+                num    = getattr(c, 'address_number', None) or ''
+                ref    = getattr(c, 'address_ref', None) or ''
+                bairro = c.neighborhood.name if c.neighborhood else ''
+                if rua or num:
+                    d += lft(f'End: {rua}{"  n° " + num if num else ""}')
+                if bairro:
+                    d += lft(f'Bairro: {bairro}')
+                if ref:
+                    d += lft(f'Ref: {ref}')
+            if cli_tel:
+                d += lft(f'Tel: {cli_tel}')
+        return d
 
     parts    = store_name.split(' ', 1)
     dt       = sale.created_at
@@ -392,10 +411,9 @@ def escpos(sale_id):
 
     # ── VIA 1: CAIXA (itens + pagamento) ─────────────────────────────────────
     data  = cabecalho()
-    if sale.customer:
-        data += lft(f'Cliente: {sale.customer.name}')
-        if sale.delivery_mode == 'entrega':
-            data += endereco_entrega(sale.customer)
+    bloco = bloco_cliente()
+    if bloco:
+        data += bloco
         data += sep()
     data += itens_com_combo()
     data += cols('Subtotal', f'R${sale.subtotal:.2f}')
@@ -422,10 +440,8 @@ def escpos(sale_id):
 
     # ── VIA 2: CLIENTE (somente itens) ───────────────────────────────────────
     data += cabecalho()
-    if sale.customer:
-        data += ctr(sale.customer.name)
-        if sale.delivery_mode == 'entrega':
-            data += endereco_entrega(sale.customer)
+    if bloco:
+        data += bloco
         data += sep()
     data += itens_com_combo()
     if sale.notes:
