@@ -317,6 +317,7 @@ def escpos(sale_id):
 
     W = 42
     INIT   = b'\x1b@'
+    CP850  = b'\x1bt\x02'   # seleciona code page PC850 (suporte a ã õ ç etc.)
     CENTER = b'\x1ba\x01'
     LEFT   = b'\x1ba\x00'
     BON    = b'\x1bE\x01'
@@ -334,7 +335,7 @@ def escpos(sale_id):
     def sep(c='-'): return LEFT + enc(c * W) + NL
 
     def cabecalho():
-        d  = INIT + BON
+        d  = INIT + CP850 + BON
         d += CENTER + enc(parts[0].upper().center(W)) + NL
         if len(parts) > 1:
             d += ctr(f'* {parts[1].upper()} *')
