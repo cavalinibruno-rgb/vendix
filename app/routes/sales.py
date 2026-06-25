@@ -300,6 +300,86 @@ def comprovante(sale_id):
         payment_entries=payment_entries,
     )
 
+@sales_bp.route('/<int:sale_id>/escpos')
+@login_required
+def escpos(sale_id):
+    import base64
+    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    store_name = current_user.tenant.store_name or 'Vendix'
+
+    W = 42
+    INIT   = b'\x1b@'
+    CENTER = b'\x1ba\x01'
+    LEFT   = b'\x1ba\x00'
+    BON    = b'\x1bE\x01'
+    BIG    = b'\x1d!\x11'
+    NORM   = b'\x1d!\x00'
+    CUT    = b'\x1dV\x01'
+    NL     = b'\n'
+
+    def enc(s):  return s.encode('cp850', errors='replace')
+    def ctr(s):  return CENTER + enc(s[:W].center(W)) + NL
+    def lft(s):  return LEFT   + enc(s[:W]) + NL
+    def cols(l, r):
+        r = str(r); l = str(l)[:W - len(r) - 1]
+        return LEFT + enc(l.ljust(W - len(r)) + r) + NL
+    def sep(c='-'): return LEFT + enc(c * W) + NL
+
+    parts    = store_name.split(' ', 1)
+    dt       = sale.created_at
+    date_str = dt.strftime('%d/%m/%Y') if dt else ''
+    time_str = dt.strftime('%H:%M')    if dt else ''
+
+    pgto_map = {
+        'dinheiro':'Dinheiro','cartao_credito':'Credito','cartao_debito':'Debito',
+        'pix':'Pix','conta':'Conta','funcionario':'Funcionario',
+        'entrega_dinheiro':'Dinheiro','entrega_pix':'Pix',
+        'entrega_cartao_credito':'Credito','entrega_cartao_debito':'Debito',
+        'combinado':'Combinado',
+    }
+
+    data  = INIT + BON
+    data += CENTER + enc(parts[0].upper().center(W)) + NL
+    if len(parts) > 1:
+        data += ctr(f'* {parts[1].upper()} *')
+    data += sep('=')
+    data += CENTER + BIG + enc(f'PEDIDO #{sale.id}'.center(W // 2)) + NORM + NL
+    data += ctr(f'{date_str}  |  {time_str}')
+    data += sep('=')
+    if sale.customer:
+        data += lft(f'Cliente: {sale.customer.name}')
+        data += sep()
+    data += LEFT + enc('PRODUTO'.ljust(W-20) + 'QTD'.center(8) + 'TOTAL'.rjust(12)) + NL
+    data += sep()
+    for item in sale.items:
+        nm = item.product_name[:W-20]
+        data += LEFT + enc(nm.ljust(W-20) + str(int(item.quantity)).center(8) + f'R${item.total:.2f}'.rjust(12)) + NL
+    data += sep()
+    data += cols('Subtotal', f'R${sale.subtotal:.2f}')
+    if sale.delivery_fee and sale.delivery_fee > 0:
+        data += cols('Taxa Entrega', f'R${sale.delivery_fee:.2f}')
+    if sale.discount and sale.discount > 0:
+        data += cols('Desconto', f'-R${sale.discount:.2f}')
+    data += sep('=')
+    data += LEFT + enc('TOTAL'.ljust(W-12) + f'R${sale.total:.2f}'.rjust(12)) + NL
+    data += sep('=')
+    data += cols('Pagamento', pgto_map.get(sale.payment_method, sale.payment_method))
+    if sale.payment_method in ('dinheiro','entrega_dinheiro') and sale.amount_paid:
+        data += cols('  Recebido', f'R${sale.amount_paid:.2f}')
+    if sale.change_amount and sale.change_amount > 0:
+        data += cols('  Troco', f'R${sale.change_amount:.2f}')
+    if sale.notes:
+        data += sep()
+        data += lft(f'Obs: {sale.notes}')
+    data += sep()
+    data += ctr('Obrigado pela preferencia!')
+    data += ctr('Volte sempre!')
+    data += NL * 4
+    data += CUT
+
+    return jsonify({'ok': True, 'data': base64.b64encode(data).decode()})
+
+
 @sales_bp.route('/<int:sale_id>/cancelar', methods=['POST'])
 @login_required
 def cancelar(sale_id):
