@@ -716,6 +716,18 @@
     </div>
   </div>
 </div>
+
+<!-- Modal seleção de impressora -->
+<div class="modal fade" id="modalImpressora" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-printer me-2"></i>Selecione a Impressora Térmica</h6>
+      </div>
+      <div class="modal-body p-2" id="listaImpressoras"></div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -1637,23 +1649,33 @@ function limparVenda() {
 }
 
 // ── Seleção de impressora térmica (Electron) ──────────
-async function getPrinterSelecionada() {
-  const salva = localStorage.getItem('vendix_printer');
-  if (salva) return salva;
-  if (!window.electronAPI || !window.electronAPI.getPrinters) return null;
-  const impressoras = await window.electronAPI.getPrinters();
-  if (!impressoras || !impressoras.length) return null;
-  const nome = prompt(
-    'Selecione a impressora térmica:\n\n' +
-    impressoras.map((p, i) => `${i + 1}. ${p}`).join('\n') +
-    '\n\nDigite o número:'
-  );
-  const idx = parseInt(nome) - 1;
-  if (idx >= 0 && idx < impressoras.length) {
-    localStorage.setItem('vendix_printer', impressoras[idx]);
-    return impressoras[idx];
-  }
-  return null;
+function getPrinterSelecionada() {
+  return new Promise(async (resolve) => {
+    const salva = localStorage.getItem('vendix_printer');
+    if (salva) return resolve(salva);
+    if (!window.electronAPI || !window.electronAPI.getPrinters) return resolve(null);
+
+    let impressoras = [];
+    try { impressoras = await window.electronAPI.getPrinters(); } catch(e) {}
+    if (!impressoras || !impressoras.length) return resolve(null);
+
+    const lista = document.getElementById('listaImpressoras');
+    lista.innerHTML = '';
+    impressoras.forEach(nome => {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-outline-secondary w-100 text-start mb-1';
+      btn.innerHTML = `<i class="bi bi-printer me-2"></i>${nome}`;
+      btn.onclick = () => {
+        localStorage.setItem('vendix_printer', nome);
+        bootstrap.Modal.getInstance(document.getElementById('modalImpressora')).hide();
+        resolve(nome);
+      };
+      lista.appendChild(btn);
+    });
+
+    const modal = new bootstrap.Modal(document.getElementById('modalImpressora'));
+    modal.show();
+  });
 }
 
 // ── Util ──────────────────────────────────────────────
