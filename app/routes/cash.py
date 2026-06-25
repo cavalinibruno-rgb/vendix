@@ -203,10 +203,13 @@ def fechar(caixa_id):
     total_pix         = sum(v.total for v in vendas if v.payment_method in ('pix', 'entrega_pix'))
     total_conta       = sum(v.total for v in vendas if v.payment_method == 'conta')
     total_funcionario = sum(v.total for v in vendas if v.payment_method == 'funcionario')
-    total_geral    = sum(v.total for v in vendas)
-    retiradas      = CashWithdrawal.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
-    total_retiradas = sum(r.amount for r in retiradas)
-    esperado_caixa = caixa.opening_amount + total_dinheiro - total_retiradas
+    total_geral       = sum(v.total for v in vendas)
+    retiradas         = CashWithdrawal.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
+    total_retiradas   = sum(r.amount for r in retiradas)
+    despesas          = Expense.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
+    despesas_dinheiro = sum(d.amount for d in despesas if d.payment_method == 'dinheiro')
+    # Esperado na gaveta = abertura + vendas dinheiro - retiradas - despesas em dinheiro
+    esperado_caixa    = caixa.opening_amount + total_dinheiro - total_retiradas - despesas_dinheiro
 
     # Bloqueia fechamento se há entregas em rota (despachadas mas não concluídas)
     em_rota = Sale.query.filter(
@@ -226,13 +229,12 @@ def fechar(caixa_id):
             try: return float(v)
             except ValueError: return 0.0
         op = {
-            'loja_dinheiro':    fval('loja_dinheiro'),
+            'dinheiro':         fval('dinheiro'),
             'loja_credito':     fval('loja_credito'),
             'loja_debito':      fval('loja_debito'),
             'loja_pix':         fval('loja_pix'),
             'loja_conta':       fval('loja_conta'),
             'loja_funcionario': fval('loja_funcionario'),
-            'app_dinheiro':     fval('app_dinheiro'),
             'app_credito':      fval('app_credito'),
             'app_debito':       fval('app_debito'),
             'app_pix':          fval('app_pix'),
@@ -257,6 +259,7 @@ def fechar(caixa_id):
         total_funcionario=total_funcionario,
         total_geral=total_geral, esperado_caixa=esperado_caixa,
         retiradas=retiradas, total_retiradas=total_retiradas,
+        despesas=despesas, despesas_dinheiro=despesas_dinheiro,
         em_rota=em_rota,
     )
 
@@ -278,13 +281,12 @@ def resumo(caixa_id):
     def tot(lst, methods): return sum(v.total for v in lst if v.payment_method in methods)
 
     sis = {
-        'loja_dinheiro':    tot(vendas_loja, ('dinheiro', 'entrega_dinheiro')),
+        'dinheiro':         tot(todas_vendas, ('dinheiro', 'entrega_dinheiro')),
         'loja_credito':     tot(vendas_loja, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
         'loja_debito':      tot(vendas_loja, ('cartao_debito',  'entrega_cartao_debito')),
         'loja_pix':         tot(vendas_loja, ('pix',      'entrega_pix')),
         'loja_conta':       tot(vendas_loja, ('conta',)),
         'loja_funcionario': tot(vendas_loja, ('funcionario',)),
-        'app_dinheiro':     tot(vendas_app,  ('dinheiro', 'entrega_dinheiro')),
         'app_credito':      tot(vendas_app,  ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
         'app_debito':       tot(vendas_app,  ('cartao_debito',  'entrega_cartao_debito')),
         'app_pix':          tot(vendas_app,  ('pix',      'entrega_pix')),
@@ -296,17 +298,21 @@ def resumo(caixa_id):
     total_retiradas = sum(r.amount for r in retiradas)
 
     # Desconta retiradas do dinheiro esperado pelo sistema (saem do caixa físico)
-    sis['loja_dinheiro'] = max(0, sis['loja_dinheiro'] - total_retiradas)
+    # Desconta retiradas e despesas em dinheiro do esperado físico
+    retiradas_r       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
+    despesas_r        = Expense.query.filter_by(cash_register_id=caixa.id).all()
+    total_retiradas_r = sum(r.amount for r in retiradas_r)
+    desp_dinheiro_r   = sum(d.amount for d in despesas_r if d.payment_method == 'dinheiro')
+    sis['dinheiro']   = max(0, sis['dinheiro'] - total_retiradas_r - desp_dinheiro_r + caixa.opening_amount)
 
     conferencia = []
     for key, label, icon, color in [
-        ('loja_dinheiro',    'Loja — Dinheiro',        'bi-cash',              'text-success'),
+        ('dinheiro',         'Dinheiro (gaveta)',       'bi-cash',              'text-success'),
         ('loja_credito',     'Loja — Cartão Crédito',  'bi-credit-card',       'text-primary'),
         ('loja_debito',      'Loja — Cartão Débito',   'bi-credit-card-2-back','text-primary'),
         ('loja_pix',         'Loja — Pix',             'bi-qr-code',           'text-info'),
         ('loja_conta',       'Loja — Conta',           'bi-person-lines-fill', 'text-warning'),
         ('loja_funcionario', 'Loja — Funcionário',     'bi-person-badge',      'text-secondary'),
-        ('app_dinheiro',     'App — Dinheiro',         'bi-cash',              'text-success'),
         ('app_credito',      'App — Cartão Crédito',   'bi-credit-card',       'text-primary'),
         ('app_debito',       'App — Cartão Débito',    'bi-credit-card-2-back','text-primary'),
         ('app_pix',          'App — Pix',              'bi-qr-code',           'text-info'),

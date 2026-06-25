@@ -25,18 +25,64 @@
 <form method="post">
   <div class="row g-4">
 
-    <!-- Loja -->
-    <div class="col-md-6">
-      <div class="card h-100">
+    <!-- Coluna esquerda: Dinheiro + Loja -->
+    <div class="col-md-6 d-flex flex-column gap-3">
+
+      <!-- Dinheiro (gaveta única) -->
+      <div class="card">
+        <div class="card-header fw-semibold"><i class="bi bi-cash me-2 text-success"></i>Dinheiro na Gaveta</div>
+        <div class="card-body">
+          <!-- Cálculo esperado -->
+          <div class="small text-muted mb-3 d-flex flex-column gap-1">
+            <div class="d-flex justify-content-between">
+              <span><i class="bi bi-plus-circle me-1"></i>Abertura</span>
+              <span>R$ {{ '%.2f'|format(caixa.opening_amount) }}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span><i class="bi bi-plus-circle me-1"></i>Vendas em dinheiro</span>
+              <span>R$ {{ '%.2f'|format(total_dinheiro) }}</span>
+            </div>
+            {% if total_retiradas > 0 %}
+            <div class="d-flex justify-content-between text-danger">
+              <span><i class="bi bi-dash-circle me-1"></i>Retiradas</span>
+              <span>- R$ {{ '%.2f'|format(total_retiradas) }}</span>
+            </div>
+            {% endif %}
+            {% if despesas_dinheiro > 0 %}
+            <div class="d-flex justify-content-between text-danger">
+              <span><i class="bi bi-dash-circle me-1"></i>Despesas (dinheiro)</span>
+              <span>- R$ {{ '%.2f'|format(despesas_dinheiro) }}</span>
+            </div>
+            {% endif %}
+            <hr class="my-1">
+            <div class="d-flex justify-content-between fw-semibold">
+              <span>Esperado na gaveta</span>
+              <span class="text-success">R$ {{ '%.2f'|format(esperado_caixa) }}</span>
+            </div>
+          </div>
+          <label class="form-label fw-semibold">Valor contado na gaveta</label>
+          <div class="input-group">
+            <span class="input-group-text">R$</span>
+            <input type="text" name="dinheiro" id="dinheiro" class="form-control campo-valor form-control-lg"
+                   value="0,00" inputmode="decimal" autocomplete="off"
+                   onfocus="if(this.value==='0,00')this.value=''"
+                   onblur="if(this.value==='')this.value='0,00'"
+                   oninput="calcTotal()">
+          </div>
+          <div id="difDinheiro" class="mt-2 small fw-semibold"></div>
+        </div>
+      </div>
+
+      <!-- Loja (cartão, pix, conta, funcionário) -->
+      <div class="card flex-fill">
         <div class="card-header fw-semibold"><i class="bi bi-shop me-2 text-warning"></i>Loja</div>
         <div class="card-body">
           {% set campos_loja = [
-            ('loja_dinheiro',     'bi-cash',              'text-success', 'Dinheiro'),
-            ('loja_credito',      'bi-credit-card',        'text-primary', 'Cartão Crédito'),
-            ('loja_debito',       'bi-credit-card-2-back', 'text-primary', 'Cartão Débito'),
-            ('loja_pix',          'bi-qr-code',            'text-info',    'Pix'),
-            ('loja_conta',        'bi-person-lines-fill',  'text-warning', 'Conta (fiado)'),
-            ('loja_funcionario',  'bi-person-badge',        'text-secondary','Funcionário (vale)'),
+            ('loja_credito',      'bi-credit-card',        'text-primary',   'Cartão Crédito'),
+            ('loja_debito',       'bi-credit-card-2-back', 'text-primary',   'Cartão Débito'),
+            ('loja_pix',          'bi-qr-code',            'text-info',      'Pix'),
+            ('loja_conta',        'bi-person-lines-fill',  'text-warning',   'Conta (fiado)'),
+            ('loja_funcionario',  'bi-person-badge',       'text-secondary', 'Funcionário (vale)'),
           ] %}
           {% for name, icon, color, label in campos_loja %}
           <div class="mb-3">
@@ -55,13 +101,14 @@
       </div>
     </div>
 
-    <!-- App -->
-    <div class="col-md-6">
+    <!-- Coluna direita: App + resumo -->
+    <div class="col-md-6 d-flex flex-column gap-3">
+
+      <!-- App -->
       <div class="card">
         <div class="card-header fw-semibold"><i class="bi bi-phone me-2 text-secondary"></i>App</div>
         <div class="card-body">
           {% set campos_app = [
-            ('app_dinheiro', 'bi-cash',              'text-success', 'Dinheiro'),
             ('app_credito',  'bi-credit-card',        'text-primary', 'Cartão Crédito'),
             ('app_debito',   'bi-credit-card-2-back', 'text-primary', 'Cartão Débito'),
             ('app_pix',      'bi-qr-code',            'text-info',    'Pix'),
@@ -82,19 +129,9 @@
         </div>
       </div>
 
-      <!-- Total informado -->
-      <div class="card mt-3">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center fs-5 fw-bold">
-            <span>Total informado</span>
-            <span id="totalInformado" class="text-warning">R$ 0,00</span>
-          </div>
-        </div>
-      </div>
-
       <!-- Retiradas -->
       {% if retiradas %}
-      <div class="card mt-3 border-warning">
+      <div class="card border-warning">
         <div class="card-header fw-semibold d-flex justify-content-between">
           <span><i class="bi bi-cash-coin me-2 text-warning"></i>Retiradas</span>
           <span class="text-danger fw-bold">- R$ {{ '%.2f'|format(total_retiradas) }}</span>
@@ -116,8 +153,42 @@
       </div>
       {% endif %}
 
+      <!-- Despesas -->
+      {% if despesas %}
+      <div class="card border-danger">
+        <div class="card-header fw-semibold d-flex justify-content-between">
+          <span><i class="bi bi-receipt me-2 text-danger"></i>Despesas</span>
+          <span class="text-danger fw-bold">- R$ {{ '%.2f'|format(despesas|sum(attribute='amount')) }}</span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <tbody>
+              {% for d in despesas %}
+              <tr>
+                <td class="text-muted small">{{ d.created_at.strftime('%H:%M') }}</td>
+                <td>{{ d.category }}</td>
+                <td class="text-muted small">{{ 'Dinheiro' if d.payment_method == 'dinheiro' else 'Pix' }}</td>
+                <td class="text-end text-danger fw-semibold">- R$ {{ '%.2f'|format(d.amount) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Total informado -->
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center fs-5 fw-bold">
+            <span>Total informado</span>
+            <span id="totalInformado" class="text-warning">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Observações -->
-      <div class="card mt-3">
+      <div class="card">
         <div class="card-body">
           <label class="form-label">Observações (opcional)</label>
           <textarea name="notes" class="form-control" rows="2"
@@ -125,7 +196,7 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-danger w-100 fw-semibold py-2 mt-3">
+      <button type="submit" class="btn btn-danger w-100 fw-semibold py-2">
         <i class="bi bi-lock-fill me-2"></i>Confirmar Fechamento
       </button>
     </div>
@@ -133,16 +204,29 @@
   </div>
 </form>
 
-
 <script>
 function parseBR(v) { return parseFloat((v||'0').replace(',','.')) || 0; }
 function fmtBR(v)   { return 'R$ ' + v.toFixed(2).replace('.',','); }
+
+const ESPERADO = {{ esperado_caixa }};
 
 function calcTotal() {
   const campos = document.querySelectorAll('.campo-valor');
   let total = 0;
   campos.forEach(c => total += parseBR(c.value));
   document.getElementById('totalInformado').textContent = fmtBR(total);
+
+  const dinheiro = parseBR(document.getElementById('dinheiro').value);
+  const dif = dinheiro - ESPERADO;
+  const el  = document.getElementById('difDinheiro');
+  if (dinheiro === 0) { el.textContent = ''; return; }
+  if (Math.abs(dif) < 0.01) {
+    el.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Caixa fechado exato</span>';
+  } else if (dif > 0) {
+    el.innerHTML = `<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Sobra de ${fmtBR(dif)}</span>`;
+  } else {
+    el.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Falta de ${fmtBR(Math.abs(dif))}</span>`;
+  }
 }
 </script>
 {% endblock %}
