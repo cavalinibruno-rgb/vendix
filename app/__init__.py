@@ -190,6 +190,7 @@ def _run_migrations(db):
         "ALTER TABLE vales ADD COLUMN IF NOT EXISTS sale_id INTEGER REFERENCES sales(id)",
         "ALTER TABLE customers ADD COLUMN IF NOT EXISTS address_number VARCHAR(16)",
         "ALTER TABLE customers ADD COLUMN IF NOT EXISTS address_ref VARCHAR(256)",
+        "ALTER TABLE sales ALTER COLUMN payment_method TYPE VARCHAR(32)",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS sale_id INTEGER REFERENCES sales(id)",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMP",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP",

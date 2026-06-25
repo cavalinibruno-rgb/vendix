@@ -11,7 +11,7 @@ class Sale(db.Model):
     delivery_fee    = db.Column(db.Float, default=0)
     subtotal        = db.Column(db.Float, default=0)
     total           = db.Column(db.Float, default=0)
-    payment_method  = db.Column(db.String(16), nullable=False)  # dinheiro | cartao | pix | conta
+    payment_method  = db.Column(db.String(32), nullable=False)  # dinheiro | cartao | pix | conta
     notes           = db.Column(db.Text)
     status          = db.Column(db.String(16), default='confirmed')  # confirmed | cancelled
     source          = db.Column(db.String(16), default='loja')       # loja | app
