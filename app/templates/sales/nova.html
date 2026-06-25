@@ -441,7 +441,7 @@
           </div>
         </div>
         <!-- Sub-seleção crédito/débito (loja) -->
-        <div id="subCartaoLoja" style="display:none;" class="d-flex gap-2 mt-2">
+        <div id="subCartaoLoja" class="d-none gap-2 mt-2">
           <button type="button" class="btn btn-sm btn-outline-primary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('cartao_credito','Crédito',this,'subCartaoLoja')">
             <i class="bi bi-credit-card me-1"></i>Crédito
           </button>
@@ -464,7 +464,7 @@
           </div>
         </div>
         <!-- Sub-seleção crédito/débito (entrega) -->
-        <div id="subCartaoEntrega" style="display:none;" class="d-flex gap-2 mt-2">
+        <div id="subCartaoEntrega" class="d-none gap-2 mt-2">
           <button type="button" class="btn btn-sm btn-outline-primary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('entrega_cartao_credito','Crédito (entrega)',this,'subCartaoEntrega')">
             <i class="bi bi-credit-card me-1"></i>Crédito
           </button>
@@ -1243,8 +1243,14 @@ function setPgto(card) {
   // Mostra sub-seleção crédito/débito se clicou em Cartão
   const subLoja    = document.getElementById('subCartaoLoja');
   const subEntrega = document.getElementById('subCartaoEntrega');
-  if (subLoja)    subLoja.style.display    = (pgto === 'cartao') ? '' : 'none';
-  if (subEntrega) subEntrega.style.display = (pgto === 'entrega_cartao') ? '' : 'none';
+  if (subLoja) {
+    subLoja.classList.toggle('d-none', pgto !== 'cartao');
+    subLoja.classList.toggle('d-flex', pgto === 'cartao');
+  }
+  if (subEntrega) {
+    subEntrega.classList.toggle('d-none', pgto !== 'entrega_cartao');
+    subEntrega.classList.toggle('d-flex', pgto === 'entrega_cartao');
+  }
   // Reseta sub-seleção
   if (pgto === 'cartao' || pgto === 'entrega_cartao') {
     document.querySelectorAll('.sub-cartao-btn').forEach(b => {
