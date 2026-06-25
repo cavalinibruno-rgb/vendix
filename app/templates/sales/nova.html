@@ -1584,15 +1584,14 @@ function finalizarVenda() {
     body: JSON.stringify(payload),
   })
   .then(r => r.json())
-  .then(d => {
+  .then(async d => {
     if (d.sale_id) {
       const url = `${window.location.origin}/vendas/${d.sale_id}/comprovante`;
       if (window.electronAPI && window.electronAPI.printSilent) {
-        // Electron: imprime silenciosamente na impressora padrão
-        window.electronAPI.printSilent(url);
+        const printer = await getPrinterSelecionada();
+        window.electronAPI.printSilent(url, printer);
         limparVenda();
       } else {
-        // Navegador: abre comprovante com autoprint
         window.location.href = url + '?autoprint=1';
       }
     }
@@ -1607,21 +1606,62 @@ function limparVenda() {
   pgto = '';
   clienteAtual = null;
   selectedEmployeeId = null;
-  document.getElementById('searchInput').value = '';
-  document.getElementById('obsVenda').value = '';
-  document.getElementById('valorRecebido').value = '';
+  modoCombinado = false;
+
+  const el = (id) => document.getElementById(id);
+  if (el('produtoSearch'))     el('produtoSearch').value = '';
+  if (el('obsVenda'))          el('obsVenda').value = '';
+  if (el('valorRecebido'))     el('valorRecebido').value = '';
+  if (el('clienteSearch'))     el('clienteSearch').value = '';
+  if (el('clienteSelecionado')) el('clienteSelecionado').style.display = 'none';
+  if (el('clienteResultados')) el('clienteResultados').style.display = 'none';
+
   document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
-  document.getElementById('subCartaoLoja').classList.add('d-none');
-  document.getElementById('subCartaoLoja').classList.remove('d-flex');
-  document.getElementById('subCartaoEntrega').classList.add('d-none');
-  document.getElementById('subCartaoEntrega').classList.remove('d-flex');
-  document.getElementById('subFuncionario').classList.add('d-none');
-  const nomeCliente = document.getElementById('nomeCliente');
-  if (nomeCliente) nomeCliente.textContent = 'Nenhum';
+
+  ['subCartaoLoja','subCartaoEntrega','subFuncionario'].forEach(id => {
+    const e = el(id);
+    if (e) { e.classList.add('d-none'); e.classList.remove('d-flex'); }
+  });
+
   renderCarrinho();
   calcTotais();
-  const aviso = document.getElementById('avisoVenda');
-  if (aviso) { aviso.textContent = '✓ Venda finalizada! Imprimindo...'; aviso.className = 'alert alert-success mt-2'; setTimeout(() => { aviso.textContent = ''; aviso.className = ''; }, 3000); }
+
+  // Volta para step 2 (produtos)
+  irParaStep(2);
+
+  // Mensagem de confirmação no toast
+  const txt = el('avisoTexto');
+  if (txt) {
+    txt.textContent = '✓ Venda finalizada! Imprimindo...';
+    el('avisoTexto').parentElement.parentElement.classList.remove('text-bg-danger');
+    el('avisoTexto').parentElement.parentElement.classList.add('text-bg-success');
+    const toast = bootstrap.Toast.getOrCreateInstance(el('avisoToast'));
+    toast.show();
+    setTimeout(() => {
+      const t = el('avisoToast');
+      if (t) { t.classList.remove('text-bg-success'); t.classList.add('text-bg-danger'); }
+    }, 3600);
+  }
+}
+
+// ── Seleção de impressora térmica (Electron) ──────────
+async function getPrinterSelecionada() {
+  const salva = localStorage.getItem('vendix_printer');
+  if (salva) return salva;
+  if (!window.electronAPI || !window.electronAPI.getPrinters) return null;
+  const impressoras = await window.electronAPI.getPrinters();
+  if (!impressoras || !impressoras.length) return null;
+  const nome = prompt(
+    'Selecione a impressora térmica:\n\n' +
+    impressoras.map((p, i) => `${i + 1}. ${p}`).join('\n') +
+    '\n\nDigite o número:'
+  );
+  const idx = parseInt(nome) - 1;
+  if (idx >= 0 && idx < impressoras.length) {
+    localStorage.setItem('vendix_printer', impressoras[idx]);
+    return impressoras[idx];
+  }
+  return null;
 }
 
 // ── Util ──────────────────────────────────────────────
