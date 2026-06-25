@@ -1588,8 +1588,12 @@ function finalizarVenda() {
     if (d.sale_id) {
       const url = `${window.location.origin}/vendas/${d.sale_id}/comprovante`;
       if (window.electronAPI && window.electronAPI.printSilent) {
-        const printer = await getPrinterSelecionada();
-        window.electronAPI.printSilent(url, printer);
+        try {
+          const printer = await getPrinterSelecionada();
+          window.electronAPI.printSilent(url, printer);
+        } catch(e) {
+          console.error('[print]', e);
+        }
         limparVenda();
       } else {
         window.location.href = url + '?autoprint=1';
@@ -1597,50 +1601,38 @@ function finalizarVenda() {
     }
     else aviso('Erro: ' + (d.error || 'desconhecido'));
   })
-  .catch(() => aviso('Erro ao finalizar venda.'));
+  .catch(() => aviso('Erro de comunicação ao finalizar venda.'));
 }
 
 // ── Reset PDV após venda (Electron) ───────────────────
 function limparVenda() {
-  carrinho = [];
-  pgto = '';
-  clienteAtual = null;
-  selectedEmployeeId = null;
-  modoCombinado = false;
+  try {
+    carrinho = [];
+    pgto = '';
+    clienteAtual = null;
+    selectedEmployeeId = null;
+    modoCombinado = false;
 
-  const el = (id) => document.getElementById(id);
-  if (el('produtoSearch'))     el('produtoSearch').value = '';
-  if (el('obsVenda'))          el('obsVenda').value = '';
-  if (el('valorRecebido'))     el('valorRecebido').value = '';
-  if (el('clienteSearch'))     el('clienteSearch').value = '';
-  if (el('clienteSelecionado')) el('clienteSelecionado').style.display = 'none';
-  if (el('clienteResultados')) el('clienteResultados').style.display = 'none';
+    const g = (id) => document.getElementById(id);
+    ['produtoSearch','obsVenda','valorRecebido','clienteSearch'].forEach(id => {
+      const e = g(id); if (e) e.value = '';
+    });
+    const cSel = g('clienteSelecionado');
+    if (cSel) cSel.style.display = 'none';
+    const cRes = g('clienteResultados');
+    if (cRes) cRes.style.display = 'none';
 
-  document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
+    ['subCartaoLoja','subCartaoEntrega','subFuncionario'].forEach(id => {
+      const e = g(id);
+      if (e) { e.classList.add('d-none'); e.classList.remove('d-flex'); }
+    });
 
-  ['subCartaoLoja','subCartaoEntrega','subFuncionario'].forEach(id => {
-    const e = el(id);
-    if (e) { e.classList.add('d-none'); e.classList.remove('d-flex'); }
-  });
-
-  renderCarrinho();
-  calcTotais();
-
-  // Volta para step 2 (produtos)
-  irParaStep(2);
-
-  // Mensagem de confirmação no toast
-  const txt = el('avisoTexto');
-  if (txt) {
-    txt.textContent = '✓ Venda finalizada! Imprimindo...';
-    el('avisoTexto').parentElement.parentElement.classList.remove('text-bg-danger');
-    el('avisoTexto').parentElement.parentElement.classList.add('text-bg-success');
-    const toast = bootstrap.Toast.getOrCreateInstance(el('avisoToast'));
-    toast.show();
-    setTimeout(() => {
-      const t = el('avisoToast');
-      if (t) { t.classList.remove('text-bg-success'); t.classList.add('text-bg-danger'); }
-    }, 3600);
+    renderCarrinho();
+    calcTotais();
+    irParaStep(2);
+  } catch(e) {
+    console.error('[limparVenda]', e);
   }
 }
 
