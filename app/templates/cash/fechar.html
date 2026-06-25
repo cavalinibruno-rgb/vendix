@@ -32,34 +32,6 @@
       <div class="card">
         <div class="card-header fw-semibold"><i class="bi bi-cash me-2 text-success"></i>Dinheiro na Gaveta</div>
         <div class="card-body">
-          <!-- Cálculo esperado -->
-          <div class="small text-muted mb-3 d-flex flex-column gap-1">
-            <div class="d-flex justify-content-between">
-              <span><i class="bi bi-plus-circle me-1"></i>Abertura</span>
-              <span>R$ {{ '%.2f'|format(caixa.opening_amount) }}</span>
-            </div>
-            <div class="d-flex justify-content-between">
-              <span><i class="bi bi-plus-circle me-1"></i>Vendas em dinheiro</span>
-              <span>R$ {{ '%.2f'|format(total_dinheiro) }}</span>
-            </div>
-            {% if total_retiradas > 0 %}
-            <div class="d-flex justify-content-between text-danger">
-              <span><i class="bi bi-dash-circle me-1"></i>Retiradas</span>
-              <span>- R$ {{ '%.2f'|format(total_retiradas) }}</span>
-            </div>
-            {% endif %}
-            {% if despesas_dinheiro > 0 %}
-            <div class="d-flex justify-content-between text-danger">
-              <span><i class="bi bi-dash-circle me-1"></i>Despesas (dinheiro)</span>
-              <span>- R$ {{ '%.2f'|format(despesas_dinheiro) }}</span>
-            </div>
-            {% endif %}
-            <hr class="my-1">
-            <div class="d-flex justify-content-between fw-semibold">
-              <span>Esperado na gaveta</span>
-              <span class="text-success">R$ {{ '%.2f'|format(esperado_caixa) }}</span>
-            </div>
-          </div>
           <label class="form-label fw-semibold">Valor contado na gaveta</label>
           <div class="input-group">
             <span class="input-group-text">R$</span>
@@ -69,7 +41,6 @@
                    onblur="if(this.value==='')this.value='0,00'"
                    oninput="calcTotal()">
           </div>
-          <div id="difDinheiro" class="mt-2 small fw-semibold"></div>
         </div>
       </div>
 
