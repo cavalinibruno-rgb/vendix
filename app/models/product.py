@@ -62,6 +62,14 @@ class Product(db.Model):
         return self.stock_quantity
 
     @property
+    def effective_min_stock(self):
+        """Para pack: min_stock do pai ÷ pack_qty. Para unitário: min_stock normal."""
+        if self.pack_parent_id and self.pack_qty and self.pack_qty > 0:
+            parent_min = self.pack_parent.min_stock if self.pack_parent else 0
+            return parent_min // self.pack_qty
+        return self.min_stock
+
+    @property
     def pack_remainder(self):
         """Unidades restantes do pai que não completam um pack."""
         if self.pack_parent_id and self.pack_qty and self.pack_qty > 0:

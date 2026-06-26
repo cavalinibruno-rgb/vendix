@@ -81,9 +81,10 @@
           <td class="text-muted small">R$ {{ '%.2f' | format(p.cost_price) }}</td>
           <td>
             {% set es = p.effective_stock %}
+            {% set ms = p.effective_min_stock %}
             {% if es <= 0 %}
               <span class="badge bg-danger">{{ es }}</span>
-            {% elif es <= p.min_stock %}
+            {% elif es <= ms %}
               <span class="badge bg-warning text-dark">{{ es }}</span>
             {% else %}
               <span class="badge bg-success">{{ es }}</span>
