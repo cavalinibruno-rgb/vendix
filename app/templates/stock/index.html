@@ -35,10 +35,10 @@
             <option value="{{ t.id }}" {% if t.id == tipo_id %}selected{% endif %}>{{ t.name }}</option>
             {% endfor %}
           </select>
-          <select name="marca" id="filtroMarcaEstoque" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
+          <select name="marca" id="filtroMarcaEstoque" class="form-select form-select-sm" style="max-width:150px;">
             <option value="">Todas as marcas</option>
             {% for m in marcas %}
-            <option value="{{ m.id }}" {% if m.id == marca_id %}selected{% endif %} data-brand-id="{{ m.id }}">{{ m.name }}</option>
+            <option value="{{ m.id }}" {% if m.id == marca_id %}selected{% endif %}>{{ m.name }}</option>
             {% endfor %}
           </select>
           <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search me-1"></i>Filtrar</button>
@@ -299,30 +299,37 @@ function selecionarProdutoAjuste(sel) {
   document.getElementById('formAjuste').action = id ? `/estoque/${id}/ajustar` : '#';
 }
 
+// todas as marcas disponíveis: {id, nome}
+const todasMarcas = [
+  {% for m in marcas %}
+  { id: {{ m.id }}, nome: {{ m.name | tojson }} },
+  {% endfor %}
+];
 const tipoMarcas = {{ tipo_marcas | tojson }};
 
-function filtrarTipoEstoque(tipoId, submeter = true) {
+function filtrarTipoEstoque(tipoId) {
   const sel = document.getElementById('filtroMarcaEstoque');
-  const marcaAtual = sel.value;
-  Array.from(sel.options).forEach(opt => {
-    if (!opt.value) return;
-    const brandId = parseInt(opt.dataset.brandId);
-    if (!tipoId) {
-      opt.hidden = false;
-    } else {
-      const marcasDaTipo = tipoMarcas[tipoId] || [];
-      opt.hidden = !marcasDaTipo.includes(brandId);
-    }
+  const valorAtual = sel.value;
+  // remove todas exceto "Todas as marcas"
+  while (sel.options.length > 1) sel.remove(1);
+  // filtra marcas pela categoria
+  const marcasVisiveis = tipoId
+    ? todasMarcas.filter(m => (tipoMarcas[tipoId] || []).includes(m.id))
+    : todasMarcas;
+  marcasVisiveis.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m.id;
+    o.textContent = m.nome;
+    sel.appendChild(o);
   });
-  const opcaoAtual = sel.querySelector(`option[value="${marcaAtual}"]`);
-  if (opcaoAtual && opcaoAtual.hidden) sel.value = '';
-  if (submeter) sel.form.submit();
+  // restaura seleção anterior se ainda existir
+  sel.value = marcasVisiveis.some(m => m.id == valorAtual) ? valorAtual : '';
 }
 
-// aplicar filtro ao carregar a página se já houver tipo selecionado
+// aplicar ao carregar a página se já houver tipo selecionado
 document.addEventListener('DOMContentLoaded', () => {
   const tipoAtual = document.getElementById('filtroTipo').value;
-  if (tipoAtual) filtrarTipoEstoque(tipoAtual, false);
+  if (tipoAtual) filtrarTipoEstoque(tipoAtual);
 });
 </script>
 {% endblock %}
