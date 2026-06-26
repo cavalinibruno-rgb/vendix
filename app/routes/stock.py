@@ -31,21 +31,18 @@ def index():
     tipo_id  = request.args.get('tipo', type=int)
     marca_id = request.args.get('marca', type=int)
     tipos    = ProductType.query.filter_by(tenant_id=tid()).order_by(ProductType.name).all()
-    marcas   = Brand.query.filter_by(tenant_id=tid()).order_by(Brand.name).all()
 
-    # Mapeamento tipo_id -> lista de brand_ids para filtro dinâmico no frontend
-    from sqlalchemy import distinct as sa_distinct
-    tipo_marcas_rows = db.session.query(
-        Product.type_id, Product.brand_id
-    ).filter(
-        Product.tenant_id == tid(),
-        Product.active == True,
-        Product.type_id != None,
-        Product.brand_id != None,
-    ).distinct().all()
-    tipo_marcas = {}
-    for tipo_id_r, brand_id_r in tipo_marcas_rows:
-        tipo_marcas.setdefault(tipo_id_r, []).append(brand_id_r)
+    # Se categoria selecionada, mostrar só marcas que têm produtos nessa categoria
+    if tipo_id:
+        brand_ids = db.session.query(Product.brand_id).filter(
+            Product.tenant_id == tid(),
+            Product.active == True,
+            Product.type_id == tipo_id,
+            Product.brand_id != None,
+        ).distinct().subquery()
+        marcas = Brand.query.filter(Brand.id.in_(brand_ids)).order_by(Brand.name).all()
+    else:
+        marcas = Brand.query.filter_by(tenant_id=tid()).order_by(Brand.name).all()
 
     ordem    = request.args.get('ordem', '')
 
