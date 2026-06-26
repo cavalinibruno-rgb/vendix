@@ -54,16 +54,33 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Impressão silenciosa: cria janela oculta, carrega URL e imprime sem diálogo
-ipcMain.on('print-silent', (event, url) => {
-  const printWin = new BrowserWindow({
-    show: false,
-    webPreferences: { nodeIntegration: false, contextIsolation: true },
-  });
-  printWin.loadURL(url);
-  printWin.webContents.once('did-finish-load', () => {
-    printWin.webContents.print({ silent: true, printBackground: false }, () => {
-      printWin.close();
+// Lista impressoras disponíveis
+ipcMain.handle('get-printers', async (event) => {
+  const win = BrowserWindow.getAllWindows()[0];
+  if (!win) return [];
+  try {
+    const printers = await win.webContents.getPrintersAsync();
+    return printers.map(p => p.name);
+  } catch (e) {
+    return [];
+  }
+});
+
+// Impressão: cria janela oculta, carrega URL e imprime silenciosamente
+ipcMain.handle('print-silent', (event, url, printerName) => {
+  return new Promise((resolve) => {
+    const printWin = new BrowserWindow({
+      show: false,
+      webPreferences: { nodeIntegration: false, contextIsolation: true },
+    });
+    printWin.loadURL(url);
+    printWin.webContents.once('did-finish-load', () => {
+      const opts = { silent: true, printBackground: false };
+      if (printerName) opts.deviceName = printerName;
+      printWin.webContents.print(opts, (success, err) => {
+        printWin.close();
+        resolve({ ok: success, error: err });
+      });
     });
   });
 });
