@@ -6,7 +6,7 @@ from app.models.customer import Neighborhood
 from app.models.pedido_online import PedidoOnline
 from app.models.sale import Sale
 from app.models.coupon import Coupon
-import json, io
+import json, io, os, requests
 from PIL import Image
 
 loja_bp = Blueprint('loja', __name__, url_prefix='/loja')
@@ -80,6 +80,31 @@ def logo_publica(slug):
     resp.headers['Content-Type'] = tenant.logo_mime or 'image/png'
     resp.headers['Cache-Control'] = 'public, max-age=604800'
     return resp
+
+
+# ── Geocodificação de CEP via Google Maps (chave no servidor) ──
+@loja_bp.route('/<slug>/geocode-cep')
+def geocode_cep(slug):
+    _get_tenant(slug)  # valida que a loja existe
+    cep = request.args.get('cep', '').replace('-', '').strip()
+    if len(cep) != 8:
+        return jsonify({'error': 'CEP inválido'})
+    key = os.environ.get('GOOGLE_MAPS_KEY', '')
+    if not key:
+        return jsonify({'error': 'Geocoding não configurado'})
+    try:
+        r = requests.get(
+            'https://maps.googleapis.com/maps/api/geocode/json',
+            params={'address': cep + ', Brasil', 'key': key},
+            timeout=5
+        )
+        data = r.json()
+        if data.get('status') == 'OK' and data.get('results'):
+            loc = data['results'][0]['geometry']['location']
+            return jsonify({'lat': loc['lat'], 'lng': loc['lng']})
+        return jsonify({'error': 'CEP não encontrado'})
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 
 # ── Validar cupom (público) ────────────────────────────

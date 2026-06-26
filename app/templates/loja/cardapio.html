@@ -761,39 +761,33 @@ async function buscarCepLoja(val) {
     if (bairroTextEl && bairroNome) bairroTextEl.value = bairroNome;
 
     const geoStatus = document.getElementById('geoStatus');
-    // Calcula por distância via coordenadas da BrasilAPI
-    if (geoStatus) {
-      // Tenta coordenadas diretas da BrasilAPI, senão geocodifica pelo endereço
-      const coords = d.location && d.location.coordinates;
-      let lat = coords && coords.latitude;
-      let lng = coords && coords.longitude;
+    const bairroNome2 = d.neighborhood || '';
+    let bairroCasado = false;
 
-      if (!lat || !lng) {
-        geoStatus.textContent = '🔍 Calculando taxa de entrega…';
-        geoStatus.style.color = '#888';
-        try {
-          // Tenta endereço completo
-          const q1 = [d.street, d.neighborhood, d.city, d.state, 'Brasil'].filter(Boolean).join(', ');
-          let nom = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q1)}&format=json&limit=1&countrycodes=br`);
-          let nomD = await nom.json();
-          if (nomD && nomD[0]) { lat = nomD[0].lat; lng = nomD[0].lon; }
-
-          // Fallback: só cidade + estado (muito mais fácil de encontrar)
-          if (!lat || !lng) {
-            const q2 = [d.city, d.state, 'Brasil'].filter(Boolean).join(', ');
-            nom  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q2)}&format=json&limit=1&countrycodes=br`);
-            nomD = await nom.json();
-            if (nomD && nomD[0]) { lat = nomD[0].lat; lng = nomD[0].lon; }
-          }
-        } catch(_) {}
+    // Tenta casar bairro do CEP com bairros cadastrados
+    if (bairroSelEl && bairroNome2) {
+      for (let opt of bairroSelEl.options) {
+        if (opt.text.toLowerCase().includes(bairroNome2.toLowerCase())) {
+          bairroSelEl.value = opt.value;
+          onBairroChange();
+          bairroCasado = true;
+          cepOk = true;
+          if (geoStatus) geoStatus.textContent = '';
+          break;
+        }
       }
+    }
 
-      if (lat && lng) {
-        geoStatus.textContent = '🔍 Calculando taxa de entrega…';
-        geoStatus.style.color = '#888';
-        cepOk = false;
-        try {
-          const res = await fetch(`/loja/${SLUG}/taxa-distancia?lat=${lat}&lng=${lng}`);
+    // Bairro não cadastrado e loja tem GPS → tenta Google Geocoding
+    if (!bairroCasado && geoStatus) {
+      geoStatus.textContent = '🔍 Calculando taxa de entrega…';
+      geoStatus.style.color = '#888';
+      cepOk = false;
+      try {
+        const geo = await fetch(`/loja/${SLUG}/geocode-cep?cep=${cep}`);
+        const gd  = await geo.json();
+        if (!gd.error) {
+          const res = await fetch(`/loja/${SLUG}/taxa-distancia?lat=${gd.lat}&lng=${gd.lng}`);
           const td  = await res.json();
           if (!td.error && !td.fora) {
             taxaEntrega = td.fee || 0;
@@ -810,14 +804,13 @@ async function buscarCepLoja(val) {
             geoStatus.textContent = '⚠️ Não foi possível calcular a taxa. Use sua localização para continuar.';
             geoStatus.style.color = '#e08000';
           }
-        } catch(e) {
-          geoStatus.textContent = '⚠️ Erro ao calcular taxa. Use sua localização para continuar.';
+        } else {
+          geoStatus.textContent = '⚠️ CEP não encontrado. Use sua localização para continuar.';
           geoStatus.style.color = '#e08000';
         }
-      } else {
-        geoStatus.textContent = '⚠️ CEP não encontrado. Use sua localização para continuar.';
+      } catch(e) {
+        geoStatus.textContent = '⚠️ Erro ao calcular taxa. Use sua localização para continuar.';
         geoStatus.style.color = '#e08000';
-        cepOk = false;
       }
     } else if (!bairroCasado) {
       cepOk = true;
