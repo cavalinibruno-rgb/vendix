@@ -119,9 +119,7 @@ def novo():
         db.session.add(product)
         db.session.flush()
         def _salvar_foto(prod, file_field):
-            from flask import current_app
             foto = request.files.get(file_field)
-            current_app.logger.warning(f'[_salvar_foto] field={file_field} filename={foto.filename if foto else "NONE"}')
             if foto and foto.filename:
                 try:
                     img_bytes, mime = _comprimir_imagem(foto)
@@ -129,14 +127,12 @@ def novo():
                     try:
                         prod.image_url = r2.upload(img_bytes, key, mime)
                         prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
-                        current_app.logger.warning(f'[_salvar_foto] R2 ok: {prod.image_url}')
-                    except Exception as e2:
-                        current_app.logger.warning(f'[_salvar_foto] R2 falhou ({e2}), usando BYTEA')
+                    except Exception:
                         prod.image_data = img_bytes
                         prod.image_mime = mime
                         prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
-                except Exception as e:
-                    current_app.logger.warning(f'[_salvar_foto] erro geral: {e}')
+                except Exception:
+                    pass
 
         tem_pack = request.form.get('tem_pack') == '1'
 
@@ -159,10 +155,7 @@ def novo():
                     })
                 i += 1
 
-        if tem_pack:
-            _salvar_foto(product, 'imagem_unidade')
-        else:
-            _salvar_foto(product, 'imagem')
+        _salvar_foto(product, 'imagem')
 
         for comp in combo_components:
             ci = ComboItem(combo_id=product.id,

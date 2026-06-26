@@ -156,9 +156,9 @@
                      value="{{ product.min_stock if product else '0' }}" min="0">
             </div>
           </div>
-          <!-- Foto única (sem pack) -->
-          <div class="mb-3" id="fotoUnica">
-            <label class="form-label fw-semibold">Foto do Produto</label>
+          <!-- Foto do produto (unidade) — sempre visível -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold" id="labelFotoUnidade">Foto do Produto</label>
             {% if product and product.image_data %}
             <div class="mb-2">
               <img src="{{ url_for('products.imagem', product_id=product.id) }}"
@@ -170,17 +170,6 @@
             <input type="file" name="imagem" id="fotoUnicaInput" class="form-control" accept="image/*">
             <div class="form-text">JPG, PNG ou WebP. Recomendado: fundo branco, quadrada.</div>
           </div>
-
-          <!-- Foto da unidade (só aparece quando pack está ativo) -->
-          {% if not product %}
-          <div id="fotoPack" style="display:none;">
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Foto da Unidade</label>
-              <input type="file" name="imagem_unidade" id="fotoUnidadeInput" class="form-control" accept="image/*">
-              <div class="form-text">JPG, PNG ou WebP. Recomendado: fundo branco, quadrada.</div>
-            </div>
-          </div>
-          {% endif %}
           <div class="mb-4">
             <label class="form-label fw-semibold">Descrição</label>
             <textarea name="description" class="form-control" rows="2"
@@ -308,14 +297,11 @@ let packCount = 0;
 
 function togglePackFields() {
   const show = document.getElementById('temPackCheck').checked;
-  document.getElementById('packFields').style.display  = show ? '' : 'none';
-  document.getElementById('fotoUnica').style.display   = show ? 'none' : '';
-  document.getElementById('fotoPack').style.display    = show ? '' : 'none';
+  document.getElementById('packFields').style.display = show ? '' : 'none';
+  document.getElementById('labelFotoUnidade').textContent = show ? 'Foto da Unidade' : 'Foto do Produto';
   if (show) {
-    document.getElementById('fotoUnicaInput').value = '';
     if (packCount === 0) adicionarPack();
   } else {
-    document.getElementById('fotoUnidadeInput').value = '';
     document.getElementById('packsLista').innerHTML = '';
     packCount = 0;
   }
