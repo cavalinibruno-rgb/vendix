@@ -5,6 +5,7 @@ from PIL import Image
 import io
 import json
 from app import db
+from app import r2
 from app.models.product import Product, ProductType, Brand
 from app.models.combo import ComboItem
 
@@ -97,8 +98,15 @@ def novo():
         db.session.flush()
         foto = request.files.get('imagem')
         if foto and foto.filename:
-            product.image_data, product.image_mime = _comprimir_imagem(foto)
-            product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
+            img_bytes, mime = _comprimir_imagem(foto)
+            key = r2.unique_key('produtos', '.jpg')
+            try:
+                product.image_url = r2.upload(img_bytes, key, mime)
+                product.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+            except Exception:
+                product.image_data = img_bytes
+                product.image_mime = mime
+                product.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
 
         for comp in combo_components:
             ci = ComboItem(combo_id=product.id,
@@ -131,8 +139,15 @@ def editar(product_id):
         product.description    = request.form.get('description', '').strip()
         foto = request.files.get('imagem')
         if foto and foto.filename:
-            product.image_data, product.image_mime = _comprimir_imagem(foto)
-            product.thumbnail_data = _gerar_thumbnail(product.image_data).encode()
+            img_bytes, mime = _comprimir_imagem(foto)
+            key = r2.unique_key('produtos', '.jpg')
+            try:
+                product.image_url = r2.upload(img_bytes, key, mime)
+                product.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+            except Exception:
+                product.image_data = img_bytes
+                product.image_mime = mime
+                product.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
 
         combo_json = request.form.get('combo_components', '[]')
         try:
@@ -228,7 +243,8 @@ def _cols():
     """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
     return [Product.id, Product.name, Product.sale_price, Product.sale_price_card,
             Product.sale_price_event, Product.stock_quantity, Product.type_id, Product.brand_id,
-            (Product.image_data != None).label('has_image')]
+            Product.image_url,
+            ((Product.image_data != None) | (Product.image_url != None)).label('has_image')]
 
 @products_bp.route('/api/buscar')
 @login_required
@@ -272,19 +288,21 @@ def api_todos():
     tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
     marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
 
-    # Busca thumbnails (BYTEA) apenas dos produtos que têm imagem
+    # Busca thumbnails — R2 (URL) tem prioridade; BYTEA como fallback legado
     ids_com_img = [r.id for r in rows if r.has_image]
+    r2_urls = {r.id: r.image_url for r in rows if r.image_url}
     thumbs = {}
     if ids_com_img:
-        for p in Product.query.filter(Product.id.in_(ids_com_img)).with_entities(Product.id, Product.thumbnail_data, Product.image_data).all():
-            if p.thumbnail_data:
-                thumbs[p.id] = p.thumbnail_data.decode()
-            elif p.image_data:
-                # thumbnail ainda não gerado — gera on-the-fly e salva
-                t = _gerar_thumbnail(p.image_data)
-                thumbs[p.id] = t
-                Product.query.filter_by(id=p.id).update({'thumbnail_data': t.encode()})
-        db.session.commit()
+        ids_sem_r2 = [i for i in ids_com_img if i not in r2_urls]
+        if ids_sem_r2:
+            for p in Product.query.filter(Product.id.in_(ids_sem_r2)).with_entities(Product.id, Product.thumbnail_data, Product.image_data).all():
+                if p.thumbnail_data:
+                    thumbs[p.id] = p.thumbnail_data.decode()
+                elif p.image_data:
+                    t = _gerar_thumbnail(p.image_data)
+                    thumbs[p.id] = t
+                    Product.query.filter_by(id=p.id).update({'thumbnail_data': t.encode()})
+            db.session.commit()
 
     return jsonify([{
         'id': r.id, 'name': r.name,
@@ -292,7 +310,7 @@ def api_todos():
         'sale_price_card': r.sale_price_card or 0,
         'sale_price_event': r.sale_price_event or 0,
         'stock_quantity': r.stock_quantity,
-        'thumbnail': thumbs.get(r.id),
+        'thumbnail': r2_urls.get(r.id) or thumbs.get(r.id),
         'type_id': r.type_id,
         'type_name': tipos.get(r.type_id, 'Sem categoria'),
         'brand_id': r.brand_id,
@@ -301,11 +319,14 @@ def api_todos():
 
 @products_bp.route('/<int:product_id>/imagem')
 def imagem(product_id):
+    from flask import redirect as _redirect
     product = Product.query.filter_by(id=product_id).first_or_404()
+    if product.image_url:
+        return _redirect(product.image_url, 301)
     if not product.image_data:
         return '', 404
     resp = Response(product.image_data, mimetype='image/jpeg')
-    resp.headers['Cache-Control'] = 'public, max-age=604800'  # 7 dias
+    resp.headers['Cache-Control'] = 'public, max-age=604800'
     return resp
 
 @products_bp.route('/admin/recomprimir-imagens', methods=['POST'])

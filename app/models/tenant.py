@@ -13,6 +13,7 @@ class Tenant(db.Model):
     status        = db.Column(db.String(16), default='active')  # active | suspended | cancelled
     expires_at    = db.Column(db.DateTime, nullable=True)
     settings      = db.Column(db.Text, default='{}')  # JSON de configurações
+    logo_url         = db.Column(db.String(512), nullable=True)
     logo_data        = db.Column(db.LargeBinary, nullable=True)
     logo_mime        = db.Column(db.String(32), nullable=True)
     preapproval_id   = db.Column(db.String(128), nullable=True)

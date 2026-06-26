@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, abort
 from flask_login import login_required, current_user
 from app import db
+from app import r2
 from app.models.app_release import AppRelease
 from functools import wraps
 import hashlib, base64, datetime
@@ -33,6 +34,8 @@ def pagina():
 @download_bp.route('/download/<int:release_id>/arquivo')
 def arquivo(release_id):
     release = AppRelease.query.get_or_404(release_id)
+    if release.file_url:
+        return redirect(release.file_url)
     mime = 'application/vnd.android.package-archive' if release.platform == 'android' else 'application/octet-stream'
     return Response(
         release.file_data,
@@ -45,6 +48,8 @@ def arquivo(release_id):
 @download_bp.route('/download/updates/<filename>')
 def update_file(filename):
     release = AppRelease.query.filter_by(filename=filename, platform='windows').order_by(AppRelease.uploaded_at.desc()).first_or_404()
+    if release.file_url:
+        return redirect(release.file_url)
     return Response(
         release.file_data,
         mimetype='application/octet-stream',
@@ -55,10 +60,18 @@ def update_file(filename):
 # Manifesto lido pelo electron-updater para verificar se há nova versão
 @download_bp.route('/download/updates/latest.yml')
 def latest_yml():
+    import requests as _requests
     release = AppRelease.query.filter_by(platform='windows').order_by(AppRelease.uploaded_at.desc()).first()
     if not release:
         abort(404)
-    sha = _sha512_b64(release.file_data)
+    if release.file_url and not release.file_data:
+        try:
+            file_bytes = _requests.get(release.file_url, timeout=30).content
+        except Exception:
+            abort(503)
+        sha = _sha512_b64(file_bytes)
+    else:
+        sha = _sha512_b64(release.file_data)
     date = release.uploaded_at.strftime('%Y-%m-%dT%H:%M:%S.000Z')
     yml = (
         f"version: {release.version}\n"
@@ -92,14 +105,26 @@ def upload():
             flash('Arquivo muito grande. Limite: 150 MB.', 'danger')
             return redirect(url_for('download.upload'))
 
-        release = AppRelease(
-            version     = version,
-            description = description,
-            filename    = f.filename,
-            file_data   = data,
-            file_size   = len(data),
-            platform    = platform,
-        )
+        key = f'releases/{f.filename}'
+        try:
+            file_url = r2.upload(data, key, 'application/octet-stream')
+            release = AppRelease(
+                version     = version,
+                description = description,
+                filename    = f.filename,
+                file_url    = file_url,
+                file_size   = len(data),
+                platform    = platform,
+            )
+        except Exception:
+            release = AppRelease(
+                version     = version,
+                description = description,
+                filename    = f.filename,
+                file_data   = data,
+                file_size   = len(data),
+                platform    = platform,
+            )
         db.session.add(release)
         db.session.commit()
         flash(f'Versão {version} publicada! Os clientes serão notificados automaticamente.', 'success')

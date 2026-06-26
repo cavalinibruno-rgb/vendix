@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_required, current_user
 from app import db
+from app import r2
 from werkzeug.security import generate_password_hash
 from app.models.coupon import Coupon
 import requests as _req, json as _json
@@ -208,8 +209,13 @@ def salvar_identidade():
         if len(data) > 2 * 1024 * 1024:
             flash('Logotipo muito grande (máx. 2 MB).', 'danger')
             return redirect(url_for('config.index') + '#identidade')
-        tenant.logo_data = data
-        tenant.logo_mime = logo.content_type or 'image/png'
+        key = r2.unique_key('logos', '.png')
+        try:
+            tenant.logo_url = r2.upload(data, key, logo.content_type or 'image/png')
+            tenant.logo_data = None
+        except Exception:
+            tenant.logo_data = data
+            tenant.logo_mime = logo.content_type or 'image/png'
     db.session.commit()
     flash('Identidade da loja salva!', 'success')
     return redirect(url_for('config.index') + '#identidade')
@@ -219,6 +225,7 @@ def salvar_identidade():
 @login_required
 def remover_logo():
     tenant = current_user.tenant
+    tenant.logo_url = None
     tenant.logo_data = None
     tenant.logo_mime = None
     db.session.commit()
@@ -229,7 +236,10 @@ def remover_logo():
 @config_bp.route('/logo')
 @login_required
 def servir_logo():
+    from flask import redirect as _redirect
     tenant = current_user.tenant
+    if tenant.logo_url:
+        return _redirect(tenant.logo_url, 301)
     if not tenant.logo_data:
         return '', 404
     return Response(tenant.logo_data, mimetype=tenant.logo_mime or 'image/png')
