@@ -47,8 +47,10 @@ class Product(db.Model):
     pack_parent_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
     pack_qty       = db.Column(db.Integer, nullable=True)  # unidades contidas neste pack
 
-    pack_parent = db.relationship('Product', foreign_keys=[pack_parent_id], remote_side='Product.id',
-                                  backref=db.backref('pack_children', lazy=True))
+    pack_parent = db.relationship('Product', foreign_keys='Product.pack_parent_id',
+                                  primaryjoin='Product.pack_parent_id == Product.id',
+                                  remote_side='Product.id',
+                                  backref=db.backref('pack_children', lazy='dynamic'))
 
     combo_items = db.relationship('ComboItem', foreign_keys='ComboItem.combo_id',
                                   backref='combo_product', cascade='all, delete-orphan', lazy=True)
