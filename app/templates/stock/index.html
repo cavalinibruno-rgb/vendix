@@ -29,16 +29,16 @@
         <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
           <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
                  style="max-width:200px;" placeholder="Buscar produto...">
-          <select name="tipo" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
+          <select name="tipo" id="filtroTipo" class="form-select form-select-sm" style="max-width:150px;" onchange="filtrarTipoEstoque(this.value)">
             <option value="">Todos os tipos</option>
             {% for t in tipos %}
             <option value="{{ t.id }}" {% if t.id == tipo_id %}selected{% endif %}>{{ t.name }}</option>
             {% endfor %}
           </select>
-          <select name="marca" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
+          <select name="marca" id="filtroMarcaEstoque" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
             <option value="">Todas as marcas</option>
             {% for m in marcas %}
-            <option value="{{ m.id }}" {% if m.id == marca_id %}selected{% endif %}>{{ m.name }}</option>
+            <option value="{{ m.id }}" {% if m.id == marca_id %}selected{% endif %} data-brand-id="{{ m.id }}">{{ m.name }}</option>
             {% endfor %}
           </select>
           <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-search me-1"></i>Filtrar</button>
@@ -298,5 +298,31 @@ function selecionarProdutoAjuste(sel) {
   const id = sel.value;
   document.getElementById('formAjuste').action = id ? `/estoque/${id}/ajustar` : '#';
 }
+
+const tipoMarcas = {{ tipo_marcas | tojson }};
+
+function filtrarTipoEstoque(tipoId, submeter = true) {
+  const sel = document.getElementById('filtroMarcaEstoque');
+  const marcaAtual = sel.value;
+  Array.from(sel.options).forEach(opt => {
+    if (!opt.value) return;
+    const brandId = parseInt(opt.dataset.brandId);
+    if (!tipoId) {
+      opt.hidden = false;
+    } else {
+      const marcasDaTipo = tipoMarcas[tipoId] || [];
+      opt.hidden = !marcasDaTipo.includes(brandId);
+    }
+  });
+  const opcaoAtual = sel.querySelector(`option[value="${marcaAtual}"]`);
+  if (opcaoAtual && opcaoAtual.hidden) sel.value = '';
+  if (submeter) sel.form.submit();
+}
+
+// aplicar filtro ao carregar a página se já houver tipo selecionado
+document.addEventListener('DOMContentLoaded', () => {
+  const tipoAtual = document.getElementById('filtroTipo').value;
+  if (tipoAtual) filtrarTipoEstoque(tipoAtual, false);
+});
 </script>
 {% endblock %}

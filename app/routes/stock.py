@@ -33,6 +33,20 @@ def index():
     tipos    = ProductType.query.filter_by(tenant_id=tid()).order_by(ProductType.name).all()
     marcas   = Brand.query.filter_by(tenant_id=tid()).order_by(Brand.name).all()
 
+    # Mapeamento tipo_id -> lista de brand_ids para filtro dinâmico no frontend
+    from sqlalchemy import distinct as sa_distinct
+    tipo_marcas_rows = db.session.query(
+        Product.type_id, Product.brand_id
+    ).filter(
+        Product.tenant_id == tid(),
+        Product.active == True,
+        Product.type_id != None,
+        Product.brand_id != None,
+    ).distinct().all()
+    tipo_marcas = {}
+    for tipo_id_r, brand_id_r in tipo_marcas_rows:
+        tipo_marcas.setdefault(tipo_id_r, []).append(brand_id_r)
+
     ordem    = request.args.get('ordem', '')
 
     from app.models.combo import ComboItem
@@ -91,7 +105,7 @@ def index():
 
     return render_template('stock/index.html',
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
-        marcas=marcas, marca_id=marca_id,
+        marcas=marcas, marca_id=marca_id, tipo_marcas=tipo_marcas,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
         eff_stock=eff_stock, eff_min=eff_min,
     )
