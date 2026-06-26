@@ -23,11 +23,7 @@
               </label>
             </div>
             <div id="packFields" style="display:none;">
-              <div class="alert alert-warning py-2 small mb-2">
-                Ao cadastrar, será criado automaticamente o produto <strong>Pack [Nome do Produto]</strong>
-                vinculado ao estoque deste. Ajuste o preço do Pack depois de criado.
-              </div>
-              <div class="row g-2 align-items-center">
+              <div class="row g-2 align-items-center mb-3">
                 <div class="col-auto">
                   <label class="form-label fw-semibold mb-0">Unidades por Pack</label>
                 </div>
@@ -36,6 +32,24 @@
                          style="width:100px;" min="2" value="12" placeholder="Ex: 12">
                 </div>
                 <div class="col-auto text-muted small">unidades do produto unitário</div>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Preço Dinheiro Pack (R$)</label>
+                  <input type="number" name="pack_sale_price" class="form-control"
+                         value="0.00" min="0" step="0.01">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Preço Cartão Pack (R$)</label>
+                  <input type="number" name="pack_sale_price_card" class="form-control"
+                         value="0.00" min="0" step="0.01">
+                  <div class="form-text text-muted">0 = mesmo do dinheiro.</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold">Preço Evento Pack (R$)</label>
+                  <input type="number" name="pack_sale_price_event" class="form-control"
+                         value="0.00" min="0" step="0.01">
+                </div>
               </div>
             </div>
           </div>

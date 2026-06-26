@@ -125,15 +125,18 @@ def novo():
 
         # Pack: cria produto pack vinculado
         if tem_pack and pack_qty_v > 1 and not is_combo:
+            pack_sale_price       = float(request.form.get('pack_sale_price', 0) or 0)
+            pack_sale_price_card  = float(request.form.get('pack_sale_price_card', 0) or 0)
+            pack_sale_price_event = float(request.form.get('pack_sale_price_event', 0) or 0)
             pack = Product(
                 tenant_id        = tenant_id(),
                 type_id          = type_id,
                 brand_id         = brand_id,
                 name             = f'Pack {name}',
                 description      = f'Pack com {pack_qty_v} unidades de {name}.',
-                sale_price       = 0,
-                sale_price_card  = 0,
-                sale_price_event = 0,
+                sale_price       = pack_sale_price,
+                sale_price_card  = pack_sale_price_card,
+                sale_price_event = pack_sale_price_event,
                 cost_price       = cost_price * pack_qty_v,
                 stock_quantity   = 0,
                 min_stock        = 0,
