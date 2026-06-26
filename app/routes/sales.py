@@ -451,7 +451,8 @@ def escpos(sale_id):
     data += NL * 4
     data += CUT
 
-    return jsonify({'ok': True, 'data': base64.b64encode(data).decode()})
+    from flask import Response
+    return Response(data, mimetype='application/octet-stream')
 
 
 @sales_bp.route('/<int:sale_id>/cancelar', methods=['POST'])
