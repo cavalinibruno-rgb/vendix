@@ -191,16 +191,17 @@
           </thead>
           <tbody>
             {% for p in estoque_baixo %}
+            {% set es = eff_stock(p) %}
             <tr>
               <td class="small fw-semibold ps-4">{{ p.name }}</td>
               <td class="text-center">
-                {% if p.stock_quantity <= 0 %}
-                <span class="badge bg-danger">{{ p.stock_quantity }}</span>
+                {% if es <= 0 %}
+                <span class="badge bg-danger">{{ es }}</span>
                 {% else %}
-                <span class="badge bg-warning" style="color:#1a1a2e">{{ p.stock_quantity }}</span>
+                <span class="badge bg-warning" style="color:#1a1a2e">{{ es }}</span>
                 {% endif %}
               </td>
-              <td class="text-center text-muted small pe-4">{{ p.min_stock }}</td>
+              <td class="text-center text-muted small pe-4">{{ eff_min(p) }}</td>
             </tr>
             {% endfor %}
           </tbody>

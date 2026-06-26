@@ -77,11 +77,32 @@ def index():
     # Produtos com estoque baixo ou zerado (exclui combos, que não têm estoque próprio)
     from app.models.product import Product
     produtos_tenant = Product.query.filter_by(tenant_id=tid, active=True).all()
+
+    # Mapa de estoque dos pais para calcular estoque efetivo dos packs
+    parent_ids = {p.pack_parent_id for p in produtos_tenant if p.pack_parent_id}
+    parent_stock_map = {}
+    parent_min_map   = {}
+    if parent_ids:
+        for pr in Product.query.filter(Product.id.in_(parent_ids)).with_entities(
+                Product.id, Product.stock_quantity, Product.min_stock).all():
+            parent_stock_map[pr.id] = pr.stock_quantity
+            parent_min_map[pr.id]   = pr.min_stock
+
+    def _eff_stock(p):
+        if p.pack_parent_id and p.pack_qty:
+            return parent_stock_map.get(p.pack_parent_id, 0) // p.pack_qty
+        return p.stock_quantity
+
+    def _eff_min(p):
+        if p.pack_parent_id and p.pack_qty:
+            return parent_min_map.get(p.pack_parent_id, 0) // p.pack_qty
+        return p.min_stock
+
     estoque_baixo = [
         p for p in produtos_tenant
-        if not p.combo_items and p.stock_quantity <= p.min_stock
+        if not p.combo_items and _eff_stock(p) <= _eff_min(p)
     ]
-    estoque_baixo.sort(key=lambda p: p.stock_quantity)
+    estoque_baixo.sort(key=lambda p: _eff_stock(p))
 
     cfg = tenant.get_settings()
     modo_restrito = (
@@ -108,6 +129,7 @@ def index():
         caixa=caixa,
         ultimas_vendas=ultimas_vendas,
         estoque_baixo=estoque_baixo,
+        eff_stock=_eff_stock, eff_min=_eff_min,
         modo_restrito=modo_restrito,
         desbloqueado=desbloqueado,
         senha_erro=senha_erro,
