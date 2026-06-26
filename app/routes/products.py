@@ -48,8 +48,30 @@ def index():
     if marca_id:
         query = query.filter_by(brand_id=marca_id)
     products = query.order_by(Product.name).all()
+
+    # Mapa estoque dos pais para calcular estoque efetivo dos packs
+    parent_ids = {p.pack_parent_id for p in products if p.pack_parent_id}
+    parent_stock_map = {}
+    parent_min_map   = {}
+    if parent_ids:
+        for pr in Product.query.filter(Product.id.in_(parent_ids)).with_entities(
+                Product.id, Product.stock_quantity, Product.min_stock).all():
+            parent_stock_map[pr.id] = pr.stock_quantity
+            parent_min_map[pr.id]   = pr.min_stock
+
+    def eff_stock(p):
+        if p.pack_parent_id and p.pack_qty:
+            return parent_stock_map.get(p.pack_parent_id, 0) // p.pack_qty
+        return p.stock_quantity
+
+    def eff_min(p):
+        if p.pack_parent_id and p.pack_qty:
+            return parent_min_map.get(p.pack_parent_id, 0) // p.pack_qty
+        return p.min_stock
+
     return render_template('products/index.html', products=products, types=types, brands=brands,
-                           tipo_id=tipo_id, marca_id=marca_id)
+                           tipo_id=tipo_id, marca_id=marca_id,
+                           eff_stock=eff_stock, eff_min=eff_min)
 
 @products_bp.route('/novo', methods=['GET', 'POST'])
 @login_required
