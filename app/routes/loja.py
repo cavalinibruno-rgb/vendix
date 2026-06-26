@@ -33,14 +33,19 @@ def api_produtos(slug):
     produtos = Product.query.filter_by(tenant_id=tenant.id, active=True).order_by(Product.name).all()
     out = []
     for p in produtos:
-        has_foto = bool(p.image_data)
+        if p.image_url:
+            thumb = p.image_url
+        elif p.image_data:
+            thumb = f'/loja/{slug}/produto/{p.id}/foto'
+        else:
+            thumb = None
         out.append({
             'id':        p.id,
             'name':      p.name,
             'price':     p.sale_price,
             'type_id':   p.type_id,
             'type_name': p.type.name if p.type else None,
-            'thumb':     f'/loja/{slug}/produto/{p.id}/foto' if has_foto else None,
+            'thumb':     thumb,
         })
     return jsonify(out)
 
