@@ -71,6 +71,17 @@ def foto_produto(slug, produto_id):
     return resp
 
 
+@loja_bp.route('/<slug>/logo')
+def logo_publica(slug):
+    tenant = _get_tenant(slug)
+    if not tenant.logo_data:
+        abort(404)
+    resp = make_response(bytes(tenant.logo_data))
+    resp.headers['Content-Type'] = tenant.logo_mime or 'image/png'
+    resp.headers['Cache-Control'] = 'public, max-age=604800'
+    return resp
+
+
 # ── Validar cupom (público) ────────────────────────────
 @loja_bp.route('/<slug>/cupom/<code>')
 def validar_cupom(slug, code):

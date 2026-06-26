@@ -176,6 +176,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 
 <!-- Header -->
 <div class="lh">
+  {% if tenant.logo_url %}
+  <img src="{{ tenant.logo_url }}" style="height:32px;width:32px;object-fit:contain;border-radius:6px;margin-right:8px;" alt="">
+  {% elif tenant.logo_data %}
+  <img src="{{ url_for('loja.logo_publica', slug=tenant.slug) }}" style="height:32px;width:32px;object-fit:contain;border-radius:6px;margin-right:8px;" alt="">
+  {% endif %}
   <span class="lh-nome">{{ tenant.store_name }}</span>
   <button class="lh-cart" onclick="abrirCarrinho()" id="btnCartHeader" style="display:none;">
     <span>🛒</span>
