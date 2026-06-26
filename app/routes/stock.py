@@ -31,18 +31,7 @@ def index():
     tipo_id  = request.args.get('tipo', type=int)
     marca_id = request.args.get('marca', type=int)
     tipos    = ProductType.query.filter_by(tenant_id=tid()).order_by(ProductType.name).all()
-
-    # Se categoria selecionada, mostrar só marcas que têm produtos nessa categoria
-    if tipo_id:
-        brand_ids = [r[0] for r in db.session.query(Product.brand_id).filter(
-            Product.tenant_id == tid(),
-            Product.active == True,
-            Product.type_id == tipo_id,
-            Product.brand_id != None,
-        ).distinct().all()]
-        marcas = Brand.query.filter(Brand.id.in_(brand_ids)).order_by(Brand.name).all()
-    else:
-        marcas = Brand.query.filter_by(tenant_id=tid()).order_by(Brand.name).all()
+    marcas   = Brand.query.filter_by(tenant_id=tid()).order_by(Brand.name).all()
 
     ordem    = request.args.get('ordem', '')
 
