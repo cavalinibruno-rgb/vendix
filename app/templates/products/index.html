@@ -80,12 +80,16 @@
           <td class="text-success fw-semibold">R$ {{ '%.2f' | format(p.sale_price) }}</td>
           <td class="text-muted small">R$ {{ '%.2f' | format(p.cost_price) }}</td>
           <td>
-            {% if p.stock_quantity <= 0 %}
-              <span class="badge bg-danger">{{ p.stock_quantity }}</span>
-            {% elif p.stock_quantity <= p.min_stock %}
-              <span class="badge bg-warning text-dark">{{ p.stock_quantity }}</span>
+            {% set es = p.effective_stock %}
+            {% if es <= 0 %}
+              <span class="badge bg-danger">{{ es }}</span>
+            {% elif es <= p.min_stock %}
+              <span class="badge bg-warning text-dark">{{ es }}</span>
             {% else %}
-              <span class="badge bg-success">{{ p.stock_quantity }}</span>
+              <span class="badge bg-success">{{ es }}</span>
+            {% endif %}
+            {% if p.pack_parent_id and p.pack_remainder > 0 %}
+              <span class="text-muted small">+{{ p.pack_remainder }}u</span>
             {% endif %}
           </td>
           <td class="pe-4">

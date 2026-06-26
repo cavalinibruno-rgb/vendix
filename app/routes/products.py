@@ -279,8 +279,30 @@ def _cols():
     """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
     return [Product.id, Product.name, Product.sale_price, Product.sale_price_card,
             Product.sale_price_event, Product.stock_quantity, Product.type_id, Product.brand_id,
-            Product.image_url,
+            Product.image_url, Product.pack_parent_id, Product.pack_qty,
             ((Product.image_data != None) | (Product.image_url != None)).label('has_image')]
+
+def _effective_stock(r, parent_stock_map):
+    """Calcula estoque efetivo: pack usa estoque do pai ÷ pack_qty."""
+    if r.pack_parent_id and r.pack_qty and r.pack_qty > 0:
+        parent_stock = parent_stock_map.get(r.pack_parent_id, 0)
+        return parent_stock // r.pack_qty
+    return r.stock_quantity
+
+def _pack_remainder(r, parent_stock_map):
+    if r.pack_parent_id and r.pack_qty and r.pack_qty > 0:
+        parent_stock = parent_stock_map.get(r.pack_parent_id, 0)
+        return parent_stock % r.pack_qty
+    return 0
+
+def _build_parent_stock_map(rows):
+    """Carrega estoques dos produtos pai referenciados por packs."""
+    parent_ids = {r.pack_parent_id for r in rows if r.pack_parent_id}
+    if not parent_ids:
+        return {}
+    parents = Product.query.filter(Product.id.in_(parent_ids)).with_entities(
+        Product.id, Product.stock_quantity).all()
+    return {p.id: p.stock_quantity for p in parents}
 
 @products_bp.route('/api/buscar')
 @login_required
@@ -302,12 +324,13 @@ def api_buscar():
         Product.id.in_([r.id for r in rows]), Product.tenant_id == tenant_id()
     ).with_entities(Product.id, Product.cost_price, Product.sale_price_card).all()}
 
+    psm = _build_parent_stock_map(rows)
     return jsonify([{
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
         'sale_price_card': (extra[r.id].sale_price_card or 0) if r.id in extra else 0,
         'cost_price': (extra[r.id].cost_price or 0) if r.id in extra else 0,
-        'stock_quantity': r.stock_quantity,
+        'stock_quantity': _effective_stock(r, psm),
         'has_image': bool(r.has_image),
         'type': tipos.get(r.type_id, ''),
         'type_id': r.type_id,
@@ -340,12 +363,14 @@ def api_todos():
                     Product.query.filter_by(id=p.id).update({'thumbnail_data': t.encode()})
             db.session.commit()
 
+    psm = _build_parent_stock_map(rows)
     return jsonify([{
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
         'sale_price_card': r.sale_price_card or 0,
         'sale_price_event': r.sale_price_event or 0,
-        'stock_quantity': r.stock_quantity,
+        'stock_quantity': _effective_stock(r, psm),
+        'pack_remainder': _pack_remainder(r, psm) if r.pack_parent_id else 0,
         'thumbnail': r2_urls.get(r.id) or thumbs.get(r.id),
         'type_id': r.type_id,
         'type_name': tipos.get(r.type_id, 'Sem categoria'),

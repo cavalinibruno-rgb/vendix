@@ -52,3 +52,19 @@ class Product(db.Model):
 
     combo_items = db.relationship('ComboItem', foreign_keys='ComboItem.combo_id',
                                   backref='combo_product', cascade='all, delete-orphan', lazy=True)
+
+    @property
+    def effective_stock(self):
+        """Para pack: estoque do pai ÷ unidades. Para unitário/combo: stock_quantity normal."""
+        if self.pack_parent_id and self.pack_qty and self.pack_qty > 0:
+            parent_stock = self.pack_parent.stock_quantity if self.pack_parent else 0
+            return parent_stock // self.pack_qty
+        return self.stock_quantity
+
+    @property
+    def pack_remainder(self):
+        """Unidades restantes do pai que não completam um pack."""
+        if self.pack_parent_id and self.pack_qty and self.pack_qty > 0:
+            parent_stock = self.pack_parent.stock_quantity if self.pack_parent else 0
+            return parent_stock % self.pack_qty
+        return 0
