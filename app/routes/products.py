@@ -96,17 +96,26 @@ def novo():
         )
         db.session.add(product)
         db.session.flush()
-        foto = request.files.get('imagem')
-        if foto and foto.filename:
-            img_bytes, mime = _comprimir_imagem(foto)
-            key = r2.unique_key('produtos', '.jpg')
-            try:
-                product.image_url = r2.upload(img_bytes, key, mime)
-                product.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
-            except Exception:
-                product.image_data = img_bytes
-                product.image_mime = mime
-                product.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+        def _salvar_foto(prod, file_field):
+            foto = request.files.get(file_field)
+            if foto and foto.filename:
+                img_bytes, mime = _comprimir_imagem(foto)
+                key = r2.unique_key('produtos', '.jpg')
+                try:
+                    prod.image_url = r2.upload(img_bytes, key, mime)
+                    prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+                except Exception:
+                    prod.image_data = img_bytes
+                    prod.image_mime = mime
+                    prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+
+        tem_pack   = request.form.get('tem_pack') == '1'
+        pack_qty_v = int(request.form.get('pack_qty', 0) or 0)
+
+        if tem_pack and pack_qty_v > 1 and not is_combo:
+            _salvar_foto(product, 'imagem_unidade')
+        else:
+            _salvar_foto(product, 'imagem')
 
         for comp in combo_components:
             ci = ComboItem(combo_id=product.id,
@@ -115,8 +124,6 @@ def novo():
             db.session.add(ci)
 
         # Pack: cria produto pack vinculado
-        tem_pack   = request.form.get('tem_pack') == '1'
-        pack_qty_v = int(request.form.get('pack_qty', 0) or 0)
         if tem_pack and pack_qty_v > 1 and not is_combo:
             pack = Product(
                 tenant_id        = tenant_id(),
@@ -134,6 +141,8 @@ def novo():
                 pack_qty         = pack_qty_v,
             )
             db.session.add(pack)
+            db.session.flush()
+            _salvar_foto(pack, 'imagem_pack')
 
         db.session.commit()
         if tem_pack and pack_qty_v > 1 and not is_combo:

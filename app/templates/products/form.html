@@ -166,7 +166,8 @@
                      value="{{ product.min_stock if product else '0' }}" min="0">
             </div>
           </div>
-          <div class="mb-3">
+          <!-- Foto única (sem pack) -->
+          <div class="mb-3" id="fotoUnica">
             <label class="form-label fw-semibold">Foto do Produto</label>
             {% if product and product.image_data %}
             <div class="mb-2">
@@ -176,9 +177,25 @@
               <div class="text-muted small mt-1">Envie uma nova foto para substituir.</div>
             </div>
             {% endif %}
-            <input type="file" name="imagem" class="form-control" accept="image/*">
+            <input type="file" name="imagem" id="fotoUnicaInput" class="form-control" accept="image/*">
             <div class="form-text">JPG, PNG ou WebP. Recomendado: fundo branco, quadrada.</div>
           </div>
+
+          <!-- Fotos separadas (com pack) -->
+          {% if not product %}
+          <div id="fotoPack" style="display:none;">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Foto da Unidade</label>
+              <input type="file" name="imagem_unidade" id="fotoUnidadeInput" class="form-control" accept="image/*">
+              <div class="form-text">JPG, PNG ou WebP. Recomendado: fundo branco, quadrada.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Foto do Pack</label>
+              <input type="file" name="imagem_pack" id="fotoPackInput" class="form-control" accept="image/*">
+              <div class="form-text">JPG, PNG ou WebP. Recomendado: fundo branco, quadrada.</div>
+            </div>
+          </div>
+          {% endif %}
           <div class="mb-4">
             <label class="form-label fw-semibold">Descrição</label>
             <textarea name="description" class="form-control" rows="2"
@@ -305,6 +322,14 @@ const brandCtrl = initSearch('brandInput', 'brandDropdown', 'brand_id', ALL_BRAN
 function togglePackFields() {
   const show = document.getElementById('temPackCheck').checked;
   document.getElementById('packFields').style.display = show ? '' : 'none';
+  document.getElementById('fotoUnica').style.display  = show ? 'none' : '';
+  document.getElementById('fotoPack').style.display   = show ? '' : 'none';
+  // Limpa o input que ficou escondido para não enviar arquivo errado
+  if (show) document.getElementById('fotoUnicaInput').value = '';
+  else {
+    document.getElementById('fotoUnidadeInput').value = '';
+    document.getElementById('fotoPackInput').value = '';
+  }
 }
 
 function toggleNova(which) {
