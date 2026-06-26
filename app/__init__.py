@@ -17,7 +17,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 
 LOJA_DOMAIN_SUFFIX = '.vendixapp.com.br'
-APP_VERSION = '1.0.0'
+APP_VERSION = '1.0.3'
 
 
 class LojaSubdomainMiddleware:
