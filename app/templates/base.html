@@ -324,9 +324,8 @@
       {% if tenant %}
         {% if tenant.logo_url or tenant.logo_data %}
         <img src="{{ url_for('config.servir_logo') }}" class="topbar-logo" alt="{{ tenant.store_name }}">
-        {% else %}
-        <span class="topbar-store-name">{{ tenant.store_name }}</span>
         {% endif %}
+        <span class="topbar-store-name">{{ tenant.store_name }}</span>
       {% endif %}
     {% endif %}
   </div>
