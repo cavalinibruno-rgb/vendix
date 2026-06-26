@@ -17,6 +17,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 
 LOJA_DOMAIN_SUFFIX = '.vendixapp.com.br'
+APP_VERSION = '1.0.0'
 
 
 class LojaSubdomainMiddleware:
@@ -313,6 +314,10 @@ def create_app():
         tenant = current_user.tenant
         if tenant and not tenant.profile_complete:
             return redirect(url_for('completar_cadastro.index'))
+
+    @app.context_processor
+    def inject_app_version():
+        return {'app_version': APP_VERSION}
 
     @app.context_processor
     def inject_nav_badges():
