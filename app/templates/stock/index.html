@@ -73,8 +73,10 @@
           </thead>
           <tbody>
             {% for p in produtos %}
-            {% set zerado  = p.stock_quantity <= 0 %}
-            {% set baixo   = p.stock_quantity > 0 and p.stock_quantity <= p.min_stock %}
+            {% set es = eff_stock(p) %}
+            {% set ms = eff_min(p) %}
+            {% set zerado  = es <= 0 %}
+            {% set baixo   = es > 0 and es <= ms %}
             <tr>
               <td class="ps-4">
                 {% if p.image_data %}
@@ -94,11 +96,11 @@
               </td>
               <td class="text-center">
                 {% if zerado %}
-                  <span class="text-danger fw-bold"><i class="bi bi-x-circle me-1"></i>{{ p.stock_quantity }}</span>
+                  <span class="text-danger fw-bold"><i class="bi bi-x-circle me-1"></i>{{ es }}</span>
                 {% elif baixo %}
-                  <span class="text-warning fw-bold"><i class="bi bi-exclamation-circle me-1"></i>{{ p.stock_quantity }}</span>
+                  <span class="text-warning fw-bold"><i class="bi bi-exclamation-circle me-1"></i>{{ es }}</span>
                 {% else %}
-                  <span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>{{ p.stock_quantity }}</span>
+                  <span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>{{ es }}</span>
                 {% endif %}
               </td>
               <td class="text-end small text-muted pe-4">R$ {{ '%.2f'|format(p.sale_price) }}</td>
@@ -192,7 +194,7 @@
             <select name="product_id" class="form-select" required>
               <option value="">— Selecione —</option>
               {% for p in produtos %}
-              <option value="{{ p.id }}">{{ p.name }} (atual: {{ p.stock_quantity }})</option>
+              <option value="{{ p.id }}">{{ p.name }} (atual: {{ es }})</option>
               {% endfor %}
             </select>
           </div>
@@ -247,7 +249,7 @@
             <select name="product_id_ajuste" id="produtoAjuste" class="form-select" required onchange="selecionarProdutoAjuste(this)">
               <option value="">— Selecione —</option>
               {% for p in produtos %}
-              <option value="{{ p.id }}" data-qtd="{{ p.stock_quantity }}">{{ p.name }} (atual: {{ p.stock_quantity }})</option>
+              <option value="{{ p.id }}" data-qtd="{{ es }}">{{ p.name }} (atual: {{ es }})</option>
               {% endfor %}
             </select>
           </div>

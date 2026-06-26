@@ -52,6 +52,26 @@ def index():
         query = query.order_by(Product.name)
     produtos = query.all()
 
+    # Estoque efetivo dos packs
+    parent_ids = {p.pack_parent_id for p in produtos if p.pack_parent_id}
+    parent_stock_map = {}
+    parent_min_map   = {}
+    if parent_ids:
+        for pr in Product.query.filter(Product.id.in_(parent_ids)).with_entities(
+                Product.id, Product.stock_quantity, Product.min_stock).all():
+            parent_stock_map[pr.id] = pr.stock_quantity
+            parent_min_map[pr.id]   = pr.min_stock
+
+    def eff_stock(p):
+        if p.pack_parent_id and p.pack_qty:
+            return parent_stock_map.get(p.pack_parent_id, 0) // p.pack_qty
+        return p.stock_quantity
+
+    def eff_min(p):
+        if p.pack_parent_id and p.pack_qty:
+            return parent_min_map.get(p.pack_parent_id, 0) // p.pack_qty
+        return p.min_stock
+
     # Movimentações com filtros
     filtro_tipo = request.args.get('mov_tipo', '')   # entrada | saida | ''
     filtro_data = request.args.get('mov_data', '')
@@ -73,6 +93,7 @@ def index():
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
         marcas=marcas, marca_id=marca_id,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
+        eff_stock=eff_stock, eff_min=eff_min,
     )
 
 @stock_bp.route('/entrada', methods=['POST'])
