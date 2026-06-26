@@ -1604,11 +1604,7 @@ function finalizarVenda() {
           const printer   = await getPrinterSelecionada();
           const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
           const result    = await window.electronAPI.printRaw(escposUrl, printer);
-          if (result && !result.ok) {
-            alert('Erro na impressão:\n' + result.error);
-          } else if (result && result.ok) {
-            // ok silencioso
-          }
+          alert('DEBUG impressão:\nok=' + (result && result.ok) + '\nerror=' + (result && result.error) + '\nwritten=' + (result && result.written) + '\nprinter=' + printer);
         } catch(e) {
           console.error('[print]', e);
         }
