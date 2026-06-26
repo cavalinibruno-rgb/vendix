@@ -29,13 +29,13 @@
         <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
           <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
                  style="max-width:200px;" placeholder="Buscar produto...">
-          <select name="tipo" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
+          <select name="tipo" id="filtroTipo" class="form-select form-select-sm" style="max-width:150px;" onchange="filtrarTipoEstoque(this.value)">
             <option value="">Todos os tipos</option>
             {% for t in tipos %}
             <option value="{{ t.id }}" {% if t.id == tipo_id %}selected{% endif %}>{{ t.name }}</option>
             {% endfor %}
           </select>
-          <select name="marca" class="form-select form-select-sm" style="max-width:150px;" onchange="this.form.submit()">
+          <select name="marca" id="filtroMarca" class="form-select form-select-sm" style="max-width:150px;">
             <option value="">Todas as marcas</option>
             {% for m in marcas %}
             <option value="{{ m.id }}" {% if m.id == marca_id %}selected{% endif %}>{{ m.name }}</option>
@@ -299,5 +299,42 @@ function selecionarProdutoAjuste(sel) {
   document.getElementById('formAjuste').action = id ? `/estoque/${id}/ajustar` : '#';
 }
 
+const todosProdEstoque = [
+  {% for p in todos_produtos %}
+  { type_id: {{ p.type_id or 'null' }}, brand_id: {{ p.brand_id or 'null' }} },
+  {% endfor %}
+];
+
+const todasMarcasEstoque = [
+  {% for m in marcas %}
+  { id: {{ m.id }}, nome: {{ m.name | tojson }} },
+  {% endfor %}
+];
+
+function construirMarcasEstoque(lista) {
+  const marcasVisiveis = new Map();
+  lista.forEach(p => { if (p.brand_id) marcasVisiveis.set(p.brand_id, true); });
+  const sel = document.getElementById('filtroMarca');
+  const valorAtual = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  todasMarcasEstoque.forEach(m => {
+    if (!marcasVisiveis.size || marcasVisiveis.has(m.id)) {
+      const o = document.createElement('option');
+      o.value = m.id; o.textContent = m.nome;
+      sel.appendChild(o);
+    }
+  });
+  sel.value = [...sel.options].some(o => o.value == valorAtual) ? valorAtual : '';
+}
+
+function filtrarTipoEstoque(tipoId) {
+  const lista = tipoId ? todosProdEstoque.filter(p => p.type_id == tipoId) : todosProdEstoque;
+  construirMarcasEstoque(lista);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const tipoAtual = document.getElementById('filtroTipo').value;
+  if (tipoAtual) filtrarTipoEstoque(tipoAtual);
+});
 </script>
 {% endblock %}

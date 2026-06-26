@@ -32,6 +32,8 @@ def index():
     marca_id = request.args.get('marca', type=int)
     tipos    = ProductType.query.filter_by(tenant_id=tid()).order_by(ProductType.name).all()
     marcas   = Brand.query.filter_by(tenant_id=tid()).order_by(Brand.name).all()
+    todos_produtos = Product.query.filter_by(tenant_id=tid(), active=True).with_entities(
+        Product.type_id, Product.brand_id).all()
 
     ordem    = request.args.get('ordem', '')
 
@@ -91,7 +93,7 @@ def index():
 
     return render_template('stock/index.html',
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
-        marcas=marcas, marca_id=marca_id,
+        marcas=marcas, marca_id=marca_id, todos_produtos=todos_produtos,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
         eff_stock=eff_stock, eff_min=eff_min,
     )
