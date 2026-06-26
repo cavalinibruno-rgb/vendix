@@ -215,6 +215,12 @@ def editar(product_id):
 @login_required
 def excluir(product_id):
     product = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
+    # Desvincula packs filhos antes de excluir o pai
+    Product.query.filter_by(pack_parent_id=product.id, tenant_id=tenant_id()).update(
+        {'pack_parent_id': None, 'pack_qty': None}
+    )
+    # Remove combo items que referenciam este produto como componente
+    ComboItem.query.filter_by(component_id=product.id).delete()
     db.session.delete(product)
     db.session.commit()
     flash('Produto removido.', 'success')
