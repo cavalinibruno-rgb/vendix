@@ -771,12 +771,24 @@ function construirMarcas(lista) {
   const marcas = new Map();
   lista.forEach(p => { if (p.brand_id && !marcas.has(p.brand_id)) marcas.set(p.brand_id, p.brand_name); });
   const sel = document.getElementById('filtroMarca');
+  const valorAtual = sel.value;
+  // limpa opções mantendo "Todas as marcas"
+  while (sel.options.length > 1) sel.remove(1);
   marcas.forEach((nome, id) => {
     const o = document.createElement('option'); o.value = id; o.textContent = nome; sel.appendChild(o);
   });
+  // tenta restaurar seleção anterior; se não existir mais, volta para "todas"
+  sel.value = marcas.has(Number(valorAtual)) ? valorAtual : 'todas';
+  marcaAtual = sel.value;
 }
 
-function filtrarCategoria(val) { catAtual = val; aplicarFiltros(); }
+function filtrarCategoria(val) {
+  catAtual = val;
+  // filtra a lista de produtos pela categoria selecionada para mostrar só marcas relevantes
+  const listaCat = val === 'todas' ? todosProds : todosProds.filter(p => p.type_id == val);
+  construirMarcas(listaCat);
+  aplicarFiltros();
+}
 function filtrarMarca(val)     { marcaAtual = val; aplicarFiltros(); }
 
 function limparFiltros() {
