@@ -137,6 +137,35 @@
                      value="{{ product.min_stock if product else '0' }}" min="0">
             </div>
           </div>
+          <!-- Pack -->
+          {% if not product %}
+          <div class="mb-3" id="packSection">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="temPackCheck"
+                     name="tem_pack" value="1" onchange="togglePackFields()">
+              <label class="form-check-label fw-semibold" for="temPackCheck">
+                Este produto também é vendido em Pack
+              </label>
+            </div>
+            <div id="packFields" style="display:none;">
+              <div class="alert alert-warning py-2 small mb-2">
+                Ao cadastrar, será criado automaticamente o produto <strong>Pack [Nome do Produto]</strong>
+                vinculado ao estoque deste. Ajuste o preço do Pack depois de criado.
+              </div>
+              <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                  <label class="form-label fw-semibold mb-0">Unidades por Pack</label>
+                </div>
+                <div class="col-auto">
+                  <input type="number" name="pack_qty" id="packQty" class="form-control"
+                         style="width:100px;" min="2" value="12" placeholder="Ex: 12">
+                </div>
+                <div class="col-auto text-muted small">unidades do produto unitário</div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           <div class="mb-3">
             <label class="form-label fw-semibold">Foto do Produto</label>
             {% if product and product.image_data %}
@@ -272,6 +301,11 @@ const catCtrl   = initSearch('catInput',   'catDropdown',   'type_id',  ALL_CATS
 const brandCtrl = initSearch('brandInput', 'brandDropdown', 'brand_id', ALL_BRANDS, 'brandNova');
 
 /* ── Toggle formulário nova categoria/marca ── */
+function togglePackFields() {
+  const show = document.getElementById('temPackCheck').checked;
+  document.getElementById('packFields').style.display = show ? '' : 'none';
+}
+
 function toggleNova(which) {
   const el = document.getElementById(which + 'Nova');
   el.style.display = el.style.display === 'none' ? '' : 'none';

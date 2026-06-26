@@ -44,5 +44,11 @@ class Product(db.Model):
     thumbnail_data = db.Column(db.LargeBinary)
     created_at     = db.Column(db.DateTime, default=datetime.now)
 
+    pack_parent_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
+    pack_qty       = db.Column(db.Integer, nullable=True)  # unidades contidas neste pack
+
+    pack_parent = db.relationship('Product', foreign_keys=[pack_parent_id], remote_side='Product.id',
+                                  backref=db.backref('pack_children', lazy=True))
+
     combo_items = db.relationship('ComboItem', foreign_keys='ComboItem.combo_id',
                                   backref='combo_product', cascade='all, delete-orphan', lazy=True)

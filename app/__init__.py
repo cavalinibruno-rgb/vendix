@@ -202,6 +202,8 @@ def _run_migrations(db):
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMP",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS reject_reason TEXT",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS pack_parent_id INTEGER REFERENCES products(id)",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS pack_qty INTEGER",
         """CREATE TABLE IF NOT EXISTS coupons (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

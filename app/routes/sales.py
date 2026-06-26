@@ -143,6 +143,22 @@ def confirmar():
                                 user_id      = _user_id(),
                                 user_name    = current_user.display_name or current_user.username,
                             ))
+                elif prod.pack_parent_id and prod.pack_qty:
+                    # Pack: deduz do produto pai
+                    parent = Product.query.filter_by(id=prod.pack_parent_id, tenant_id=tid()).first()
+                    if parent:
+                        total_deduct = int(prod.pack_qty * qty)
+                        parent.stock_quantity = max(0, parent.stock_quantity - total_deduct)
+                        db.session.add(StockMovement(
+                            tenant_id    = tid(),
+                            product_id   = parent.id,
+                            product_name = parent.name,
+                            type         = 'saida',
+                            quantity     = total_deduct,
+                            motive       = f'Pack "{prod.name}" ({prod.pack_qty}un) — {mot}',
+                            user_id      = _user_id(),
+                            user_name    = current_user.display_name or current_user.username,
+                        ))
                 else:
                     prod.stock_quantity = max(0, prod.stock_quantity - int(qty))
                     db.session.add(StockMovement(
@@ -497,6 +513,21 @@ def cancelar(sale_id):
                             user_id      = _user_id(),
                             user_name    = current_user.display_name or current_user.username,
                         ))
+            elif prod and prod.pack_parent_id and prod.pack_qty:
+                parent = Product.query.filter_by(id=prod.pack_parent_id, tenant_id=tid()).first()
+                if parent:
+                    total = int(prod.pack_qty * item.quantity)
+                    parent.stock_quantity += total
+                    db.session.add(StockMovement(
+                        tenant_id    = tid(),
+                        product_id   = parent.id,
+                        product_name = parent.name,
+                        type         = 'entrada',
+                        quantity     = total,
+                        motive       = f'Cancelamento pack "{prod.name}" Venda #{sale.id}',
+                        user_id      = _user_id(),
+                        user_name    = current_user.display_name or current_user.username,
+                    ))
             elif prod:
                 prod.stock_quantity += int(item.quantity)
                 db.session.add(StockMovement(

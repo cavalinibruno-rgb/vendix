@@ -114,8 +114,32 @@ def novo():
                            quantity=float(comp['quantity']))
             db.session.add(ci)
 
+        # Pack: cria produto pack vinculado
+        tem_pack   = request.form.get('tem_pack') == '1'
+        pack_qty_v = int(request.form.get('pack_qty', 0) or 0)
+        if tem_pack and pack_qty_v > 1 and not is_combo:
+            pack = Product(
+                tenant_id        = tenant_id(),
+                type_id          = type_id,
+                brand_id         = brand_id,
+                name             = f'Pack {name}',
+                description      = f'Pack com {pack_qty_v} unidades de {name}.',
+                sale_price       = 0,
+                sale_price_card  = 0,
+                sale_price_event = 0,
+                cost_price       = cost_price * pack_qty_v,
+                stock_quantity   = 0,
+                min_stock        = 0,
+                pack_parent_id   = product.id,
+                pack_qty         = pack_qty_v,
+            )
+            db.session.add(pack)
+
         db.session.commit()
-        flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
+        if tem_pack and pack_qty_v > 1 and not is_combo:
+            flash(f'Produto "{name}" e "Pack {name}" cadastrados com sucesso!', 'success')
+        else:
+            flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
 
     return render_template('products/form.html', types=types, brands=brands, product=None)
