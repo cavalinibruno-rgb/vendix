@@ -1601,8 +1601,9 @@ function finalizarVenda() {
       const url = `${window.location.origin}/vendas/${d.sale_id}/comprovante`;
       if (window.electronAPI && window.electronAPI.printRaw) {
         try {
-          const printer = await getPrinterSelecionada();
-          const result  = await window.electronAPI.printRaw(url, printer);
+          const printer   = await getPrinterSelecionada();
+          const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
+          const result    = await window.electronAPI.printRaw(escposUrl, printer);
           if (result && !result.ok) console.error('[print]', result.error);
         } catch(e) {
           console.error('[print]', e);
