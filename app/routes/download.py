@@ -60,18 +60,15 @@ def update_file(filename):
 # Manifesto lido pelo electron-updater para verificar se há nova versão
 @download_bp.route('/download/updates/latest.yml')
 def latest_yml():
-    import requests as _requests
     release = AppRelease.query.filter_by(platform='windows').order_by(AppRelease.uploaded_at.desc()).first()
     if not release:
         abort(404)
-    if release.file_url and not release.file_data:
-        try:
-            file_bytes = _requests.get(release.file_url, timeout=30).content
-        except Exception:
-            abort(503)
-        sha = _sha512_b64(file_bytes)
-    else:
+    if release.file_sha512:
+        sha = release.file_sha512
+    elif release.file_data:
         sha = _sha512_b64(release.file_data)
+    else:
+        abort(503)
     date = release.uploaded_at.strftime('%Y-%m-%dT%H:%M:%S.000Z')
     yml = (
         f"version: {release.version}\n"
@@ -105,6 +102,7 @@ def upload():
             flash('Arquivo muito grande. Limite: 150 MB.', 'danger')
             return redirect(url_for('download.upload'))
 
+        sha = _sha512_b64(data)
         key = f'releases/{f.filename}'
         try:
             file_url = r2.upload(data, key, 'application/octet-stream')
@@ -113,6 +111,7 @@ def upload():
                 description = description,
                 filename    = f.filename,
                 file_url    = file_url,
+                file_sha512 = sha,
                 file_size   = len(data),
                 platform    = platform,
             )
@@ -122,6 +121,7 @@ def upload():
                 description = description,
                 filename    = f.filename,
                 file_data   = data,
+                file_sha512 = sha,
                 file_size   = len(data),
                 platform    = platform,
             )

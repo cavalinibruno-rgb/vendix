@@ -197,6 +197,7 @@ def _run_migrations(db):
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_url VARCHAR(512)",
         "ALTER TABLE app_releases ADD COLUMN IF NOT EXISTS file_url VARCHAR(512)",
         "ALTER TABLE app_releases ALTER COLUMN file_data DROP NOT NULL",
+        "ALTER TABLE app_releases ADD COLUMN IF NOT EXISTS file_sha512 VARCHAR(128)",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS sale_id INTEGER REFERENCES sales(id)",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMP",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP",

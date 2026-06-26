@@ -1,5 +1,6 @@
-const { app, BrowserWindow, shell, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { autoUpdater } = require('electron-updater');
 
 const VENDIX_URL = 'https://vendix-production-5c8b.up.railway.app';
 
@@ -47,6 +48,31 @@ app.whenReady().then(() => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+
+  // Verifica atualização 5 segundos após abrir
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 5000);
+});
+
+autoUpdater.on('update-available', () => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Atualização disponível',
+    message: 'Uma nova versão do Vendix está disponível. Ela será baixada em segundo plano.',
+    buttons: ['OK'],
+  });
+});
+
+autoUpdater.on('update-downloaded', () => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Atualização pronta',
+    message: 'A atualização foi baixada. O Vendix será reiniciado para instalar.',
+    buttons: ['Reiniciar agora'],
+  }).then(() => {
+    autoUpdater.quitAndInstall();
   });
 });
 
