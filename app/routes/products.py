@@ -152,7 +152,7 @@ def novo():
                     })
                 i += 1
 
-        if packs_data:
+        if tem_pack:
             _salvar_foto(product, 'imagem_unidade')
         else:
             _salvar_foto(product, 'imagem')
