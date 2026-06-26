@@ -91,7 +91,7 @@ def index():
 
     return render_template('stock/index.html',
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
-        marcas=marcas, marca_id=marca_id, tipo_marcas=tipo_marcas,
+        marcas=marcas, marca_id=marca_id,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
         eff_stock=eff_stock, eff_min=eff_min,
     )
