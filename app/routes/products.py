@@ -214,13 +214,19 @@ def editar(product_id):
 @products_bp.route('/<int:product_id>/excluir', methods=['POST'])
 @login_required
 def excluir(product_id):
+    from app.models.sale import SaleItem
+    from app.models.stock import StockMovement
     product = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
-    # Desvincula packs filhos antes de excluir o pai
+    # Desvincula packs filhos
     Product.query.filter_by(pack_parent_id=product.id, tenant_id=tenant_id()).update(
         {'pack_parent_id': None, 'pack_qty': None}
     )
-    # Remove combo items que referenciam este produto como componente
+    # Remove combo items que usam este produto (como combo ou componente)
     ComboItem.query.filter_by(component_id=product.id).delete()
+    ComboItem.query.filter_by(combo_id=product.id).delete()
+    # Desvincula itens de venda e movimentações (mantém histórico, só remove FK)
+    SaleItem.query.filter_by(product_id=product.id).update({'product_id': None})
+    StockMovement.query.filter_by(product_id=product.id).update({'product_id': None})
     db.session.delete(product)
     db.session.commit()
     flash('Produto removido.', 'success')
