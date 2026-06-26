@@ -322,7 +322,7 @@
     {% if current_user.is_authenticated and not current_user.is_master %}
       {% set tenant = current_user.tenant %}
       {% if tenant %}
-        {% if tenant.logo_data %}
+        {% if tenant.logo_url or tenant.logo_data %}
         <img src="{{ url_for('config.servir_logo') }}" class="topbar-logo" alt="{{ tenant.store_name }}">
         {% else %}
         <span class="topbar-store-name">{{ tenant.store_name }}</span>
