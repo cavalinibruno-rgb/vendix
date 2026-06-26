@@ -758,57 +758,63 @@ async function buscarCepLoja(val) {
     const bairroTextEl = document.getElementById('cliBairroText');
     const bairroSelEl  = document.getElementById('bairroSel');
     if (bairroTextEl && d.bairro) bairroTextEl.value = d.bairro;
+
+    const geoStatus = document.getElementById('geoStatus');
+    let bairroCasado = false;
+
+    // 1º: tenta casar com bairro cadastrado (tem taxa definida)
     if (bairroSelEl && d.bairro) {
       for (let opt of bairroSelEl.options) {
         if (opt.text.toLowerCase().includes(d.bairro.toLowerCase())) {
           bairroSelEl.value = opt.value;
-          onBairroChange(); // calcula taxa pelo bairro cadastrado
+          onBairroChange();
+          bairroCasado = true;
+          cepOk = true;
+          if (geoStatus) { geoStatus.textContent = ''; }
           break;
         }
       }
     }
 
-    // CEP válido libera o pedido imediatamente
-    cepOk = true;
-
-    // Calcula taxa por distância usando coordenadas do endereço (loja com GPS)
-    const geoStatus = document.getElementById('geoStatus');
-    if (geoStatus) {
+    // 2º: loja usa GPS e bairro não casou → tenta Nominatim
+    if (!bairroCasado && geoStatus) {
       geoStatus.textContent = '🔍 Calculando taxa de entrega…';
       geoStatus.style.color = '#888';
+      cepOk = false;
       try {
-        // Usa endereço completo do ViaCEP para geocodificação mais precisa
-        const query = [d.logradouro, d.bairro, d.localidade, d.uf, 'Brasil']
-          .filter(Boolean).join(', ');
+        const query = [d.logradouro, d.bairro, d.localidade, d.uf, 'Brasil'].filter(Boolean).join(', ');
         const nom  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
         const nomD = await nom.json();
         if (nomD && nomD[0]) {
           const lat = nomD[0].lat, lng = nomD[0].lon;
           const res = await fetch(`/loja/${SLUG}/taxa-distancia?lat=${lat}&lng=${lng}`);
           const td  = await res.json();
-          if (!td.error) {
+          if (!td.error && !td.fora) {
             taxaEntrega = td.fee || 0;
             geoOk = true;
+            cepOk = true;
             atualizarCartUI();
             renderCartTotais();
-            geoStatus.textContent = td.fora
-              ? '⚠️ Endereço fora da área de entrega.'
-              : td.fee > 0
-                ? `✅ Taxa de entrega: R$ ${fmt(td.fee)}`
-                : '✅ Entrega grátis!';
-            geoStatus.style.color = td.fora ? '#e08000' : '#27ae60';
+            geoStatus.textContent = td.fee > 0 ? `✅ Taxa de entrega: R$ ${fmt(td.fee)}` : '✅ Entrega grátis!';
+            geoStatus.style.color = '#27ae60';
+          } else if (td.fora) {
+            geoStatus.textContent = '⚠️ Endereço fora da área de entrega.';
+            geoStatus.style.color = '#e08000';
           } else {
-            geoStatus.textContent = '⚠️ Não foi possível calcular a taxa.';
+            geoStatus.textContent = '⚠️ Não foi possível calcular a taxa. Use sua localização para continuar.';
             geoStatus.style.color = '#e08000';
           }
         } else {
-          geoStatus.textContent = '⚠️ CEP não encontrado para cálculo de taxa. Use sua localização para continuar.';
+          geoStatus.textContent = '⚠️ CEP não encontrado. Use sua localização para continuar.';
           geoStatus.style.color = '#e08000';
-          cepOk = false;
         }
       } catch(e) {
-        geoStatus.textContent = '';
+        geoStatus.textContent = '⚠️ Erro ao calcular taxa. Use sua localização para continuar.';
+        geoStatus.style.color = '#e08000';
       }
+    } else if (!bairroCasado) {
+      // loja sem GPS e bairro não casou: libera mesmo assim
+      cepOk = true;
     }
 
     // Foca no campo número
