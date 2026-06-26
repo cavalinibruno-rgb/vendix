@@ -180,9 +180,10 @@ def _run_migrations(db):
             created_at TIMESTAMP DEFAULT NOW()
         )""",
         # Índices de performance
-        "CREATE INDEX IF NOT EXISTS idx_sales_tenant_id ON sales(tenant_id)",
+        "DROP INDEX IF EXISTS idx_sales_tenant_id",
+        "DROP INDEX IF EXISTS idx_sales_tenant_status",
         "CREATE INDEX IF NOT EXISTS idx_sales_tenant_created ON sales(tenant_id, created_at)",
-        "CREATE INDEX IF NOT EXISTS idx_sales_tenant_status ON sales(tenant_id, status)",
+        "CREATE INDEX IF NOT EXISTS idx_sales_tenant_created_status ON sales(tenant_id, created_at DESC, status)",
         "CREATE INDEX IF NOT EXISTS idx_pedidos_tenant_status ON pedidos_online(tenant_id, status)",
         "CREATE INDEX IF NOT EXISTS idx_pedidos_tenant_created ON pedidos_online(tenant_id, created_at)",
         "CREATE INDEX IF NOT EXISTS idx_products_tenant_id ON products(tenant_id)",
