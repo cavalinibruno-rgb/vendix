@@ -763,9 +763,23 @@ async function buscarCepLoja(val) {
     const geoStatus = document.getElementById('geoStatus');
     // Calcula por distância via coordenadas da BrasilAPI
     if (geoStatus) {
+      // Tenta coordenadas diretas da BrasilAPI, senão geocodifica pelo endereço
       const coords = d.location && d.location.coordinates;
-      const lat = coords && coords.latitude;
-      const lng = coords && coords.longitude;
+      let lat = coords && coords.latitude;
+      let lng = coords && coords.longitude;
+
+      if (!lat || !lng) {
+        // Fallback: geocodificar endereço via Nominatim
+        geoStatus.textContent = '🔍 Calculando taxa de entrega…';
+        geoStatus.style.color = '#888';
+        try {
+          const q = [d.street, d.neighborhood, d.city, d.state, 'Brasil'].filter(Boolean).join(', ');
+          const nom  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=br`);
+          const nomD = await nom.json();
+          if (nomD && nomD[0]) { lat = nomD[0].lat; lng = nomD[0].lon; }
+        } catch(_) {}
+      }
+
       if (lat && lng) {
         geoStatus.textContent = '🔍 Calculando taxa de entrega…';
         geoStatus.style.color = '#888';
@@ -793,7 +807,6 @@ async function buscarCepLoja(val) {
           geoStatus.style.color = '#e08000';
         }
       } else {
-        // Sem coordenadas: pede para usar GPS
         geoStatus.textContent = '⚠️ CEP não encontrado. Use sua localização para continuar.';
         geoStatus.style.color = '#e08000';
         cepOk = false;
