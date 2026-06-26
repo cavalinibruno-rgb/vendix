@@ -360,3 +360,31 @@ def api_categorias():
 def api_marcas():
     brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
     return jsonify([{'id': b.id, 'name': b.name} for b in brands])
+
+@products_bp.route('/api/categoria-rapida', methods=['POST'])
+@login_required
+def api_categoria_rapida():
+    name = (request.json or {}).get('name', '').strip()
+    if not name:
+        return jsonify({'error': 'Nome obrigatório'}), 400
+    existing = ProductType.query.filter_by(tenant_id=tenant_id(), name=name).first()
+    if existing:
+        return jsonify({'id': existing.id, 'name': existing.name})
+    t = ProductType(tenant_id=tenant_id(), name=name)
+    db.session.add(t)
+    db.session.commit()
+    return jsonify({'id': t.id, 'name': t.name})
+
+@products_bp.route('/api/marca-rapida', methods=['POST'])
+@login_required
+def api_marca_rapida():
+    name = (request.json or {}).get('name', '').strip()
+    if not name:
+        return jsonify({'error': 'Nome obrigatório'}), 400
+    existing = Brand.query.filter_by(tenant_id=tenant_id(), name=name).first()
+    if existing:
+        return jsonify({'id': existing.id, 'name': existing.name})
+    b = Brand(tenant_id=tenant_id(), name=name)
+    db.session.add(b)
+    db.session.commit()
+    return jsonify({'id': b.id, 'name': b.name})

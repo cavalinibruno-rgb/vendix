@@ -17,29 +17,52 @@
             <input type="text" name="name" class="form-control"
                    value="{{ product.name if product else '' }}" required autofocus>
           </div>
+          <!-- Categoria com busca -->
           <div class="mb-3">
             <label class="form-label fw-semibold">Categoria</label>
-            <select name="type_id" id="typeSelect" class="form-select">
-              <option value="">— Sem categoria —</option>
-              {% for t in types %}
-              <option value="{{ t.id }}"
-                data-name="{{ t.name | lower }}"
-                {% if product and product.type_id == t.id %}selected{% endif %}>
-                {{ t.name }}
-              </option>
-              {% endfor %}
-            </select>
+            <input type="hidden" name="type_id" id="type_id"
+                   value="{{ product.type_id if product and product.type_id else '' }}">
+            <div class="srch-wrap" id="catWrap">
+              <input type="text" class="form-control srch-input" id="catInput"
+                     placeholder="Buscar categoria…"
+                     autocomplete="off"
+                     value="{{ product.type.name if product and product.type_id else '' }}">
+              <div class="srch-dropdown" id="catDropdown"></div>
+            </div>
+            <div id="catNova" style="display:none;margin-top:6px;">
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="catNovaInput" placeholder="Nome da nova categoria">
+                <button type="button" class="btn btn-outline-warning" onclick="criarCategoria()">+ Cadastrar</button>
+              </div>
+            </div>
+            <div style="margin-top:4px;">
+              <button type="button" class="btn btn-link btn-sm p-0 text-warning" id="btnCatNova"
+                      onclick="toggleNova('cat')">＋ Cadastrar Categoria</button>
+            </div>
           </div>
+
+          <!-- Marca com busca -->
           <div class="mb-3">
             <label class="form-label fw-semibold">Marca</label>
-            <select name="brand_id" class="form-select">
-              <option value="">— Sem marca —</option>
-              {% for b in brands %}
-              <option value="{{ b.id }}" {% if product and product.brand_id == b.id %}selected{% endif %}>
-                {{ b.name }}
-              </option>
-              {% endfor %}
-            </select>
+            <input type="hidden" name="brand_id" id="brand_id"
+                   value="{{ product.brand_id if product and product.brand_id else '' }}">
+            <div class="srch-wrap" id="brandWrap">
+              <input type="text" class="form-control srch-input" id="brandInput"
+                     placeholder="Buscar marca…"
+                     autocomplete="off"
+                     value="{{ product.brand.name if product and product.brand_id else '' }}">
+              <div class="srch-dropdown" id="brandDropdown"></div>
+            </div>
+            <div id="brandNova" style="display:none;margin-top:6px;">
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control" id="brandNovaInput" placeholder="Nome da nova marca">
+                <button type="button" class="btn btn-outline-warning" onclick="criarMarca()">+ Cadastrar</button>
+              </div>
+            </div>
+            <div style="margin-top:4px;">
+              <button type="button" class="btn btn-link btn-sm p-0 text-warning" id="btnBrandNova"
+                      onclick="toggleNova('brand')">＋ Cadastrar Marca</button>
+            </div>
           </div>
           <div class="row g-3 mb-3">
             <div class="col-md-3">
@@ -147,9 +170,153 @@
 </div>
 {% endblock %}
 
+{% block styles %}
+<style>
+.srch-wrap { position: relative; }
+.srch-dropdown {
+  display: none;
+  position: absolute;
+  left: 0; right: 0;
+  background: #1e2235;
+  border: 1px solid #3a3f5c;
+  border-radius: 8px;
+  z-index: 200;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+.srch-dropdown.open { display: block; }
+.srch-opt {
+  padding: 9px 14px;
+  cursor: pointer;
+  font-size: .9rem;
+  color: #cdd1e0;
+  border-bottom: 1px solid #2a2f45;
+}
+.srch-opt:last-child { border-bottom: none; }
+.srch-opt:hover, .srch-opt.active { background: #2d3450; color: #f0c040; }
+.srch-opt.empty { color: #888; font-style: italic; cursor: default; }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
-const typeSelect    = document.getElementById('typeSelect');
+/* ── Dados de categorias e marcas ── */
+const ALL_CATS = [
+  {% for t in types %}
+  { id: {{ t.id }}, name: {{ t.name | tojson }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+const ALL_BRANDS = [
+  {% for b in brands %}
+  { id: {{ b.id }}, name: {{ b.name | tojson }} }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+/* ── Busca genérica ── */
+function initSearch(inputId, dropId, hiddenId, allItems, novaSection, onSelect) {
+  const inp    = document.getElementById(inputId);
+  const drop   = document.getElementById(dropId);
+  const hidden = document.getElementById(hiddenId);
+  let items    = allItems.slice();
+
+  function render(list) {
+    drop.innerHTML = '';
+    if (!list.length) {
+      drop.innerHTML = '<div class="srch-opt empty">Nenhum resultado</div>';
+    } else {
+      list.forEach(item => {
+        const d = document.createElement('div');
+        d.className = 'srch-opt';
+        d.textContent = item.name;
+        d.addEventListener('mousedown', e => { e.preventDefault(); select(item); });
+        drop.appendChild(d);
+      });
+    }
+    drop.classList.add('open');
+  }
+
+  function select(item) {
+    hidden.value = item ? item.id : '';
+    inp.value    = item ? item.name : '';
+    drop.classList.remove('open');
+    if (onSelect) onSelect(item);
+  }
+
+  inp.addEventListener('focus', () => {
+    render(items.filter(i => i.name.toLowerCase().includes(inp.value.toLowerCase())));
+  });
+  inp.addEventListener('input', () => {
+    hidden.value = '';
+    const q = inp.value.toLowerCase();
+    render(items.filter(i => i.name.toLowerCase().includes(q)));
+  });
+  inp.addEventListener('blur', () => {
+    setTimeout(() => drop.classList.remove('open'), 150);
+    // Se o texto não bate com nenhum item, limpa
+    if (!items.find(i => i.name.toLowerCase() === inp.value.toLowerCase())) {
+      if (inp.value && !hidden.value) { inp.value = ''; }
+    }
+  });
+
+  // Permite adicionar item dinamicamente (após cadastro rápido)
+  return {
+    addItem(item) {
+      if (!items.find(i => i.id === item.id)) items.push(item);
+      select(item);
+    }
+  };
+}
+
+const catCtrl   = initSearch('catInput',   'catDropdown',   'type_id',  ALL_CATS,   'catNova',   () => { toggleCombo(); updateCost(); });
+const brandCtrl = initSearch('brandInput', 'brandDropdown', 'brand_id', ALL_BRANDS, 'brandNova');
+
+/* ── Toggle formulário nova categoria/marca ── */
+function toggleNova(which) {
+  const el = document.getElementById(which + 'Nova');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+  if (el.style.display !== 'none') {
+    document.getElementById(which + 'NovaInput').focus();
+  }
+}
+
+/* ── Criar categoria rápida ── */
+async function criarCategoria() {
+  const name = document.getElementById('catNovaInput').value.trim();
+  if (!name) return;
+  const r = await fetch('/produtos/api/categoria-rapida', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name})
+  });
+  const data = await r.json();
+  if (data.error) { alert(data.error); return; }
+  catCtrl.addItem(data);
+  document.getElementById('catNovaInput').value = '';
+  document.getElementById('catNova').style.display = 'none';
+}
+
+/* ── Criar marca rápida ── */
+async function criarMarca() {
+  const name = document.getElementById('brandNovaInput').value.trim();
+  if (!name) return;
+  const r = await fetch('/produtos/api/marca-rapida', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name})
+  });
+  const data = await r.json();
+  if (data.error) { alert(data.error); return; }
+  brandCtrl.addItem(data);
+  document.getElementById('brandNovaInput').value = '';
+  document.getElementById('brandNova').style.display = 'none';
+}
+
+/* ── Enter nos inputs de nova cat/marca ── */
+document.getElementById('catNovaInput').addEventListener('keydown', e => { if (e.key==='Enter'){e.preventDefault();criarCategoria();} });
+document.getElementById('brandNovaInput').addEventListener('keydown', e => { if (e.key==='Enter'){e.preventDefault();criarMarca();} });
+
+/* ── Combo section ── */
 const comboSection  = document.getElementById('comboSection');
 const stockFields   = document.getElementById('stockFields');
 const comboInput    = document.getElementById('comboComponentsInput');
@@ -162,8 +329,8 @@ let searchMap = {};
 let searchTimeout;
 
 function isCombo() {
-  const opt = typeSelect.options[typeSelect.selectedIndex];
-  return opt && opt.dataset.name && opt.dataset.name.includes('combo');
+  const catName = document.getElementById('catInput').value.toLowerCase();
+  return catName.includes('combo');
 }
 function toggleCombo() {
   const combo = isCombo();
@@ -234,7 +401,7 @@ document.getElementById('comboSearchBtn').addEventListener('click', () => search
 document.addEventListener('click', e => {
   if (!searchBox.contains(e.target) && !searchResults.contains(e.target)) searchResults.style.display = 'none';
 });
-typeSelect.addEventListener('change', () => { toggleCombo(); updateCost(); });
+document.getElementById('catInput').addEventListener('change', () => { toggleCombo(); updateCost(); });
 toggleCombo();
 renderComponents();
 updateCost();
