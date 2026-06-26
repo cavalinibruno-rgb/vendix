@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#1a1a2e">
+<title>Rastrear Pedido – {{ tenant.store_name }}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-height:100vh;}
+.header{background:#1a1a2e;padding:14px 18px;text-align:center;}
+.header-nome{color:#c9a84c;font-size:1rem;font-weight:700;}
+.header-sub{color:#aaa;font-size:.78rem;margin-top:2px;}
+.card{background:#fff;border-radius:16px;margin:20px 16px;padding:24px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.titulo{font-size:1.1rem;font-weight:800;color:#1a1a2e;text-align:center;margin-bottom:6px;}
+.sub{font-size:.82rem;color:#888;text-align:center;margin-bottom:20px;}
+.inp{width:100%;background:#f5f5f5;border:1.5px solid #e5e5e5;border-radius:10px;
+     padding:13px 14px;font-size:1rem;outline:none;transition:border-color .2s;}
+.inp:focus{border-color:#c9a84c;}
+.btn{width:100%;margin-top:12px;background:#c9a84c;color:#fff;border:none;border-radius:10px;
+     padding:13px;font-size:.95rem;font-weight:700;cursor:pointer;}
+.btn:active{opacity:.85;}
+.erro{background:#fff1f2;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 14px;
+      font-size:.85rem;color:#c0392b;margin-top:14px;text-align:center;}
+.entregue{text-align:center;padding:20px 0;}
+.entregue-icon{font-size:3rem;margin-bottom:10px;}
+.entregue-txt{font-size:1rem;font-weight:700;color:#1a1a2e;}
+.entregue-sub{font-size:.82rem;color:#888;margin-top:6px;}
+.btn-voltar{display:block;text-align:center;margin:0 16px 28px;padding:13px;
+            background:#1a1a2e;color:#c9a84c;border-radius:12px;font-weight:700;
+            text-decoration:none;font-size:.9rem;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-nome">{{ tenant.store_name }}</div>
+  <div class="header-sub">Rastrear pedido</div>
+</div>
+
+<div class="card">
+  {% if entregue %}
+  <div class="entregue">
+    <div class="entregue-icon">✅</div>
+    <div class="entregue-txt">Pedido entregue!</div>
+    <div class="entregue-sub">Seu pedido já foi entregue com sucesso.<br>Obrigado pela preferência!</div>
+  </div>
+  {% else %}
+  <div class="titulo">📦 Onde está meu pedido?</div>
+  <div class="sub">Informe o número do pedido ou seu telefone</div>
+  <form method="get" action="/loja/{{ tenant.slug }}/rastrear">
+    <input class="inp" name="q" type="text" inputmode="numeric"
+           placeholder="Nº do pedido ou telefone"
+           value="{{ busca or '' }}" autocomplete="off">
+    <button class="btn" type="submit">🔍 Rastrear</button>
+    {% if erro %}
+    <div class="erro">{{ erro }}</div>
+    {% endif %}
+  </form>
+  {% endif %}
+</div>
+
+<a href="/loja/{{ tenant.slug }}" class="btn-voltar">← Voltar ao cardápio</a>
+
+</body>
+</html>

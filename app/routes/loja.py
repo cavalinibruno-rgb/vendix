@@ -240,6 +240,48 @@ def taxa_distancia(slug):
     return jsonify({'dist_km': round(dist_km, 2), 'fee': 0, 'fora': True})
 
 
+# ── Rastrear pedido por telefone ou número ──────────────
+@loja_bp.route('/<slug>/rastrear')
+def rastrear(slug):
+    tenant = _get_tenant(slug)
+    busca  = request.args.get('q', '').strip()
+    erro   = None
+    pedido = None
+
+    if busca:
+        # Tenta por ID numérico
+        if busca.isdigit():
+            pedido = PedidoOnline.query.filter_by(
+                id=int(busca), tenant_id=tenant.id
+            ).first()
+        # Tenta por telefone (normaliza removendo não-dígitos)
+        if not pedido:
+            tel = ''.join(c for c in busca if c.isdigit())
+            if tel:
+                pedido = PedidoOnline.query.filter_by(
+                    tenant_id=tenant.id, cliente_tel=busca
+                ).order_by(PedidoOnline.created_at.desc()).first()
+                if not pedido and tel != busca:
+                    pedido = PedidoOnline.query.filter(
+                        PedidoOnline.tenant_id == tenant.id,
+                        PedidoOnline.cliente_tel.contains(tel[-8:])
+                    ).order_by(PedidoOnline.created_at.desc()).first()
+
+        if not pedido:
+            erro = 'Pedido não encontrado. Verifique o número ou telefone.'
+        else:
+            # Verifica se já foi entregue
+            if pedido.sale_id:
+                sale = Sale.query.get(pedido.sale_id)
+                if sale and sale.delivered_at:
+                    return render_template('loja/rastrear.html',
+                        tenant=tenant, pedido=None, entregue=True, busca=busca)
+            return redirect(url_for('loja.acompanhar', slug=slug, pedido_id=pedido.id))
+
+    return render_template('loja/rastrear.html',
+        tenant=tenant, pedido=None, entregue=False, busca=busca, erro=erro)
+
+
 # ── Acompanhar pedido (cliente) ─────────────────────────
 @loja_bp.route('/<slug>/pedido/<int:pedido_id>/acompanhar')
 def acompanhar(slug, pedido_id):
@@ -258,9 +300,14 @@ def pedido_status(slug, pedido_id):
     dispatched_at = None
 
     # Se foi aceito e a venda foi despachada pelo módulo de Entregas
+    delivered_at = None
     if pedido.sale_id and status == 'accepted':
         sale = Sale.query.get(pedido.sale_id)
-        if sale and sale.dispatched_at:
+        if sale and sale.delivered_at:
+            status = 'delivered'
+            dispatched_at = sale.dispatched_at.strftime('%H:%M') if sale.dispatched_at else None
+            delivered_at  = sale.delivered_at.strftime('%H:%M')
+        elif sale and sale.dispatched_at:
             status = 'dispatched'
             dispatched_at = sale.dispatched_at.strftime('%H:%M')
 
@@ -268,6 +315,7 @@ def pedido_status(slug, pedido_id):
         'status':        status,
         'accepted_at':   pedido.accepted_at.strftime('%H:%M') if pedido.accepted_at else None,
         'dispatched_at': dispatched_at,
+        'delivered_at':  delivered_at,
         'reject_reason': pedido.reject_reason,
     })
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'

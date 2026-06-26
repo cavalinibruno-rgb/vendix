@@ -207,6 +207,20 @@ function applyStatus(data) {
     document.getElementById('dot-dispatched').textContent = '✓';
     if (data.dispatched_at) timeDisp.textContent = data.dispatched_at;
 
+  } else if (s === 'delivered') {
+    banner.className = 'status-banner accepted';
+    banner.innerHTML = '<span class="status-icon">🏠</span><div class="status-text">Pedido entregue!</div><div class="status-sub">Obrigado pela preferência!</div>';
+    stepAcc.className  = 'step done'; dotAcc.textContent = '✓';
+    if (data.accepted_at)  timeAcc.textContent  = data.accepted_at;
+    stepDisp.className = 'step done';
+    document.getElementById('dot-dispatched').textContent = '✓';
+    if (data.dispatched_at) timeDisp.textContent = data.dispatched_at;
+    const stepDel = document.getElementById('step-delivered');
+    stepDel.className = 'step done';
+    stepDel.querySelector('.step-dot').textContent = '✓';
+    if (data.delivered_at) stepDel.querySelector('.step-time').textContent = data.delivered_at;
+    clearInterval(pollTimer);
+
   } else if (s === 'rejected') {
     banner.className = 'status-banner rejected';
     banner.innerHTML = `<span class="status-icon">❌</span><div class="status-text">Pedido recusado</div><div class="status-sub">${data.reject_reason || 'A loja não pôde atender seu pedido.'}</div>`;

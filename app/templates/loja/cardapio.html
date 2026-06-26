@@ -191,6 +191,15 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 </div>
 
 <!-- Busca -->
+<div style="padding:8px 14px 0;">
+  <a href="/loja/{{ tenant.slug }}/rastrear"
+     style="display:flex;align-items:center;justify-content:center;gap:8px;
+            background:#1a1a2e;color:#c9a84c;border-radius:10px;padding:10px;
+            font-size:.85rem;font-weight:700;text-decoration:none;">
+    📦 Rastrear meu pedido
+  </a>
+</div>
+
 <div class="busca-wrap">
   <span class="busca-icon">🔍</span>
   <input class="busca-input" type="search" id="inputBusca" placeholder="Buscar produto..." oninput="filtrarBusca(this.value)">
