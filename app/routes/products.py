@@ -109,10 +109,28 @@ def novo():
                     prod.image_mime = mime
                     prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
 
-        tem_pack   = request.form.get('tem_pack') == '1'
-        pack_qty_v = int(request.form.get('pack_qty', 0) or 0)
+        tem_pack = request.form.get('tem_pack') == '1'
 
-        if tem_pack and pack_qty_v > 1 and not is_combo:
+        # Coleta packs[0][qty], packs[1][qty], etc.
+        packs_data = []
+        if tem_pack and not is_combo:
+            i = 0
+            while True:
+                qty_str = request.form.get(f'packs[{i}][qty]')
+                if qty_str is None:
+                    break
+                qty = int(qty_str or 0)
+                if qty > 1:
+                    packs_data.append({
+                        'qty':        qty,
+                        'preco':      float(request.form.get(f'packs[{i}][preco]', 0) or 0),
+                        'preco_card': float(request.form.get(f'packs[{i}][preco_card]', 0) or 0),
+                        'preco_event':float(request.form.get(f'packs[{i}][preco_event]', 0) or 0),
+                        'foto_key':   f'packs[{i}][foto]',
+                    })
+                i += 1
+
+        if packs_data:
             _salvar_foto(product, 'imagem_unidade')
         else:
             _salvar_foto(product, 'imagem')
@@ -123,33 +141,31 @@ def novo():
                            quantity=float(comp['quantity']))
             db.session.add(ci)
 
-        # Pack: cria produto pack vinculado
-        if tem_pack and pack_qty_v > 1 and not is_combo:
-            pack_sale_price       = float(request.form.get('pack_sale_price', 0) or 0)
-            pack_sale_price_card  = float(request.form.get('pack_sale_price_card', 0) or 0)
-            pack_sale_price_event = float(request.form.get('pack_sale_price_event', 0) or 0)
+        # Cria um produto pack para cada entrada
+        for pd in packs_data:
             pack = Product(
                 tenant_id        = tenant_id(),
                 type_id          = type_id,
                 brand_id         = brand_id,
-                name             = f'Pack {name}',
-                description      = f'Pack com {pack_qty_v} unidades de {name}.',
-                sale_price       = pack_sale_price,
-                sale_price_card  = pack_sale_price_card,
-                sale_price_event = pack_sale_price_event,
-                cost_price       = cost_price * pack_qty_v,
+                name             = f'Pack c/ {pd["qty"]} {name}',
+                description      = f'Pack com {pd["qty"]} unidades de {name}.',
+                sale_price       = pd['preco'],
+                sale_price_card  = pd['preco_card'],
+                sale_price_event = pd['preco_event'],
+                cost_price       = cost_price * pd['qty'],
                 stock_quantity   = 0,
                 min_stock        = 0,
                 pack_parent_id   = product.id,
-                pack_qty         = pack_qty_v,
+                pack_qty         = pd['qty'],
             )
             db.session.add(pack)
             db.session.flush()
-            _salvar_foto(pack, 'imagem_pack')
+            _salvar_foto(pack, pd['foto_key'])
 
         db.session.commit()
-        if tem_pack and pack_qty_v > 1 and not is_combo:
-            flash(f'Produto "{name}" e "Pack {name}" cadastrados com sucesso!', 'success')
+        if packs_data:
+            nomes = ', '.join(f'Pack c/ {p["qty"]}' for p in packs_data)
+            flash(f'Produto "{name}" e packs ({nomes}) cadastrados com sucesso!', 'success')
         else:
             flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))

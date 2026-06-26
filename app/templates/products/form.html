@@ -23,34 +23,10 @@
               </label>
             </div>
             <div id="packFields" style="display:none;">
-              <div class="row g-2 align-items-center mb-3">
-                <div class="col-auto">
-                  <label class="form-label fw-semibold mb-0">Unidades por Pack</label>
-                </div>
-                <div class="col-auto">
-                  <input type="number" name="pack_qty" id="packQty" class="form-control"
-                         style="width:100px;" min="2" value="12" placeholder="Ex: 12">
-                </div>
-                <div class="col-auto text-muted small">unidades do produto unitário</div>
-              </div>
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <label class="form-label fw-semibold">Preço Dinheiro Pack (R$)</label>
-                  <input type="number" name="pack_sale_price" class="form-control"
-                         value="0.00" min="0" step="0.01">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label fw-semibold">Preço Cartão Pack (R$)</label>
-                  <input type="number" name="pack_sale_price_card" class="form-control"
-                         value="0.00" min="0" step="0.01">
-                  <div class="form-text text-muted">0 = mesmo do dinheiro.</div>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label fw-semibold">Preço Evento Pack (R$)</label>
-                  <input type="number" name="pack_sale_price_event" class="form-control"
-                         value="0.00" min="0" step="0.01">
-                </div>
-              </div>
+              <div id="packsLista"></div>
+              <button type="button" class="btn btn-outline-warning btn-sm mt-1" onclick="adicionarPack()">
+                + Adicionar Pack
+              </button>
             </div>
           </div>
           {% endif %}
@@ -333,17 +309,70 @@ const catCtrl   = initSearch('catInput',   'catDropdown',   'type_id',  ALL_CATS
 const brandCtrl = initSearch('brandInput', 'brandDropdown', 'brand_id', ALL_BRANDS, 'brandNova');
 
 /* ── Toggle formulário nova categoria/marca ── */
+let packCount = 0;
+
 function togglePackFields() {
   const show = document.getElementById('temPackCheck').checked;
-  document.getElementById('packFields').style.display = show ? '' : 'none';
-  document.getElementById('fotoUnica').style.display  = show ? 'none' : '';
-  document.getElementById('fotoPack').style.display   = show ? '' : 'none';
-  // Limpa o input que ficou escondido para não enviar arquivo errado
-  if (show) document.getElementById('fotoUnicaInput').value = '';
-  else {
+  document.getElementById('packFields').style.display  = show ? '' : 'none';
+  document.getElementById('fotoUnica').style.display   = show ? 'none' : '';
+  document.getElementById('fotoPack').style.display    = show ? '' : 'none';
+  if (show) {
+    document.getElementById('fotoUnicaInput').value = '';
+    if (packCount === 0) adicionarPack();
+  } else {
     document.getElementById('fotoUnidadeInput').value = '';
     document.getElementById('fotoPackInput').value = '';
+    document.getElementById('packsLista').innerHTML = '';
+    packCount = 0;
   }
+}
+
+function adicionarPack() {
+  const i = packCount++;
+  const div = document.createElement('div');
+  div.id = `pack_${i}`;
+  div.className = 'border rounded p-3 mb-2 position-relative';
+  div.innerHTML = `
+    <button type="button" class="btn-close position-absolute top-0 end-0 m-2"
+            onclick="removerPack(${i})" title="Remover"></button>
+    <div class="row g-2 align-items-center mb-2">
+      <div class="col-auto">
+        <label class="form-label fw-semibold mb-0">Unidades</label>
+      </div>
+      <div class="col-auto">
+        <input type="number" name="packs[${i}][qty]" class="form-control form-control-sm"
+               style="width:90px;" min="2" placeholder="Ex: 6" required>
+      </div>
+      <div class="col text-muted small">unidades → nome: <em>Pack c/ N Nome</em></div>
+    </div>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Preço Dinheiro (R$)</label>
+        <input type="number" name="packs[${i}][preco]" class="form-control form-control-sm"
+               value="0.00" min="0" step="0.01">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Preço Cartão (R$)</label>
+        <input type="number" name="packs[${i}][preco_card]" class="form-control form-control-sm"
+               value="0.00" min="0" step="0.01">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">Preço Evento (R$)</label>
+        <input type="number" name="packs[${i}][preco_event]" class="form-control form-control-sm"
+               value="0.00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="mt-2">
+      <label class="form-label small fw-semibold mb-1">Foto deste Pack (opcional)</label>
+      <input type="file" name="packs[${i}][foto]" class="form-control form-control-sm" accept="image/*">
+    </div>
+  `;
+  document.getElementById('packsLista').appendChild(div);
+}
+
+function removerPack(i) {
+  const el = document.getElementById(`pack_${i}`);
+  if (el) el.remove();
 }
 
 function toggleNova(which) {
