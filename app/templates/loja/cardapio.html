@@ -802,8 +802,9 @@ async function buscarCepLoja(val) {
             geoStatus.style.color = '#e08000';
           }
         } else {
-          geoStatus.textContent = '⚠️ CEP não encontrado para cálculo de taxa.';
+          geoStatus.textContent = '⚠️ CEP não encontrado para cálculo de taxa. Use sua localização para continuar.';
           geoStatus.style.color = '#e08000';
+          cepOk = false;
         }
       } catch(e) {
         geoStatus.textContent = '';
