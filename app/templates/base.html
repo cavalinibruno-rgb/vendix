@@ -309,7 +309,6 @@
     {% if current_user.is_authenticated %}
     <div class="footer-name" style="color:#9ba8b5;font-size:.8rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;">{{ current_user.display_name or current_user.username }}</div>
     <div class="footer-name" style="color:#5a6370;font-size:.7rem;margin-bottom:8px;">v{{ app_version }}</div>
-    <div class="footer-name" style="color:#5a6370;font-size:.7rem;margin-bottom:8px;">v1.0.2</div>
     <a href="{{ url_for('auth.logout') }}" class="nav-link" style="padding:6px 0;">
       <i class="bi bi-box-arrow-left"></i><span class="nav-label"> Sair</span>
     </a>
