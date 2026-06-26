@@ -761,24 +761,8 @@ async function buscarCepLoja(val) {
     if (bairroTextEl && bairroNome) bairroTextEl.value = bairroNome;
 
     const geoStatus = document.getElementById('geoStatus');
-    let bairroCasado = false;
-
-    // 1º: tenta casar com bairro cadastrado (tem taxa definida)
-    if (bairroSelEl && bairroNome) {
-      for (let opt of bairroSelEl.options) {
-        if (opt.text.toLowerCase().includes(bairroNome.toLowerCase())) {
-          bairroSelEl.value = opt.value;
-          onBairroChange();
-          bairroCasado = true;
-          cepOk = true;
-          if (geoStatus) geoStatus.textContent = '';
-          break;
-        }
-      }
-    }
-
-    // 2º: bairro não casou mas BrasilAPI retornou coordenadas → calcula por distância
-    if (!bairroCasado && geoStatus) {
+    // Calcula por distância via coordenadas da BrasilAPI
+    if (geoStatus) {
       const coords = d.location && d.location.coordinates;
       const lat = coords && coords.latitude;
       const lng = coords && coords.longitude;
