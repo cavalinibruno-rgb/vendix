@@ -371,20 +371,28 @@ def escpos(sale_id):
     def itens_com_combo():
         d  = LEFT + enc('PRODUTO'.ljust(W-20) + 'QTD'.center(8) + 'TOTAL'.rjust(12)) + NL
         d += sep()
+        def _wrap_words(text, width):
+            """Quebra texto em linhas respeitando palavras inteiras."""
+            words, lines, cur = text.split(), [], ''
+            for w in words:
+                if cur and len(cur) + 1 + len(w) > width:
+                    lines.append(cur)
+                    cur = w
+                else:
+                    cur = (cur + ' ' + w).strip()
+            if cur:
+                lines.append(cur)
+            return lines or ['']
+
         for item in sale.items:
             full_nm = item.product_name
             col_nm  = W - 20
-            if len(full_nm) <= col_nm:
-                nm = full_nm
-                d += LEFT + enc(nm.ljust(col_nm) + str(int(item.quantity)).center(8) + f'R${item.total:.2f}'.rjust(12)) + NL
-            else:
-                # primeira linha: nome truncado + qtd + total
-                d += LEFT + enc(full_nm[:col_nm].ljust(col_nm) + str(int(item.quantity)).center(8) + f'R${item.total:.2f}'.rjust(12)) + NL
-                # linhas extras com o restante do nome
-                rest = full_nm[col_nm:]
-                while rest:
-                    d += LEFT + enc(rest[:col_nm]) + NL
-                    rest = rest[col_nm:]
+            linhas_nm = _wrap_words(full_nm, col_nm)
+            # primeira linha: nome + qtd + total
+            d += LEFT + enc(linhas_nm[0].ljust(col_nm) + str(int(item.quantity)).center(8) + f'R${item.total:.2f}'.rjust(12)) + NL
+            # linhas seguintes (se nome longo)
+            for extra in linhas_nm[1:]:
+                d += LEFT + enc(extra) + NL
             # Composição do combo
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
