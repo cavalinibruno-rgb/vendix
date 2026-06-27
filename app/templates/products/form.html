@@ -36,31 +36,6 @@
             </div>
           </div>
 
-          <!-- Seção preços gelado (aparece quando toggle ativo) -->
-          <div id="geladoFields" style="display:{% if product and (product.sale_price_cold or product.sale_price_cold_card) %}block{% else %}none{% endif %};" class="mb-3">
-            <div class="card border-0" style="background:rgba(14,165,233,.08);border-radius:10px;padding:14px 16px;">
-              <div class="d-flex align-items-center gap-2 mb-3">
-                <span style="font-size:1.1rem;">🧊</span>
-                <span class="fw-semibold" style="color:#38bdf8;">Preços quando Gelado</span>
-              </div>
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label fw-semibold small">Preço Gelado — Dinheiro (R$)</label>
-                  <input type="number" name="sale_price_cold" class="form-control"
-                         value="{{ '%.2f' | format(product.sale_price_cold) if product and product.sale_price_cold else '0.00' }}"
-                         min="0" step="0.01">
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label fw-semibold small">Preço Gelado — Cartão (R$)</label>
-                  <input type="number" name="sale_price_cold_card" class="form-control"
-                         value="{{ '%.2f' | format(product.sale_price_cold_card) if product and product.sale_price_cold_card else '0.00' }}"
-                         min="0" step="0.01">
-                  <div class="form-text" style="color:#7dd3fc;">0 = mesmo do Preço Gelado Dinheiro.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- Pack fields -->
           {% if not product %}
           <div id="packFields" style="display:none;" class="mb-3">
@@ -123,6 +98,32 @@
                       onclick="toggleNova('brand')">＋ Cadastrar Marca</button>
             </div>
           </div>
+
+          <!-- Seção preços gelado (aparece quando toggle ativo) -->
+          <div id="geladoFields" style="display:{% if product and (product.sale_price_cold or product.sale_price_cold_card) %}block{% else %}none{% endif %};" class="mb-3">
+            <div class="card border-0" style="background:rgba(14,165,233,.08);border-radius:10px;padding:14px 16px;">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span style="font-size:1.1rem;">🧊</span>
+                <span class="fw-semibold" style="color:#38bdf8;">Preços quando Gelado</span>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Preço Gelado — Dinheiro (R$)</label>
+                  <input type="number" name="sale_price_cold" class="form-control"
+                         value="{{ '%.2f' | format(product.sale_price_cold) if product and product.sale_price_cold else '0.00' }}"
+                         min="0" step="0.01">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Preço Gelado — Cartão (R$)</label>
+                  <input type="number" name="sale_price_cold_card" class="form-control"
+                         value="{{ '%.2f' | format(product.sale_price_cold_card) if product and product.sale_price_cold_card else '0.00' }}"
+                         min="0" step="0.01">
+                  <div class="form-text" style="color:#7dd3fc;">0 = mesmo do Preço Gelado Dinheiro.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="row g-3 mb-3">
             <div class="col-md-3">
               <label class="form-label fw-semibold">Preço Dinheiro (R$)</label>
