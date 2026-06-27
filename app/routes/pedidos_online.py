@@ -69,6 +69,12 @@ def aceitar(pedido_id):
         db.session.add(sale)
         db.session.flush()
 
+        # Sequencial por tenant
+        last = db.session.query(db.func.max(Sale.sale_number)).filter(
+            Sale.tenant_id == tid(), Sale.id != sale.id
+        ).scalar() or 0
+        sale.sale_number = last + 1
+
         for i in items:
             qty  = float(i['quantity'])
             pid  = i.get('product_id')
