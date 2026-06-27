@@ -44,21 +44,24 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-class EmployeeLoginProxy:
+class EmployeeLoginProxy(UserMixin):
     """Adapta Employee para funcionar com Flask-Login."""
     def __init__(self, emp):
         from app.models.tenant import Tenant
         self._emp         = emp
-        self.id           = f'e_{emp.id}'
         self.tenant_id    = emp.tenant_id
         self.username     = emp.username
         self.email        = None
         self.display_name = emp.name
         self.role         = emp.role  # 'caixa'
-        self.is_active    = True
-        self.is_anonymous = False
-        self.is_authenticated = True
         self.tenant       = Tenant.query.get(emp.tenant_id)
+
+    def get_id(self):
+        return f'e_{self._emp.id}'
+
+    @property
+    def id(self):
+        return f'e_{self._emp.id}'
 
     @property
     def is_master(self):
@@ -67,9 +70,6 @@ class EmployeeLoginProxy:
     @property
     def is_employee(self):
         return True
-
-    def get_id(self):
-        return self.id
 
     def check_password(self, pwd):
         return self._emp.check_password(pwd)
