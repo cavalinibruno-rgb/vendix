@@ -74,7 +74,7 @@ def _calcular_dre(inicio_str, fim_str):
         Sale.cancelled_at <= fim,
     ).all()
 
-    receita_bruta      = sum(v.total for v in vendas)
+    receita_bruta      = sum(v.total for v in vendas) + sum(v.total for v in canceladas)
     deducao_cancelados = sum(v.total for v in canceladas)
     base_imposto       = receita_bruta - deducao_cancelados
 
