@@ -862,7 +862,7 @@ function confirmarAddProd() {
     existente.quantity += qtd;
     existente.total = existente.unit_price * existente.quantity;
   } else {
-    const preco = precoParaPgto(prodModalAtual);
+    const preco = precoParaPgto(prodModalAtual, false);
     carrinho.push({
       product_id: prodModalAtual.id,
       name: prodModalAtual.name,
@@ -870,6 +870,7 @@ function confirmarAddProd() {
       unit_price: preco,
       sale_price_original: preco,
       sale_price_cold: prodModalAtual.sale_price_cold || 0,
+      sale_price_cold_card: prodModalAtual.sale_price_cold_card || 0,
       gelado: false,
       quantity: qtd,
       total: preco * qtd,
@@ -1131,14 +1132,11 @@ function removerItem(idx) { carrinho.splice(idx, 1); renderCarrinho(); calcTotai
 function toggleGelado(idx) {
   const item = carrinho[idx];
   item.gelado = !item.gelado;
-  item.unit_price = item.gelado ? item.sale_price_cold : item.sale_price_original;
+  const prod = produtosCache[String(item.product_id)];
+  item.unit_price = prod ? precoParaPgto(prod, item.gelado) : (item.gelado ? item.sale_price_cold : item.sale_price_original);
   item.total = item.unit_price * item.quantity;
   // nome para impressão
-  if (item.gelado) {
-    if (!item.name.endsWith(' Gelado')) item.name = item.name_original + ' Gelado';
-  } else {
-    item.name = item.name_original;
-  }
+  item.name = item.gelado ? item.name_original + ' Gelado' : item.name_original;
   renderCarrinho(); calcTotais();
 }
 
@@ -1321,15 +1319,19 @@ function selecionarSubCartao(valor, label, btn, subId) {
   // Recalcula preços do carrinho
   carrinho.forEach(item => {
     const prod = produtosCache[String(item.product_id)];
-    if (prod) { item.unit_price = precoParaPgto(prod); item.total = item.unit_price * item.quantity; }
+    if (prod) { item.unit_price = precoParaPgto(prod, item.gelado); item.total = item.unit_price * item.quantity; }
   });
   renderCarrinho(); calcTotais();
 }
 
-function precoParaPgto(prod) {
+function precoParaPgto(prod, gelado) {
   if (origem !== 'loja') return prod.sale_price;
   if (EVENT_MODE && prod.sale_price_event && prod.sale_price_event > 0)
     return prod.sale_price_event;
+  if (gelado && prod.sale_price_cold > 0) {
+    if (isCartao() && prod.sale_price_cold_card > 0) return prod.sale_price_cold_card;
+    return prod.sale_price_cold;
+  }
   if (isCartao() && prod.sale_price_card && prod.sale_price_card > 0)
     return prod.sale_price_card;
   return prod.sale_price;
@@ -1379,7 +1381,7 @@ function setPgto(card) {
   }
   carrinho.forEach(item => {
     const prod = produtosCache[String(item.product_id)];
-    if (prod) { item.unit_price = precoParaPgto(prod); item.total = item.unit_price * item.quantity; }
+    if (prod) { item.unit_price = precoParaPgto(prod, item.gelado); item.total = item.unit_price * item.quantity; }
   });
   renderCarrinho();
   calcTotais();
