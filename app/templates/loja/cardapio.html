@@ -794,12 +794,12 @@ function fazerPedido() {
   const bairroTextEl = document.getElementById('cliBairroText');
   const bairroText   = bairroTextEl ? bairroTextEl.value.trim() : '';
   const partes = [];
-  if (end)       partes.push(`Rua: ${end}`);
-  if (num)       partes.push(`Número: ${num}`);
-  if (comp)      partes.push(`Complemento: ${comp}`);
-  if (bairroText)partes.push(`Bairro: ${bairroText}`);
-  if (ref)       partes.push(`Referência: ${ref}`);
-  const endCompleto = partes.join(' | ');
+  if (end)       partes.push(end);
+  if (num)       partes.push(num);
+  if (comp)      partes.push(comp);
+  if (bairroText)partes.push(bairroText);
+  if (ref)       partes.push(`REF: ${ref}`);
+  const endCompleto = partes.join(' - ');
 
   if (modoGeo && !geoOk && !cepOk) { erroEl.textContent = 'Confirme sua localização ou preencha o CEP.'; return; }
   if (!modoGeo && !bairroId) { erroEl.textContent = 'Selecione o bairro.'; return; }
