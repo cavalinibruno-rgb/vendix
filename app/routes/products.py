@@ -333,7 +333,7 @@ def marca_excluir(brand_id):
 def _cols():
     """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
     return [Product.id, Product.name, Product.sale_price, Product.sale_price_card,
-            Product.sale_price_event, Product.stock_quantity, Product.type_id, Product.brand_id,
+            Product.sale_price_event, Product.sale_price_cold, Product.stock_quantity, Product.type_id, Product.brand_id,
             Product.image_url, Product.pack_parent_id, Product.pack_qty,
             ((Product.image_data != None) | (Product.image_url != None)).label('has_image')]
 
@@ -424,6 +424,7 @@ def api_todos():
         'sale_price': r.sale_price,
         'sale_price_card': r.sale_price_card or 0,
         'sale_price_event': r.sale_price_event or 0,
+        'sale_price_cold': r.sale_price_cold or 0,
         'stock_quantity': _effective_stock(r, psm),
         'pack_remainder': _pack_remainder(r, psm) if r.pack_parent_id else 0,
         'thumbnail': r2_urls.get(r.id) or thumbs.get(r.id),

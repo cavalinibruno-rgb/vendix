@@ -867,6 +867,9 @@ function confirmarAddProd() {
       product_id: prodModalAtual.id,
       name: prodModalAtual.name,
       unit_price: preco,
+      sale_price_original: preco,
+      sale_price_cold: prodModalAtual.sale_price_cold || 0,
+      gelado: false,
       quantity: qtd,
       total: preco * qtd,
       thumbnail: prodModalAtual.thumbnail || null,
@@ -1124,6 +1127,14 @@ document.getElementById('btnSalvarCliente').addEventListener('click', function()
 // ── Carrinho ──────────────────────────────────────────
 function removerItem(idx) { carrinho.splice(idx, 1); renderCarrinho(); calcTotais(); }
 
+function toggleGelado(idx) {
+  const item = carrinho[idx];
+  item.gelado = !item.gelado;
+  item.unit_price = item.gelado ? item.sale_price_cold : item.sale_price_original;
+  item.total = item.unit_price * item.quantity;
+  renderCarrinho(); calcTotais();
+}
+
 function alterarQtd(idx, val) {
   const qtd = parseInt(val);
   if (qtd <= 0 || isNaN(qtd)) { removerItem(idx); return; }
@@ -1158,11 +1169,18 @@ function renderCarrinho() {
     const thumbHtml = item.thumbnail
       ? `<img src="${item.thumbnail}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;background:#3a3a3a;" alt="">`
       : `<div style="width:36px;height:36px;border-radius:4px;background:#3a3a3a;display:flex;align-items:center;justify-content:center;color:#555;font-size:.9rem;"><i class="bi bi-box-seam"></i></div>`;
+    const temGelado = item.sale_price_cold > 0;
+    const estaGelado = item.gelado || false;
+    const geladoBtn = temGelado
+      ? `<button class="btn btn-sm p-0 ms-1" title="Preço Gelado"
+           style="font-size:.85rem;opacity:${estaGelado ? 1 : 0.35};"
+           onclick="toggleGelado(${idx})">🧊</button>`
+      : '';
     tr.innerHTML = `
       <td class="ps-2" style="width:44px;">${thumbHtml}</td>
       <td style="max-width:110px;">
         <div class="fw-semibold small">${item.name}</div>
-        <div>${precoCell}</div>
+        <div class="d-flex align-items-center">${precoCell}${geladoBtn}</div>
       </td>
       <td style="width:80px;">
         <input type="number" class="form-control form-control-sm text-center p-1"
