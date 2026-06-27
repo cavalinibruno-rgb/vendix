@@ -206,6 +206,7 @@ def _run_migrations(db):
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS pack_qty INTEGER",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price_cold FLOAT DEFAULT 0",
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS sale_number INTEGER",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price_cold_card FLOAT DEFAULT 0",
         """CREATE TABLE IF NOT EXISTS coupons (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

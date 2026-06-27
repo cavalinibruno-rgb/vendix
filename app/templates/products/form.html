@@ -12,22 +12,62 @@
       <div class="card-header"><i class="bi bi-box-seam me-2 text-warning"></i>Dados do Produto</div>
       <div class="card-body p-4">
         <form method="post" enctype="multipart/form-data">
-          <!-- Pack -->
-          {% if not product %}
-          <div class="mb-3" id="packSection">
-            <div class="form-check form-switch mb-2">
+          <!-- Toggles de configuração -->
+          <div class="mb-3">
+            <!-- Pack -->
+            {% if not product %}
+            <div class="form-check form-switch mb-2" id="packSection">
               <input class="form-check-input" type="checkbox" id="temPackCheck"
                      name="tem_pack" value="1" onchange="togglePackFields()">
               <label class="form-check-label fw-semibold" for="temPackCheck">
                 Este produto também é vendido em Pack
               </label>
             </div>
-            <div id="packFields" style="display:none;">
-              <div id="packsLista"></div>
-              <button type="button" class="btn btn-outline-warning btn-sm mt-1" onclick="adicionarPack()">
-                + Adicionar Pack
-              </button>
+            {% endif %}
+            <!-- Preço Gelado -->
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="temGeladoCheck"
+                     name="tem_gelado" value="1"
+                     onchange="toggleGeladoFields()"
+                     {% if product and (product.sale_price_cold or product.sale_price_cold_card) %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="temGeladoCheck">
+                🧊 Este produto tem preço diferente quando gelado
+              </label>
             </div>
+          </div>
+
+          <!-- Seção preços gelado (aparece quando toggle ativo) -->
+          <div id="geladoFields" style="display:{% if product and (product.sale_price_cold or product.sale_price_cold_card) %}block{% else %}none{% endif %};" class="mb-3">
+            <div class="card border-0" style="background:rgba(14,165,233,.08);border-radius:10px;padding:14px 16px;">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <span style="font-size:1.1rem;">🧊</span>
+                <span class="fw-semibold" style="color:#38bdf8;">Preços quando Gelado</span>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Preço Gelado — Dinheiro (R$)</label>
+                  <input type="number" name="sale_price_cold" class="form-control"
+                         value="{{ '%.2f' | format(product.sale_price_cold) if product and product.sale_price_cold else '0.00' }}"
+                         min="0" step="0.01">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Preço Gelado — Cartão (R$)</label>
+                  <input type="number" name="sale_price_cold_card" class="form-control"
+                         value="{{ '%.2f' | format(product.sale_price_cold_card) if product and product.sale_price_cold_card else '0.00' }}"
+                         min="0" step="0.01">
+                  <div class="form-text" style="color:#7dd3fc;">0 = mesmo do Preço Gelado Dinheiro.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pack fields -->
+          {% if not product %}
+          <div id="packFields" style="display:none;" class="mb-3">
+            <div id="packsLista"></div>
+            <button type="button" class="btn btn-outline-warning btn-sm mt-1" onclick="adicionarPack()">
+              + Adicionar Pack
+            </button>
           </div>
           {% endif %}
 
@@ -103,13 +143,6 @@
                      value="{{ '%.2f' | format(product.sale_price_event) if product else '0.00' }}"
                      min="0" step="0.01">
               <div class="form-text text-muted">Usado quando evento estiver ativo.</div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold">🧊 Preço Gelado (R$)</label>
-              <input type="number" name="sale_price_cold" class="form-control"
-                     value="{{ '%.2f' | format(product.sale_price_cold) if product and product.sale_price_cold else '0.00' }}"
-                     min="0" step="0.01">
-              <div class="form-text text-muted">Opcional. Se vazio, usa o preço normal.</div>
             </div>
             <div class="col-md-3">
               <label class="form-label fw-semibold">Preço de Custo (R$)</label>
@@ -301,6 +334,11 @@ const brandCtrl = initSearch('brandInput', 'brandDropdown', 'brand_id', ALL_BRAN
 
 /* ── Toggle formulário nova categoria/marca ── */
 let packCount = 0;
+
+function toggleGeladoFields() {
+  const show = document.getElementById('temGeladoCheck').checked;
+  document.getElementById('geladoFields').style.display = show ? '' : 'none';
+}
 
 function togglePackFields() {
   const show = document.getElementById('temPackCheck').checked;
