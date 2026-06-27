@@ -339,6 +339,10 @@ let packCount = 0;
 function toggleGeladoFields() {
   const show = document.getElementById('temGeladoCheck').checked;
   document.getElementById('geladoFields').style.display = show ? '' : 'none';
+  // Atualiza campos gelado em todos os cards de pack já renderizados
+  document.querySelectorAll('.pack-gelado-fields').forEach(el => {
+    el.style.display = show ? '' : 'none';
+  });
 }
 
 function togglePackFields() {
@@ -388,7 +392,7 @@ function adicionarPack() {
                value="0.00" min="0" step="0.01">
       </div>
     </div>
-    <div class="row g-2 mt-1" style="background:rgba(14,165,233,.07);border-radius:8px;padding:8px 4px;">
+    <div class="row g-2 mt-1 pack-gelado-fields" style="background:rgba(14,165,233,.07);border-radius:8px;padding:8px 4px;display:${document.getElementById('temGeladoCheck').checked ? '' : 'none'};">
       <div class="col-12 pb-0">
         <span style="font-size:.75rem;font-weight:700;color:#38bdf8;">🧊 Preços quando Gelado</span>
       </div>
