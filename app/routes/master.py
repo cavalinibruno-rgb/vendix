@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models.tenant import Tenant
@@ -147,3 +147,60 @@ def tenant_adicionar_dias(tenant_id):
     db.session.commit()
     flash(f'+{dias} dias adicionados para "{tenant.store_name}". Vence em {tenant.expires_at.strftime("%d/%m/%Y")}.', 'success')
     return redirect(url_for('master.dashboard'))
+
+
+@master_bp.route('/storage-info')
+@login_required
+@master_required
+def storage_info():
+    """Informações de armazenamento do banco Postgres."""
+    try:
+        result = db.session.execute(db.text("""
+            SELECT
+                pg_size_pretty(pg_database_size(current_database())) AS db_total,
+                pg_database_size(current_database()) AS db_bytes,
+                (SELECT pg_size_pretty(pg_total_relation_size('sales'))) AS sales_table,
+                (SELECT pg_size_pretty(pg_total_relation_size('sale_items'))) AS sale_items_table,
+                (SELECT pg_size_pretty(pg_total_relation_size('products'))) AS products_table,
+                (SELECT pg_size_pretty(pg_total_relation_size('pedidos_online'))) AS pedidos_table,
+                (SELECT COUNT(*) FROM sales) AS total_sales,
+                (SELECT COUNT(*) FROM sale_items) AS total_items,
+                (
+                    SELECT pg_size_pretty(
+                        pg_column_size(s.*) +
+                        COALESCE((SELECT SUM(pg_column_size(si.*)) FROM sale_items si WHERE si.sale_id = s.id), 0)
+                    )
+                    FROM sales s ORDER BY s.id DESC LIMIT 1
+                ) AS ultima_venda_size,
+                (SELECT id FROM sales ORDER BY id DESC LIMIT 1) AS ultima_venda_id
+        """)).fetchone()
+
+        # Tamanho de cada tabela principal
+        tabelas = db.session.execute(db.text("""
+            SELECT
+                relname AS tabela,
+                pg_size_pretty(pg_total_relation_size(relid)) AS tamanho,
+                pg_total_relation_size(relid) AS bytes,
+                n_live_tup AS linhas
+            FROM pg_stat_user_tables
+            ORDER BY pg_total_relation_size(relid) DESC
+        """)).fetchall()
+
+        return jsonify({
+            'banco_total': result.db_total,
+            'banco_bytes': result.db_bytes,
+            'tabela_sales': result.sales_table,
+            'tabela_sale_items': result.sale_items_table,
+            'tabela_products': result.products_table,
+            'tabela_pedidos': result.pedidos_table,
+            'total_vendas': result.total_sales,
+            'total_itens': result.total_items,
+            'ultima_venda_id': result.ultima_venda_id,
+            'ultima_venda_tamanho': result.ultima_venda_size,
+            'todas_tabelas': [
+                {'tabela': r.tabela, 'tamanho': r.tamanho, 'linhas': r.linhas}
+                for r in tabelas
+            ],
+        })
+    except Exception as e:
+        return jsonify({'erro': str(e)}), 500
