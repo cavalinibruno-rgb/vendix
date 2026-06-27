@@ -155,7 +155,8 @@ def novo():
                         'preco':      float(request.form.get(f'packs[{i}][preco]', 0) or 0),
                         'preco_card': float(request.form.get(f'packs[{i}][preco_card]', 0) or 0),
                         'preco_event':float(request.form.get(f'packs[{i}][preco_event]', 0) or 0),
-                        'preco_cold': float(request.form.get(f'packs[{i}][preco_cold]', 0) or 0),
+                        'preco_cold':      float(request.form.get(f'packs[{i}][preco_cold]', 0) or 0),
+                        'preco_cold_card': float(request.form.get(f'packs[{i}][preco_cold_card]', 0) or 0),
                         'foto_key':   f'packs[{i}][foto]',
                     })
                 i += 1
@@ -179,8 +180,9 @@ def novo():
                 sale_price       = pd['preco'],
                 sale_price_card  = pd['preco_card'],
                 sale_price_event = pd['preco_event'],
-                sale_price_cold  = pd['preco_cold'],
-                cost_price       = cost_price * pd['qty'],
+                sale_price_cold      = pd['preco_cold'],
+                sale_price_cold_card = pd['preco_cold_card'],
+                cost_price           = cost_price * pd['qty'],
                 stock_quantity   = 0,
                 min_stock        = 0,
                 pack_parent_id   = product.id,
