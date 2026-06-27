@@ -94,7 +94,7 @@ def _calcular_dre(inicio_str, fim_str):
             return (p.cost_price or 0) if p else 0
         return 0
 
-    cmv = sum(_custo_item(item) * item.quantity for v in vendas for item in v.items)
+    cmv = sum(_custo_item(item) * item.quantity for v in confirmadas for item in v.items)
 
     lucro_bruto = receita_liquida - cmv
 
