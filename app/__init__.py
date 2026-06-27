@@ -239,6 +239,11 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAX_CONTENT_LENGTH'] = 150 * 1024 * 1024  # 150 MB
 
+    from datetime import timedelta
+    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+    app.config['REMEMBER_COOKIE_SECURE']   = True
+    app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
