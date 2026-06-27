@@ -58,25 +58,20 @@ def _calcular_dre(inicio_str, fim_str):
     inicio = datetime.strptime(inicio_str, '%Y-%m-%d')
     fim    = datetime.strptime(fim_str,    '%Y-%m-%d').replace(hour=23, minute=59, second=59)
 
-    # Vendas confirmadas no período
+    # Vendas confirmadas no período (ativas ou canceladas — todas que passaram pelo caixa)
     vendas = Sale.query.filter(
         Sale.tenant_id == tid(),
-        Sale.status == 'confirmed',
+        Sale.status.in_(['confirmed', 'cancelled']),
         Sale.created_at >= inicio,
         Sale.created_at <= fim,
     ).all()
 
-    # Vendas canceladas no período
-    canceladas = Sale.query.filter(
-        Sale.tenant_id == tid(),
-        Sale.status == 'cancelled',
-        Sale.cancelled_at >= inicio,
-        Sale.cancelled_at <= fim,
-    ).all()
+    confirmadas = [v for v in vendas if v.status == 'confirmed']
+    canceladas  = [v for v in vendas if v.status == 'cancelled']
 
-    receita_bruta      = sum(v.total for v in vendas) + sum(v.total for v in canceladas)
+    receita_bruta      = sum(v.total for v in vendas)
     deducao_cancelados = sum(v.total for v in canceladas)
-    base_imposto       = sum(v.total for v in vendas)  # impostos sobre vendas efetivas
+    base_imposto       = sum(v.total for v in confirmadas)
 
     impostos_detalhado, total_impostos, reduz_receita = _calcular_impostos(regime, cfg, base_imposto)
 
