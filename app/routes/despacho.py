@@ -5,6 +5,7 @@ from collections import defaultdict
 from app import db
 from app.models.sale import Sale
 from app.models.motoboy import Motoboy
+from app.models.pedido_online import PedidoOnline
 
 despacho_bp = Blueprint('entregas', __name__, url_prefix='/entregas')
 
@@ -27,9 +28,17 @@ def index():
     motoboys = Motoboy.query.filter_by(tenant_id=tid(), active=True).order_by(Motoboy.name).all()
     cfg = current_user.tenant.get_settings()
 
+    # Mapa sale_id → pedido_online para exibir nome/endereço de pedidos do link
+    todas_vendas = pendentes + em_rota + list(concluidas)
+    sale_ids = [v.id for v in todas_vendas]
+    pedidos_map = {}
+    if sale_ids:
+        for po in PedidoOnline.query.filter(PedidoOnline.sale_id.in_(sale_ids)).all():
+            pedidos_map[po.sale_id] = po
+
     return render_template('despacho/index.html',
         pendentes=pendentes, em_rota=em_rota, concluidas=concluidas,
-        motoboys=motoboys, cfg=cfg)
+        motoboys=motoboys, cfg=cfg, pedidos_map=pedidos_map)
 
 @despacho_bp.route('/<int:sale_id>/despachar', methods=['POST'])
 @login_required
@@ -78,6 +87,19 @@ def concluir(sale_id):
     sale.delivered_at = datetime.now()
     db.session.commit()
     return jsonify({'ok': True, 'sale_id': sale.id})
+
+@despacho_bp.route('/<int:sale_id>/cancelar', methods=['POST'])
+@login_required
+def cancelar(sale_id):
+    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    motivo = request.form.get('motivo', '').strip() or 'Cancelado pelo operador'
+    sale.status           = 'cancelled'
+    sale.cancelled_at     = datetime.now()
+    sale.cancelled_by_name = current_user.display_name or current_user.username
+    sale.cancel_reason    = motivo
+    db.session.commit()
+    flash('Entrega cancelada.', 'warning')
+    return redirect(url_for('entregas.index'))
 
 @despacho_bp.route('/relatorio-motoboys')
 @login_required

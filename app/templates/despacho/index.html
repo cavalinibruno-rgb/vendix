@@ -41,10 +41,11 @@
       <tbody>
         {% for v in pendentes %}
         <tr id="row-pend-{{ v.id }}">
-          <td class="text-muted small ps-4">#{{ v.id }}</td>
+          {% set po = pedidos_map.get(v.id) %}
+          <td class="text-muted small ps-4">#{{ v.sale_number or v.id }}</td>
           <td class="small text-nowrap">{{ v.created_at.strftime('%H:%M') }}</td>
-          <td class="fw-semibold">{{ v.customer.name if v.customer else '—' }}</td>
-          <td class="small text-muted">{{ v.notes or '—' }}</td>
+          <td class="fw-semibold">{{ v.customer.name if v.customer else (po.cliente_nome if po else '—') }}</td>
+          <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.notes or '—') }}</td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
           <td>
             <select class="form-select form-select-sm" id="motoboy-{{ v.id }}">
@@ -54,9 +55,12 @@
               {% endfor %}
             </select>
           </td>
-          <td class="pe-4">
+          <td class="pe-4 d-flex gap-1">
             <button class="btn btn-success btn-sm fw-semibold" onclick="despachar({{ v.id }})">
               <i class="bi bi-send me-1"></i>Despachar
+            </button>
+            <button class="btn btn-outline-danger btn-sm" onclick="cancelarEntrega({{ v.id }}, {{ v.sale_number or v.id }})">
+              <i class="bi bi-x-lg"></i>
             </button>
           </td>
         </tr>
@@ -169,11 +173,17 @@ function despachar(saleId) {
 function concluir(saleId) {
   fetch(`/entregas/${saleId}/concluir`, { method: 'POST' })
     .then(r => r.json())
-    .then(d => {
-      if (!d.ok) return;
-      location.reload();
-    })
+    .then(d => { if (d.ok) location.reload(); })
     .catch(() => alert('Erro ao concluir entrega.'));
+}
+
+function cancelarEntrega(saleId, num) {
+  if (!confirm(`Cancelar pedido #${num}? Esta ação não pode ser desfeita.`)) return;
+  const fd = new FormData();
+  fd.append('motivo', 'Cancelado pelo operador de entregas');
+  fetch(`/entregas/${saleId}/cancelar`, { method: 'POST', body: fd })
+    .then(r => { if (r.redirected || r.ok) location.reload(); })
+    .catch(() => alert('Erro ao cancelar.'));
 }
 </script>
 {% endblock %}
