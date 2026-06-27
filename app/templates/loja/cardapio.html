@@ -675,16 +675,29 @@ function abrirCarrinho() {
   renderCartTotais();
   document.getElementById('overlay').classList.add('show');
   document.body.style.overflow = 'hidden';
+  // Empurra entrada no histórico para que gesto de voltar feche o carrinho
+  if (!location.hash) history.pushState({ cart: true }, '', '#carrinho');
 }
 
 function fecharCarrinho() {
   document.getElementById('overlay').classList.remove('show');
   document.body.style.overflow = '';
+  // Remove o #carrinho do histórico se ainda estiver lá
+  if (location.hash === '#carrinho') history.back();
 }
 
 function fecharCarrinhoSeFora(e) {
   if (e.target === document.getElementById('overlay')) fecharCarrinho();
 }
+
+// Gesto de voltar fecha o carrinho se estiver aberto
+window.addEventListener('popstate', () => {
+  const overlay = document.getElementById('overlay');
+  if (overlay.classList.contains('show')) {
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+});
 
 function setPgto(el) {
   document.querySelectorAll('.pgto-opt').forEach(o => o.classList.remove('active'));
