@@ -105,6 +105,13 @@
               <div class="form-text text-muted">Usado quando evento estiver ativo.</div>
             </div>
             <div class="col-md-3">
+              <label class="form-label fw-semibold">🧊 Preço Gelado (R$)</label>
+              <input type="number" name="sale_price_cold" class="form-control"
+                     value="{{ '%.2f' | format(product.sale_price_cold) if product and product.sale_price_cold else '0.00' }}"
+                     min="0" step="0.01">
+              <div class="form-text text-muted">Opcional. Se vazio, usa o preço normal.</div>
+            </div>
+            <div class="col-md-3">
               <label class="form-label fw-semibold">Preço de Custo (R$)</label>
               <input type="number" name="cost_price" class="form-control"
                      value="{{ '%.2f' | format(product.cost_price) if product else '0.00' }}"
@@ -339,6 +346,11 @@ function adicionarPack() {
       <div class="col-md-4">
         <label class="form-label small fw-semibold mb-1">Preço Evento (R$)</label>
         <input type="number" name="packs[${i}][preco_event]" class="form-control form-control-sm"
+               value="0.00" min="0" step="0.01">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold mb-1">🧊 Preço Gelado (R$)</label>
+        <input type="number" name="packs[${i}][preco_cold]" class="form-control form-control-sm"
                value="0.00" min="0" step="0.01">
       </div>
     </div>

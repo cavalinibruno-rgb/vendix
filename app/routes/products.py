@@ -85,6 +85,7 @@ def novo():
         sale_price       = float(request.form.get('sale_price', 0) or 0)
         sale_price_card  = float(request.form.get('sale_price_card', 0) or 0)
         sale_price_event = float(request.form.get('sale_price_event', 0) or 0)
+        sale_price_cold  = float(request.form.get('sale_price_cold', 0) or 0)
         cost_price       = float(request.form.get('cost_price', 0) or 0)
         stock           = int(request.form.get('stock_quantity', 0) or 0)
         min_stock       = int(request.form.get('min_stock', 0) or 0)
@@ -112,6 +113,7 @@ def novo():
             sale_price=sale_price,
             sale_price_card=sale_price_card,
             sale_price_event=sale_price_event,
+            sale_price_cold=sale_price_cold,
             cost_price=cost_price,
             stock_quantity=stock,
             min_stock=min_stock,
@@ -151,6 +153,7 @@ def novo():
                         'preco':      float(request.form.get(f'packs[{i}][preco]', 0) or 0),
                         'preco_card': float(request.form.get(f'packs[{i}][preco_card]', 0) or 0),
                         'preco_event':float(request.form.get(f'packs[{i}][preco_event]', 0) or 0),
+                        'preco_cold': float(request.form.get(f'packs[{i}][preco_cold]', 0) or 0),
                         'foto_key':   f'packs[{i}][foto]',
                     })
                 i += 1
@@ -174,6 +177,7 @@ def novo():
                 sale_price       = pd['preco'],
                 sale_price_card  = pd['preco_card'],
                 sale_price_event = pd['preco_event'],
+                sale_price_cold  = pd['preco_cold'],
                 cost_price       = cost_price * pd['qty'],
                 stock_quantity   = 0,
                 min_stock        = 0,
@@ -207,6 +211,7 @@ def editar(product_id):
         product.sale_price       = float(request.form.get('sale_price', 0) or 0)
         product.sale_price_card  = float(request.form.get('sale_price_card', 0) or 0)
         product.sale_price_event = float(request.form.get('sale_price_event', 0) or 0)
+        product.sale_price_cold  = float(request.form.get('sale_price_cold', 0) or 0)
         product.cost_price       = float(request.form.get('cost_price', 0) or 0)
         product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
         product.min_stock      = int(request.form.get('min_stock', 0) or 0)

@@ -33,6 +33,7 @@ class Product(db.Model):
     sale_price       = db.Column(db.Float, default=0)
     sale_price_card  = db.Column(db.Float, default=0)
     sale_price_event = db.Column(db.Float, default=0)
+    sale_price_cold  = db.Column(db.Float, default=0)
     cost_price       = db.Column(db.Float, default=0)
     stock_quantity = db.Column(db.Integer, default=0)
     min_stock      = db.Column(db.Integer, default=0)
