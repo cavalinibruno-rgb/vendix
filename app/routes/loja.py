@@ -40,12 +40,14 @@ def api_produtos(slug):
         else:
             thumb = None
         out.append({
-            'id':        p.id,
-            'name':      p.name,
-            'price':     p.sale_price,
-            'type_id':   p.type_id,
-            'type_name': p.type.name if p.type else None,
-            'thumb':     thumb,
+            'id':         p.id,
+            'name':       p.name,
+            'price':      p.sale_price,
+            'type_id':    p.type_id,
+            'type_name':  p.type.name if p.type else None,
+            'brand_id':   p.brand_id,
+            'brand_name': p.brand.name if p.brand else None,
+            'thumb':      thumb,
         })
     return jsonify(out)
 
