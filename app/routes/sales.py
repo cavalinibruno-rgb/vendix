@@ -417,10 +417,27 @@ def escpos(sale_id):
             d += lft(f'Cliente: {cli_nome}')
         if sale.delivery_mode == 'entrega':
             if cli_end:
-                # Pedido online: formato "Rua: X | Número: Y | Bairro: Z | ..."
-                for parte in cli_end.split(' | '):
-                    if parte.strip():
-                        d += lft(parte.strip())
+                # Suporta formato novo "rua - num - comp - bairro - REF: x"
+                # e formato legado "Rua: x | Número: y | ..."
+                if ' | ' in cli_end:
+                    partes = [p.strip() for p in cli_end.split(' | ') if p.strip()]
+                else:
+                    partes = [p.strip() for p in cli_end.split(' - ') if p.strip()]
+                labels = ['Rua:', 'Número:', 'Complemento:', 'Bairro:', 'Referência:']
+                # formato legado já vem com label; formato novo não tem
+                if partes and not any(partes[0].startswith(lb) for lb in labels):
+                    rotulos = ['Rua:', 'Número:', 'Complemento:', 'Bairro:', 'Referência:']
+                    for idx2, parte in enumerate(partes):
+                        rot = rotulos[idx2] if idx2 < len(rotulos) else ''
+                        if rot == 'Referência:' or parte.startswith('REF:'):
+                            d += lft(f'Referencia: {parte.replace("REF:", "").strip()}')
+                        elif rot:
+                            d += lft(f'{rot} {parte}')
+                        else:
+                            d += lft(parte)
+                else:
+                    for parte in partes:
+                        d += lft(parte)
             elif sale.customer:
                 c = sale.customer
                 rua    = c.address or ''
