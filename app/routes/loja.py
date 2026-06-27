@@ -43,6 +43,7 @@ def api_produtos(slug):
             'id':         p.id,
             'name':       p.name,
             'price':      p.sale_price,
+            'price_cold': p.sale_price_cold or 0,
             'type_id':    p.type_id,
             'type_name':  p.type.name if p.type else None,
             'brand_id':   p.brand_id,

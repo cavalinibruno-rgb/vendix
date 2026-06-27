@@ -236,6 +236,20 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
       <div class="prod-sheet-name" id="prodSheetName"></div>
       <div class="prod-sheet-price" id="prodSheetPrice"></div>
     </div>
+    <!-- Opção Gelado -->
+    <div id="geladoRow" style="display:none;margin:0 18px 10px;">
+      <button id="geladoToggle" onclick="toggleGeladoSheet()"
+        style="width:100%;border:2px solid #d1e8f5;border-radius:12px;background:#f0f8ff;
+               padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s;">
+        <span style="font-size:1.3rem;">🧊</span>
+        <div style="flex:1;text-align:left;">
+          <div style="font-weight:700;font-size:.88rem;color:#1a1a2e;">Quero gelado</div>
+          <div id="geladoPrecoLabel" style="font-size:.75rem;color:#0ea5e9;font-weight:600;"></div>
+        </div>
+        <div id="geladoCheck" style="width:22px;height:22px;border-radius:50%;border:2px solid #ccc;
+             display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .2s;"></div>
+      </button>
+    </div>
     <div class="prod-qty-row">
       <button class="prod-qty-btn" onclick="prodQty(-1)">−</button>
       <input class="prod-qty-num" id="prodSheetQty" type="number" min="1" inputmode="numeric" value="1" oninput="prodQtyInput(this)">
@@ -454,11 +468,39 @@ function renderGrid(lista) {
 
 let _prodSheet = null;
 let _prodSheetQty = 1;
+let _prodSheetGelado = false;
+
+function _precoAtualSheet() {
+  if (_prodSheetGelado && _prodSheet.price_cold > 0) return _prodSheet.price_cold;
+  return _prodSheet.price;
+}
+
+function toggleGeladoSheet() {
+  _prodSheetGelado = !_prodSheetGelado;
+  const btn   = document.getElementById('geladoToggle');
+  const check = document.getElementById('geladoCheck');
+  if (_prodSheetGelado) {
+    btn.style.background   = 'linear-gradient(135deg,#e0f2fe,#bae6fd)';
+    btn.style.borderColor  = '#0ea5e9';
+    check.style.background = '#0ea5e9';
+    check.style.borderColor= '#0ea5e9';
+    check.textContent      = '✓';
+    check.style.color      = '#fff';
+  } else {
+    btn.style.background   = '#f0f8ff';
+    btn.style.borderColor  = '#d1e8f5';
+    check.style.background = 'transparent';
+    check.style.borderColor= '#ccc';
+    check.textContent      = '';
+  }
+  _atualizarSheetQty();
+}
 
 function addItem(id) {
   const prod = todos.find(p => p.id === id);
   if (!prod) return;
   _prodSheet = prod;
+  _prodSheetGelado = false;
   // qty inicial: já no carrinho? mostra qty atual, senão 1
   const ex = carrinho.find(i => i.id === id);
   _prodSheetQty = ex ? ex.qty : 1;
@@ -471,15 +513,34 @@ function addItem(id) {
 
   document.getElementById('prodSheetName').textContent  = prod.name;
   document.getElementById('prodSheetPrice').textContent = 'R$ ' + fmt(prod.price);
+
+  // Mostrar opção gelado se o produto tiver preço gelado
+  const geladoRow = document.getElementById('geladoRow');
+  if (prod.price_cold > 0) {
+    document.getElementById('geladoPrecoLabel').textContent = `Preço gelado: R$ ${fmt(prod.price_cold)}`;
+    // reset visual
+    const btn   = document.getElementById('geladoToggle');
+    const check = document.getElementById('geladoCheck');
+    btn.style.background  = '#f0f8ff';
+    btn.style.borderColor = '#d1e8f5';
+    check.style.background  = 'transparent';
+    check.style.borderColor = '#ccc';
+    check.textContent = '';
+    geladoRow.style.display = '';
+  } else {
+    geladoRow.style.display = 'none';
+  }
+
   _atualizarSheetQty();
   document.getElementById('prodOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
 }
 
 function _atualizarSheetQty() {
+  const preco = _precoAtualSheet();
   document.getElementById('prodSheetQty').value       = _prodSheetQty;
   document.getElementById('prodAddLabel').textContent = `Adicionar (${_prodSheetQty})`;
-  document.getElementById('prodAddTotal').textContent = 'R$ ' + fmt(_prodSheet.price * _prodSheetQty);
+  document.getElementById('prodAddTotal').textContent = 'R$ ' + fmt(preco * _prodSheetQty);
 }
 
 function prodQty(delta) {
@@ -488,17 +549,21 @@ function prodQty(delta) {
 }
 
 function prodQtyInput(el) {
-  const v = parseInt(el.value) || 1;
-  _prodSheetQty = Math.max(1, v);
-  document.getElementById('prodAddLabel').textContent = `Adicionar (${_prodSheetQty})`;
-  document.getElementById('prodAddTotal').textContent = 'R$ ' + fmt(_prodSheet.price * _prodSheetQty);
+  _prodSheetQty = Math.max(1, parseInt(el.value) || 1);
+  _atualizarSheetQty();
 }
 
 function confirmarAddItem() {
   if (!_prodSheet) return;
-  const idx = carrinho.findIndex(i => i.id === _prodSheet.id);
-  if (idx >= 0) carrinho[idx].qty = _prodSheetQty;
-  else carrinho.push({ id: _prodSheet.id, name: _prodSheet.name, price: _prodSheet.price, qty: _prodSheetQty, thumb: _prodSheet.thumb || null });
+  const preco = _precoAtualSheet();
+  const nome  = _prodSheetGelado ? _prodSheet.name + ' Gelado' : _prodSheet.name;
+  const idx   = carrinho.findIndex(i => i.id === _prodSheet.id && i.gelado === _prodSheetGelado);
+  if (idx >= 0) {
+    carrinho[idx].qty = _prodSheetQty;
+  } else {
+    carrinho.push({ id: _prodSheet.id, name: nome, price: preco, qty: _prodSheetQty,
+                    thumb: _prodSheet.thumb || null, gelado: _prodSheetGelado });
+  }
   atualizarCartUI();
   fecharProdSheetDireto();
 }
