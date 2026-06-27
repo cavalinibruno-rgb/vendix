@@ -241,7 +241,6 @@ def create_app():
 
     from datetime import timedelta
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
-    app.config['REMEMBER_COOKIE_SECURE']   = True
     app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 
     db.init_app(app)
