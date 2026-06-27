@@ -3,7 +3,10 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.tenant import Tenant
 from app.models.user import User
+from app.models.sale import Sale, SaleItem
+from app.models.sale_archive import SaleArchive
 from datetime import datetime, timedelta
+import json
 from werkzeug.security import generate_password_hash
 from functools import wraps
 import re
@@ -147,6 +150,76 @@ def tenant_adicionar_dias(tenant_id):
     db.session.commit()
     flash(f'+{dias} dias adicionados para "{tenant.store_name}". Vence em {tenant.expires_at.strftime("%d/%m/%Y")}.', 'success')
     return redirect(url_for('master.dashboard'))
+
+
+@master_bp.route('/arquivar-vendas', methods=['POST'])
+@login_required
+@master_required
+def arquivar_vendas():
+    """Move vendas com mais de X meses para sales_archive, preservando os itens em JSON."""
+    meses = int(request.form.get('meses', 6))
+    corte = datetime.now() - timedelta(days=meses * 30)
+
+    vendas = Sale.query.filter(Sale.created_at < corte).all()
+    arquivadas = 0
+    erros = 0
+
+    for v in vendas:
+        try:
+            items_data = [
+                {
+                    'product_id':   item.product_id,
+                    'product_name': item.product_name,
+                    'unit_price':   item.unit_price,
+                    'cost_price':   item.cost_price,
+                    'quantity':     item.quantity,
+                    'total':        item.total,
+                }
+                for item in v.items
+            ]
+            arq = SaleArchive(
+                original_id      = v.id,
+                tenant_id        = v.tenant_id,
+                sale_number      = v.sale_number,
+                customer_id      = v.customer_id,
+                delivery_mode    = v.delivery_mode,
+                delivery_fee     = v.delivery_fee,
+                subtotal         = v.subtotal,
+                total            = v.total,
+                payment_method   = v.payment_method,
+                notes            = v.notes,
+                status           = v.status,
+                source           = v.source,
+                app_name         = v.app_name,
+                amount_paid      = v.amount_paid,
+                discount         = v.discount,
+                discount_type    = v.discount_type,
+                cashier_name     = v.cashier_name,
+                cancelled_at     = v.cancelled_at,
+                cancelled_by_name= v.cancelled_by_name,
+                cancel_reason    = v.cancel_reason,
+                employee_id      = v.employee_id,
+                created_at       = v.created_at,
+                items_json       = json.dumps(items_data),
+            )
+            db.session.add(arq)
+            # Remove itens e venda original
+            for item in v.items:
+                db.session.delete(item)
+            db.session.delete(v)
+            arquivadas += 1
+        except Exception:
+            db.session.rollback()
+            erros += 1
+            continue
+
+    db.session.commit()
+    return jsonify({
+        'arquivadas': arquivadas,
+        'erros': erros,
+        'corte': corte.strftime('%d/%m/%Y'),
+        'meses': meses,
+    })
 
 
 @master_bp.route('/storage-info')

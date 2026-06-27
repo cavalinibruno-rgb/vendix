@@ -360,6 +360,7 @@ def create_app():
         from app.models.pedido_online import PedidoOnline  # noqa: F401
         from app.models.pending_registration import PendingRegistration  # noqa: F401
         from app.models.app_release import AppRelease  # noqa: F401
+        from app.models.sale_archive import SaleArchive  # noqa: F401
         db.create_all()
         _run_migrations(db)
         from app.seed import seed_master

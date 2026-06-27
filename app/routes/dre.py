@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app import db
 from app.models.sale import Sale, SaleItem
+from app.models.sale_archive import SaleArchive
 from app.models.product import Product
 from app.models.expense import Expense, CATEGORIAS
 from app.models.tenant import Tenant
@@ -58,7 +59,7 @@ def _calcular_dre(inicio_str, fim_str):
     inicio = datetime.strptime(inicio_str, '%Y-%m-%d')
     fim    = datetime.strptime(fim_str,    '%Y-%m-%d').replace(hour=23, minute=59, second=59)
 
-    # Vendas confirmadas no período (ativas ou canceladas — todas que passaram pelo caixa)
+    # Vendas ativas no período
     vendas = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status.in_(['confirmed', 'cancelled']),
@@ -66,12 +67,22 @@ def _calcular_dre(inicio_str, fim_str):
         Sale.created_at <= fim,
     ).all()
 
-    confirmadas = [v for v in vendas if v.status == 'confirmed']
-    canceladas  = [v for v in vendas if v.status == 'cancelled']
+    # Vendas arquivadas no mesmo período
+    vendas_arq = SaleArchive.query.filter(
+        SaleArchive.tenant_id == tid(),
+        SaleArchive.status.in_(['confirmed', 'cancelled']),
+        SaleArchive.created_at >= inicio,
+        SaleArchive.created_at <= fim,
+    ).all()
 
-    receita_bruta      = sum(v.total for v in vendas)
-    deducao_cancelados = sum(v.total for v in canceladas)
-    base_imposto       = sum(v.total for v in confirmadas)
+    confirmadas     = [v for v in vendas if v.status == 'confirmed']
+    canceladas      = [v for v in vendas if v.status == 'cancelled']
+    confirmadas_arq = [v for v in vendas_arq if v.status == 'confirmed']
+    canceladas_arq  = [v for v in vendas_arq if v.status == 'cancelled']
+
+    receita_bruta      = sum(v.total for v in vendas) + sum(v.total for v in vendas_arq)
+    deducao_cancelados = sum(v.total for v in canceladas) + sum(v.total for v in canceladas_arq)
+    base_imposto       = sum(v.total for v in confirmadas) + sum(v.total for v in confirmadas_arq)
 
     impostos_detalhado, total_impostos, reduz_receita = _calcular_impostos(regime, cfg, base_imposto)
 
@@ -82,7 +93,7 @@ def _calcular_dre(inicio_str, fim_str):
     # Para MEI o DAS entra como despesa extra, não reduz receita
     das_mei = total_impostos if regime == 'mei' else 0
 
-    # CMV — usa custo gravado no item; fallback para custo atual do produto em vendas antigas
+    # CMV — vendas ativas
     _produto_cache = {}
     def _custo_item(item):
         if item.cost_price:
@@ -95,6 +106,15 @@ def _calcular_dre(inicio_str, fim_str):
         return 0
 
     cmv = sum(_custo_item(item) * item.quantity for v in confirmadas for item in v.items)
+
+    # CMV — vendas arquivadas (itens em JSON)
+    import json as _json
+    for v in confirmadas_arq:
+        try:
+            items = _json.loads(v.items_json or '[]')
+            cmv += sum((i.get('cost_price') or 0) * i.get('quantity', 1) for i in items)
+        except Exception:
+            pass
 
     lucro_bruto = receita_liquida - cmv
 
@@ -132,7 +152,7 @@ def _calcular_dre(inicio_str, fim_str):
         por_categoria=por_categoria,
         resultado_liquido=resultado_liquido,
         categorias=CATEGORIAS,
-        qtd_vendas=len(vendas),
+        qtd_vendas=len(vendas) + len(vendas_arq),
     )
 
 @dre_bp.route('/')
