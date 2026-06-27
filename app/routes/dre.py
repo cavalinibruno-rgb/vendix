@@ -76,7 +76,7 @@ def _calcular_dre(inicio_str, fim_str):
 
     receita_bruta      = sum(v.total for v in vendas) + sum(v.total for v in canceladas)
     deducao_cancelados = sum(v.total for v in canceladas)
-    base_imposto       = receita_bruta - deducao_cancelados
+    base_imposto       = sum(v.total for v in vendas)  # impostos sobre vendas efetivas
 
     impostos_detalhado, total_impostos, reduz_receita = _calcular_impostos(regime, cfg, base_imposto)
 
