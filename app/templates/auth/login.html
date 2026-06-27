@@ -25,14 +25,14 @@
   <div class="alert alert-{{ 'danger' if cat == 'danger' else 'success' }}">{{ msg }}</div>
   {% endfor %}
 
-  <form method="post">
+  <form method="post" id="loginForm">
     <div class="mb-3">
       <label class="form-label fw-semibold">E-mail ou usuário</label>
-      <input type="text" name="email" class="form-control" placeholder="seu@email.com ou nome_usuario" required autofocus autocomplete="username">
+      <input type="text" name="email" id="inputEmail" class="form-control" placeholder="seu@email.com ou nome_usuario" required autocomplete="username">
     </div>
     <div class="mb-4">
       <label class="form-label fw-semibold">Senha</label>
-      <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+      <input type="password" name="password" id="inputPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
     </div>
     <div class="mb-4 d-flex align-items-center">
       <input type="checkbox" name="remember" id="remember" style="width:16px;height:16px;accent-color:#c9a84c;cursor:pointer;">
@@ -44,6 +44,36 @@
       <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
     </button>
   </form>
+  <script>
+    const emailEl = document.getElementById('inputEmail');
+    const passEl  = document.getElementById('inputPassword');
+    const remEl   = document.getElementById('remember');
+
+    // Carregar credenciais salvas
+    const saved = JSON.parse(localStorage.getItem('vendix_creds') || 'null');
+    if (saved) {
+      emailEl.value = saved.email;
+      passEl.value  = saved.pass;
+      remEl.checked = true;
+      emailEl.removeAttribute('autofocus');
+    } else {
+      emailEl.setAttribute('autofocus', '');
+    }
+
+    // Salvar ou limpar ao submeter
+    document.getElementById('loginForm').addEventListener('submit', () => {
+      if (remEl.checked) {
+        localStorage.setItem('vendix_creds', JSON.stringify({ email: emailEl.value, pass: passEl.value }));
+      } else {
+        localStorage.removeItem('vendix_creds');
+      }
+    });
+
+    // Desmarcar checkbox limpa credenciais salvas imediatamente
+    remEl.addEventListener('change', () => {
+      if (!remEl.checked) localStorage.removeItem('vendix_creds');
+    });
+  </script>
 
   <div class="text-center mt-4" style="font-size:.8rem;color:#9ca3af;">
     Problemas com acesso? Entre em contato com o suporte.
