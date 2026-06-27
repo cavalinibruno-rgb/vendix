@@ -31,6 +31,7 @@ class Sale(db.Model):
     delivered_at      = db.Column(db.DateTime, nullable=True)
     payment_entries   = db.Column(db.Text, nullable=True)  # JSON para pagamento combinado
     employee_id       = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
+    sale_number       = db.Column(db.Integer, nullable=True)  # sequencial por tenant
     created_at       = db.Column(db.DateTime, default=datetime.now)
 
     items    = db.relationship('SaleItem', backref='sale', lazy=True, cascade='all, delete-orphan')

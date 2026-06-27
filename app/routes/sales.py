@@ -104,6 +104,12 @@ def confirmar():
     db.session.add(sale)
     db.session.flush()
 
+    # Sequencial por tenant
+    last = db.session.query(db.func.max(Sale.sale_number)).filter(
+        Sale.tenant_id == tid(), Sale.id != sale.id
+    ).scalar() or 0
+    sale.sale_number = last + 1
+
     for i in items:
         qty = float(i['quantity'])
         pid = i.get('product_id') or None
@@ -124,7 +130,7 @@ def confirmar():
             if not prod:
                 prod = Product.query.filter_by(id=pid, tenant_id=tid()).first()
             if prod:
-                mot = f'Venda App #{sale.id} ({app_name})' if source == 'app' and app_name else f'Venda #{sale.id}'
+                mot = f'Venda App #{sale.sale_number or sale.id} ({app_name})' if source == 'app' and app_name else f'Venda #{sale.sale_number or sale.id}'
                 combo_items = ComboItem.query.filter_by(combo_id=pid).all()
                 if combo_items:
                     # Combo: deduz estoque dos componentes
@@ -192,7 +198,7 @@ def confirmar():
                 employee_id = emp.id,
                 amount      = total,
                 date        = _date.today(),
-                notes       = f'Venda #{sale.id} — PDV',
+                notes       = f'Venda #{sale.sale_number or sale.id} — PDV',
                 sale_id     = sale.id,
             )
             db.session.add(vale)
@@ -363,7 +369,7 @@ def escpos(sale_id):
         if len(parts) > 1:
             d += ctr(f'* {parts[1].upper()} *')
         d += sep('=')
-        d += CENTER + BIG + enc(f'PEDIDO #{sale.id}'.center(W // 2)) + NORM + NL
+        d += CENTER + BIG + enc(f'PEDIDO #{sale.sale_number or sale.id}'.center(W // 2)) + NORM + NL
         d += ctr(f'{date_str}  |  {time_str}')
         d += sep('=')
         return d
@@ -528,7 +534,7 @@ def cancelar(sale_id):
                             product_name = comp.name,
                             type         = 'entrada',
                             quantity     = total,
-                            motive       = f'Cancelamento combo "{prod.name if prod else ""}" Venda #{sale.id}',
+                            motive       = f'Cancelamento combo "{prod.name if prod else ""}" Venda #{sale.sale_number or sale.id}',
                             user_id      = _user_id(),
                             user_name    = current_user.display_name or current_user.username,
                         ))
@@ -543,7 +549,7 @@ def cancelar(sale_id):
                         product_name = parent.name,
                         type         = 'entrada',
                         quantity     = total,
-                        motive       = f'Cancelamento pack "{prod.name}" Venda #{sale.id}',
+                        motive       = f'Cancelamento pack "{prod.name}" Venda #{sale.sale_number or sale.id}',
                         user_id      = _user_id(),
                         user_name    = current_user.display_name or current_user.username,
                     ))
@@ -555,7 +561,7 @@ def cancelar(sale_id):
                     product_name = prod.name,
                     type         = 'entrada',
                     quantity     = int(item.quantity),
-                    motive       = f'Cancelamento Venda #{sale.id} — {motivo}',
+                    motive       = f'Cancelamento Venda #{sale.sale_number or sale.id} — {motivo}',
                     user_id      = _user_id(),
                     user_name    = current_user.display_name or current_user.username,
                 ))

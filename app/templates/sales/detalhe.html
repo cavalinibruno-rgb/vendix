@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}Venda #{{ sale.id }} – Vendix{% endblock %}
+{% block title %}Venda #{{ sale.sale_number or sale.id }} – Vendix{% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center">
   <div>
-    <h1><i class="bi bi-receipt me-2"></i>Venda #{{ sale.id }}</h1>
+    <h1><i class="bi bi-receipt me-2"></i>Venda #{{ sale.sale_number or sale.id }}</h1>
     <p class="text-muted">{{ sale.created_at.strftime('%d/%m/%Y às %H:%M') }}</p>
   </div>
   <div class="d-flex gap-2">
@@ -123,7 +123,7 @@
     <div class="modal-content">
       <form method="post" action="{{ url_for('sales.cancelar', sale_id=sale.id) }}">
         <div class="modal-header">
-          <h5 class="modal-title">Cancelar Venda #{{ sale.id }}</h5>
+          <h5 class="modal-title">Cancelar Venda #{{ sale.sale_number or sale.id }}</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">

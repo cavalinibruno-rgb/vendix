@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Comprovante #{{ sale.id }}</title>
+  <title>Comprovante #{{ sale.sale_number or sale.id }}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -227,7 +227,7 @@
   <!-- NÚMERO DO PEDIDO -->
   <div class="order-box">
     <div class="order-label">Pedido N°</div>
-    <div class="order-number">#{{ sale.id }}</div>
+    <div class="order-number">#{{ sale.sale_number or sale.id }}</div>
     <div class="small">{{ sale.created_at.strftime('%d/%m/%Y') }} &nbsp;|&nbsp; {{ sale.created_at.strftime('%H:%M') }}</div>
   </div>
 
@@ -382,7 +382,7 @@
 
   <div class="order-box">
     <div class="order-label">Pedido N°</div>
-    <div class="order-number">#{{ sale.id }}</div>
+    <div class="order-number">#{{ sale.sale_number or sale.id }}</div>
     <div class="small">{{ sale.created_at.strftime('%d/%m/%Y') }} &nbsp;|&nbsp; {{ sale.created_at.strftime('%H:%M') }}</div>
   </div>
 
