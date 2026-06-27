@@ -213,6 +213,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
   {% endfor %}
 </div>
 
+<!-- Marcas (aparece ao selecionar categoria) -->
+<div class="cats" id="marcaTabs" style="display:none;border-top:1px solid rgba(255,255,255,.08);padding-top:6px;"></div>
+
 <!-- Grid de produtos -->
 <div class="grid has-cart" id="prodGrid"></div>
 
@@ -387,10 +390,34 @@ fetch(`/loja/${SLUG}/produtos`)
 let _catAtiva = null;
 let _busca = '';
 
+let _marcaAtiva = null;
+
 function filtrarCat(catId, btn) {
-  document.querySelectorAll('.cat').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('#catTabs .cat').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
   _catAtiva = catId;
+  _marcaAtiva = null;
+  construirMarcas(catId);
+  aplicarFiltros();
+}
+
+function construirMarcas(catId) {
+  const bar = document.getElementById('marcaTabs');
+  const lista = catId ? todos.filter(p => p.type_id == catId) : [];
+  const marcas = new Map();
+  lista.forEach(p => { if (p.brand_id && p.brand_name) marcas.set(p.brand_id, p.brand_name); });
+  if (!marcas.size) { bar.style.display = 'none'; return; }
+  bar.innerHTML = `<button class="cat active" onclick="filtrarMarca(null, this)">Todas</button>` +
+    [...marcas].map(([id, nome]) =>
+      `<button class="cat" onclick="filtrarMarca(${id}, this)">${nome}</button>`
+    ).join('');
+  bar.style.display = 'flex';
+}
+
+function filtrarMarca(marcaId, btn) {
+  document.querySelectorAll('#marcaTabs .cat').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  _marcaAtiva = marcaId;
   aplicarFiltros();
 }
 
@@ -401,6 +428,7 @@ function filtrarBusca(txt) {
 
 function aplicarFiltros() {
   let lista = _catAtiva ? todos.filter(p => p.type_id == _catAtiva) : todos;
+  if (_marcaAtiva) lista = lista.filter(p => p.brand_id == _marcaAtiva);
   if (_busca) lista = lista.filter(p => p.name.toLowerCase().includes(_busca));
   renderGrid(lista);
 }
