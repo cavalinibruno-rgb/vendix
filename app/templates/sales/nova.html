@@ -866,6 +866,7 @@ function confirmarAddProd() {
     carrinho.push({
       product_id: prodModalAtual.id,
       name: prodModalAtual.name,
+      name_original: prodModalAtual.name,
       unit_price: preco,
       sale_price_original: preco,
       sale_price_cold: prodModalAtual.sale_price_cold || 0,
@@ -1132,6 +1133,12 @@ function toggleGelado(idx) {
   item.gelado = !item.gelado;
   item.unit_price = item.gelado ? item.sale_price_cold : item.sale_price_original;
   item.total = item.unit_price * item.quantity;
+  // nome para impressão
+  if (item.gelado) {
+    if (!item.name.endsWith(' Gelado')) item.name = item.name_original + ' Gelado';
+  } else {
+    item.name = item.name_original;
+  }
   renderCarrinho(); calcTotais();
 }
 
