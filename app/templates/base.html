@@ -142,22 +142,24 @@
     }
     .sidebar.collapsed { width: 60px; }
     .sidebar-brand {
-      padding: 20px 24px 16px;
+      padding: 0;
       border-bottom: 1px solid #3d3d5e;
-      color: #c9a84c;
-      font-size: 1.4rem;
-      font-weight: 800;
-      letter-spacing: 1px;
-      display: flex; align-items: center; justify-content: space-between; white-space: nowrap;
+      display: flex; flex-direction: column; align-items: stretch;
     }
-    .sidebar-brand span { color: #fff; }
+    .sidebar-brand .brand-logo-row {
+      padding: 16px 24px 12px;
+      display: flex; align-items: center; justify-content: space-between; overflow: hidden;
+    }
+    .sidebar-brand .brand-logo-row img { height: 28px; object-fit: contain; flex-shrink: 0; }
     .sidebar-brand .btn-collapse {
       background: none; border: none; color: #9ba8b5; cursor: pointer;
-      padding: 0; font-size: 1rem; flex-shrink: 0; line-height: 1;
+      padding: 4px 6px; font-size: 1.1rem; flex-shrink: 0; line-height: 1; border-radius: 6px;
     }
-    .sidebar-brand .btn-collapse:hover { color: #fff; }
-    .sidebar.collapsed .sidebar-brand { padding: 20px 0 16px; justify-content: center; }
-    .sidebar.collapsed .sidebar-brand .brand-text { display: none; }
+    .sidebar-brand .btn-collapse:hover { color: #fff; background: rgba(255,255,255,.08); }
+    /* collapsed: logo esconde, botão fica centralizado em linha própria */
+    .sidebar.collapsed .sidebar-brand .brand-logo-row { padding: 14px 0 12px; justify-content: center; }
+    .sidebar.collapsed .sidebar-brand .brand-logo-row img { display: none; }
+    .sidebar.collapsed .sidebar-brand .btn-collapse { font-size: 1.3rem; }
     .sidebar .nav-section {
       padding: 10px 24px 4px; font-size: .7rem; font-weight: 700;
       letter-spacing: .08em; color: #c9a84c; text-transform: uppercase; white-space: nowrap;
@@ -222,10 +224,12 @@
 
 <div class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    <img src="/static/img/logo.png" alt="Vendix" style="height:28px;object-fit:contain;">
-    <button class="btn-collapse" onclick="toggleSidebar()" title="Recolher menu">
-      <i class="bi bi-list fs-4" id="collapseIcon"></i>
-    </button>
+    <div class="brand-logo-row">
+      <img src="/static/img/logo.png" alt="Vendix">
+      <button class="btn-collapse" onclick="toggleSidebar()" title="Recolher menu">
+        <i class="bi bi-layout-sidebar-reverse fs-5" id="collapseIcon"></i>
+      </button>
+    </div>
   </div>
   <nav class="mt-2">
     {% if current_user.is_authenticated and current_user.is_master %}
