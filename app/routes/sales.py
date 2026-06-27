@@ -2,14 +2,72 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from app import db
 from app.models.sale import Sale, SaleItem
+from app.models.sale_archive import SaleArchive
 from app.models.product import Product
 from app.models.customer import Customer
 from app.models.cash import CashRegister
 from app.models.stock import StockMovement
 from app.models.combo import ComboItem
 from app.auth_utils import autenticar_operador
+import json as _json
 
 sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
+
+
+def _get_sale_or_archive(sale_id, tenant_id):
+    """Busca venda ativa; se não achar, reconstrói a partir do arquivo."""
+    sale = Sale.query.filter_by(id=sale_id, tenant_id=tenant_id).first()
+    if sale:
+        return sale, False
+
+    arq = SaleArchive.query.filter_by(original_id=sale_id, tenant_id=tenant_id).first()
+    if not arq:
+        return None, False
+
+    # Reconstrói um objeto Sale-like com itens simulados a partir do JSON
+    items_data = _json.loads(arq.items_json or '[]')
+    fake_items = []
+    for i in items_data:
+        item = SaleItem.__new__(SaleItem)
+        item.product_id   = i.get('product_id')
+        item.product_name = i.get('product_name', '')
+        item.unit_price   = i.get('unit_price', 0)
+        item.cost_price   = i.get('cost_price', 0)
+        item.quantity     = i.get('quantity', 1)
+        item.total        = i.get('total', 0)
+        fake_items.append(item)
+
+    fake = Sale.__new__(Sale)
+    fake.id               = arq.original_id
+    fake.sale_number      = arq.sale_number
+    fake.tenant_id        = arq.tenant_id
+    fake.customer_id      = arq.customer_id
+    fake.customer         = None
+    fake.delivery_mode    = arq.delivery_mode or 'retirada'
+    fake.delivery_fee     = arq.delivery_fee or 0
+    fake.subtotal         = arq.subtotal or 0
+    fake.total            = arq.total or 0
+    fake.payment_method   = arq.payment_method or ''
+    fake.payment_entries  = None
+    fake.notes            = arq.notes
+    fake.status           = arq.status
+    fake.source           = arq.source
+    fake.app_name         = arq.app_name
+    fake.amount_paid      = arq.amount_paid
+    fake.change_amount    = None
+    fake.discount         = arq.discount or 0
+    fake.discount_type    = arq.discount_type
+    fake.cashier_name     = arq.cashier_name
+    fake.cancelled_at     = arq.cancelled_at
+    fake.cancelled_by_name= arq.cancelled_by_name
+    fake.cancel_reason    = arq.cancel_reason
+    fake.dispatched_at    = None
+    fake.delivered_at     = None
+    fake.motoboy_name     = None
+    fake.employee_id      = arq.employee_id
+    fake.created_at       = arq.created_at
+    fake.items            = fake_items
+    return fake, True  # True = veio do arquivo
 
 def tid():
     return current_user.tenant_id
@@ -283,13 +341,17 @@ def index():
 @sales_bp.route('/<int:sale_id>')
 @login_required
 def detalhe(sale_id):
-    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
-    return render_template('sales/detalhe.html', sale=sale)
+    sale, arquivada = _get_sale_or_archive(sale_id, tid())
+    if not sale:
+        from flask import abort; abort(404)
+    return render_template('sales/detalhe.html', sale=sale, arquivada=arquivada)
 
 @sales_bp.route('/<int:sale_id>/comprovante')
 @login_required
 def comprovante(sale_id):
-    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    sale, _ = _get_sale_or_archive(sale_id, tid())
+    if not sale:
+        from flask import abort; abort(404)
     autoprint = request.args.get('autoprint', '0') == '1'
     store_name = current_user.tenant.store_name
 
@@ -327,7 +389,9 @@ def comprovante(sale_id):
 def escpos(sale_id):
     import base64
     from app.models.pedido_online import PedidoOnline
-    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    sale, _ = _get_sale_or_archive(sale_id, tid())
+    if not sale:
+        from flask import abort; abort(404)
     store_name = current_user.tenant.store_name or 'Vendix'
 
     # Dados do cliente — pode vir do cadastro ou do pedido online
