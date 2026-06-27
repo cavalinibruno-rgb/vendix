@@ -588,15 +588,18 @@ function usarLocalizacao() {
             btn.style.color = '#fff';
             atualizarCartUI();
             renderCartTotais();
-            // Geocodificação reversa para preencher o endereço
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pt-BR`)
+            // Geocodificação reversa via Google para preencher rua e bairro
+            fetch(`/loja/${SLUG}/reverse-geocode?lat=${lat}&lng=${lng}`)
               .then(r => r.json())
               .then(geo => {
-                const a = geo.address || {};
-                const rua    = a.road || a.pedestrian || a.footway || '';
-                const numero = a.house_number || '';
-                const bairro = a.suburb || a.neighbourhood || a.quarter || a.city_district || '';
-                if (rua) document.getElementById('cliEnd').value = rua;
+                if (geo.rua) {
+                  const endEl = document.getElementById('cliEnd');
+                  endEl.value = geo.rua + (geo.numero ? ', ' + geo.numero : '');
+                }
+                if (geo.bairro) {
+                  const bairroTextEl = document.getElementById('cliBairroText');
+                  if (bairroTextEl) bairroTextEl.value = geo.bairro;
+                }
               })
               .catch(() => {});
           }

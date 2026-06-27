@@ -109,6 +109,40 @@ def geocode_cep(slug):
         return jsonify({'error': str(e)})
 
 
+@loja_bp.route('/<slug>/reverse-geocode')
+def reverse_geocode(slug):
+    _get_tenant(slug)
+    lat = request.args.get('lat', '')
+    lng = request.args.get('lng', '')
+    key = os.environ.get('GOOGLE_MAPS_KEY', '')
+    if not key:
+        return jsonify({'error': 'Geocoding não configurado'})
+    try:
+        r = requests.get(
+            'https://maps.googleapis.com/maps/api/geocode/json',
+            params={'latlng': f'{lat},{lng}', 'key': key, 'language': 'pt-BR'},
+            timeout=5
+        )
+        data = r.json()
+        if data.get('status') == 'OK' and data.get('results'):
+            components = data['results'][0].get('address_components', [])
+            rua = numero = bairro = ''
+            for c in components:
+                types = c.get('types', [])
+                if 'route' in types:
+                    rua = c['long_name']
+                elif 'street_number' in types:
+                    numero = c['long_name']
+                elif 'sublocality_level_1' in types or 'sublocality' in types:
+                    bairro = c['long_name']
+                elif 'neighborhood' in types and not bairro:
+                    bairro = c['long_name']
+            return jsonify({'rua': rua, 'numero': numero, 'bairro': bairro})
+        return jsonify({'error': 'Endereço não encontrado'})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
 # ── Validar cupom (público) ────────────────────────────
 @loja_bp.route('/<slug>/cupom/<code>')
 def validar_cupom(slug, code):
