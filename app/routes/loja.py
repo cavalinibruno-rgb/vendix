@@ -86,7 +86,9 @@ def logo_publica(slug):
     return resp
 
 
-# ── Geocodificação de CEP via Google Maps (chave no servidor) ──
+# ── Geocodificação de CEP via ViaCEP + Nominatim (gratuito, sem chave) ──
+_NOMINATIM_HEADERS = {'User-Agent': 'VendixApp/1.0 (contato@vendixapp.com.br)'}
+
 @loja_bp.route('/<slug>/geocode-cep')
 @limiter.limit("20 per minute")
 def geocode_cep(slug):
@@ -94,19 +96,26 @@ def geocode_cep(slug):
     cep = request.args.get('cep', '').replace('-', '').strip()
     if len(cep) != 8:
         return jsonify({'error': 'CEP inválido'})
-    key = os.environ.get('GOOGLE_MAPS_KEY', '')
-    if not key:
-        return jsonify({'error': 'Geocoding não configurado'})
     try:
+        # 1. ViaCEP: CEP → endereço
+        via = requests.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=5).json()
+        if via.get('erro'):
+            return jsonify({'error': 'CEP não encontrado'})
+        logradouro = via.get('logradouro', '')
+        localidade = via.get('localidade', '')
+        uf         = via.get('uf', '')
+        query      = f"{logradouro}, {localidade}, {uf}, Brasil" if logradouro else f"{localidade}, {uf}, Brasil"
+
+        # 2. Nominatim: endereço → lat/lng
         r = requests.get(
-            'https://maps.googleapis.com/maps/api/geocode/json',
-            params={'address': cep + ', Brasil', 'key': key},
+            'https://nominatim.openstreetmap.org/search',
+            params={'q': query, 'format': 'json', 'limit': 1, 'countrycodes': 'br'},
+            headers=_NOMINATIM_HEADERS,
             timeout=5
         )
-        data = r.json()
-        if data.get('status') == 'OK' and data.get('results'):
-            loc = data['results'][0]['geometry']['location']
-            return jsonify({'lat': loc['lat'], 'lng': loc['lng']})
+        results = r.json()
+        if results:
+            return jsonify({'lat': float(results[0]['lat']), 'lng': float(results[0]['lon'])})
         return jsonify({'error': 'CEP não encontrado'})
     except Exception:
         return jsonify({'error': 'Erro ao consultar CEP. Tente novamente.'})
