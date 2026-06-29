@@ -4,6 +4,7 @@ from app import db
 from app import r2
 from werkzeug.security import generate_password_hash
 from app.models.coupon import Coupon
+from app.routes.products import _validar_imagem, _MAX_UPLOAD_SIZE
 import requests as _req, json as _json
 
 config_bp = Blueprint('config', __name__, url_prefix='/configuracoes')
@@ -205,6 +206,11 @@ def salvar_identidade():
         tenant.store_name = novo_nome
     logo = request.files.get('logo')
     if logo and logo.filename:
+        try:
+            _validar_imagem(logo)
+        except ValueError as e:
+            flash(str(e), 'danger')
+            return redirect(url_for('config.index') + '#identidade')
         data = logo.read()
         if len(data) > 2 * 1024 * 1024:
             flash('Logotipo muito grande (máx. 2 MB).', 'danger')

@@ -14,8 +14,39 @@ products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 def tenant_id():
     return current_user.tenant_id
 
+# Magic bytes das imagens permitidas
+_MAGIC_BYTES = {
+    b'\xff\xd8\xff': 'image/jpeg',
+    b'\x89PNG\r\n\x1a\n': 'image/png',
+    b'GIF87a': 'image/gif',
+    b'GIF89a': 'image/gif',
+    b'RIFF': 'image/webp',  # RIFF....WEBP
+}
+_MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+def _validar_imagem(file_storage):
+    """Lê até 12 bytes para verificar magic bytes. Lança ValueError se inválido."""
+    data = file_storage.read(12)
+    file_storage.seek(0)
+    if len(data) < 4:
+        raise ValueError('Arquivo muito pequeno ou corrompido.')
+    for magic, mime in _MAGIC_BYTES.items():
+        if data.startswith(magic):
+            # Webp: verifica RIFF....WEBP
+            if magic == b'RIFF' and data[8:12] != b'WEBP':
+                continue
+            return mime
+    raise ValueError('Tipo de arquivo não permitido. Envie uma imagem JPG, PNG, GIF ou WEBP.')
+
 def _comprimir_imagem(file_storage, max_size=(600, 600), quality=75):
-    """Redimensiona e comprime imagem para JPEG. Retorna (bytes, mime)."""
+    """Valida, redimensiona e comprime imagem para JPEG. Retorna (bytes, mime)."""
+    # Verifica tamanho antes de ler tudo
+    file_storage.seek(0, 2)
+    size = file_storage.tell()
+    file_storage.seek(0)
+    if size > _MAX_UPLOAD_SIZE:
+        raise ValueError(f'Imagem muito grande. Máximo permitido: 10 MB.')
+    _validar_imagem(file_storage)
     img = Image.open(file_storage)
     if img.mode not in ('RGB', 'L'):
         img = img.convert('RGB')
@@ -135,8 +166,10 @@ def novo():
                         prod.image_data = img_bytes
                         prod.image_mime = mime
                         prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+                except ValueError as e:
+                    flash(str(e), 'danger')
                 except Exception:
-                    pass
+                    flash('Erro ao processar imagem. Verifique o arquivo e tente novamente.', 'danger')
 
         tem_pack = request.form.get('tem_pack') == '1'
 
