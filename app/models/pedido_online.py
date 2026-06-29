@@ -1,12 +1,14 @@
 from app import db
 from datetime import datetime
 import json as _json
+import secrets
 
 
 class PedidoOnline(db.Model):
     __tablename__ = 'pedidos_online'
 
     id             = db.Column(db.Integer, primary_key=True)
+    token          = db.Column(db.String(48), unique=True, nullable=True)
     tenant_id      = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
     sale_id        = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=True)
     # Cliente (sem cadastro)

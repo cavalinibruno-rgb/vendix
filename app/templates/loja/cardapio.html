@@ -844,7 +844,7 @@ function fazerPedido() {
   .then(r => r.json())
   .then(d => {
     if (d.pedido_id) {
-      window.location.href = `/loja/${SLUG}/pedido/${d.pedido_id}/acompanhar`;
+      window.location.href = `/loja/${SLUG}/pedido/${d.token || d.pedido_id}/acompanhar`;
     } else {
       erroEl.textContent = d.error || 'Erro ao enviar pedido.';
       btn.disabled = false;

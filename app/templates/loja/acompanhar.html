@@ -163,7 +163,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 
 <script>
 const SLUG      = {{ tenant.slug | tojson }};
-const PEDIDO_ID = {{ pedido.id }};
+const PEDIDO_ID = {{ (pedido.token or pedido.id) | tojson }};
 let lastStatus  = null; // sempre aplica o status na primeira chamada
 
 function applyStatus(data) {

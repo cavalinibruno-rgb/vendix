@@ -247,7 +247,9 @@ def fazer_pedido(slug):
 
     total = round(max(0, subtotal + taxa_entrega - desconto), 2)
 
+    import secrets as _secrets
     pedido = PedidoOnline(
+        token          = _secrets.token_urlsafe(32),
         tenant_id      = tenant.id,
         cliente_nome   = cliente_nome,
         cliente_tel    = cliente_tel,
@@ -270,7 +272,7 @@ def fazer_pedido(slug):
         cupom_obj.used_count = (cupom_obj.used_count or 0) + 1
 
     db.session.commit()
-    return jsonify({'pedido_id': pedido.id})
+    return jsonify({'pedido_id': pedido.id, 'token': pedido.token})
 
 
 # ── Taxa por distância (cliente) ───────────────────────
@@ -339,25 +341,33 @@ def rastrear(slug):
                 if sale and sale.delivered_at:
                     return render_template('loja/rastrear.html',
                         tenant=tenant, pedido=None, entregue=True, busca=busca)
-            return redirect(url_for('loja.acompanhar', slug=slug, pedido_id=pedido.id))
+            token_acomp = pedido.token or str(pedido.id)
+            return redirect(url_for('loja.acompanhar', slug=slug, token=token_acomp))
 
     return render_template('loja/rastrear.html',
         tenant=tenant, pedido=None, entregue=False, busca=busca, erro=erro)
 
 
 # ── Acompanhar pedido (cliente) ─────────────────────────
-@loja_bp.route('/<slug>/pedido/<int:pedido_id>/acompanhar')
-def acompanhar(slug, pedido_id):
+@loja_bp.route('/<slug>/pedido/<token>/acompanhar')
+def acompanhar(slug, token):
     tenant = _get_tenant(slug)
-    pedido = PedidoOnline.query.filter_by(id=pedido_id, tenant_id=tenant.id).first_or_404()
+    # Suporte a pedidos antigos que usam ID numérico como token
+    if token.isdigit():
+        pedido = PedidoOnline.query.filter_by(id=int(token), tenant_id=tenant.id).first_or_404()
+    else:
+        pedido = PedidoOnline.query.filter_by(token=token, tenant_id=tenant.id).first_or_404()
     return render_template('loja/acompanhar.html', tenant=tenant, pedido=pedido)
 
 
 # ── Status polling (cliente) ────────────────────────────
-@loja_bp.route('/<slug>/pedido/<int:pedido_id>/status')
-def pedido_status(slug, pedido_id):
+@loja_bp.route('/<slug>/pedido/<token>/status')
+def pedido_status(slug, token):
     tenant = _get_tenant(slug)
-    pedido = PedidoOnline.query.filter_by(id=pedido_id, tenant_id=tenant.id).first_or_404()
+    if token.isdigit():
+        pedido = PedidoOnline.query.filter_by(id=int(token), tenant_id=tenant.id).first_or_404()
+    else:
+        pedido = PedidoOnline.query.filter_by(token=token, tenant_id=tenant.id).first_or_404()
 
     status = pedido.status
     dispatched_at = None
