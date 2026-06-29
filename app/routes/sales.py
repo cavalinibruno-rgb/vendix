@@ -705,3 +705,35 @@ def cancelamentos():
     return render_template('sales/cancelamentos.html',
         vendas=vendas, total_cancelado=total_cancelado,
         filtro_de=filtro_de, filtro_ate=filtro_ate)
+
+
+@sales_bp.route('/auditoria-descontos')
+@login_required
+def auditoria_descontos():
+    filtro_de  = request.args.get('de', '')
+    filtro_ate = request.args.get('ate', '')
+
+    query = Sale.query.filter(
+        Sale.tenant_id == tid(),
+        Sale.status != 'cancelled',
+        Sale.discount > 0,
+    )
+
+    if filtro_de:
+        try:
+            query = query.filter(Sale.created_at >= filtro_de)
+        except Exception:
+            pass
+    if filtro_ate:
+        try:
+            query = query.filter(db.func.date(Sale.created_at) <= filtro_ate)
+        except Exception:
+            pass
+
+    vendas = query.order_by(Sale.created_at.desc()).all()
+    total_desconto = sum(v.discount or 0 for v in vendas)
+    total_vendido  = sum(v.total for v in vendas)
+
+    return render_template('sales/auditoria_descontos.html',
+        vendas=vendas, total_desconto=total_desconto, total_vendido=total_vendido,
+        filtro_de=filtro_de, filtro_ate=filtro_ate)
