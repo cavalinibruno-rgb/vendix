@@ -69,6 +69,9 @@ def funcionario_credenciais(emp_id):
     if not username or not senha:
         flash('Informe usuário e senha.', 'danger')
         return redirect(url_for('vale.index'))
+    if len(senha) < 8:
+        flash('A senha deve ter pelo menos 8 caracteres.', 'danger')
+        return redirect(url_for('vale.index'))
     # Garante username único no tenant
     conflict = Employee.query.filter_by(tenant_id=tid(), username=username).filter(Employee.id != emp_id).first()
     if conflict:

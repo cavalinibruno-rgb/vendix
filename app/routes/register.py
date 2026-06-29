@@ -93,8 +93,8 @@ def checkout():
     senha      = request.form.get('senha', '').strip()
     plano      = request.form.get('plano', 'mensal')
 
-    if not store_name or not email or len(senha) < 6:
-        return jsonify({'error': 'Preencha todos os campos. Senha mínima: 6 caracteres.'}), 400
+    if not store_name or not email or len(senha) < 8:
+        return jsonify({'error': 'Preencha todos os campos. Senha mínima: 8 caracteres.'}), 400
     if plano not in PLANOS:
         return jsonify({'error': 'Plano inválido.'}), 400
     if Tenant.query.filter_by(email=email).first():

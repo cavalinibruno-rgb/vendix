@@ -262,8 +262,8 @@ def alterar_senha():
         flash('Senha atual incorreta.', 'danger')
         return redirect(url_for('config.index') + '#seguranca')
 
-    if len(nova_senha) < 4:
-        flash('A nova senha deve ter pelo menos 4 caracteres.', 'danger')
+    if len(nova_senha) < 8:
+        flash('A nova senha deve ter pelo menos 8 caracteres.', 'danger')
         return redirect(url_for('config.index') + '#seguranca')
 
     if nova_senha != confirmar:
