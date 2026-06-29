@@ -20,7 +20,7 @@ PLANOS = {
     },
     'anual': {
         'nome': 'Vendix Anual',
-        'valor_total': 1198.80,
+        'valor_total': 1.00,  # TESTE — voltar para 1198.80
         'dias': 365,
         'tipo': 'avista',       # pagamento único via Checkout Pro
     },
