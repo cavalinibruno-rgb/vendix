@@ -25,6 +25,7 @@ def _sha512_b64(data: bytes) -> str:
 
 
 @download_bp.route('/download')
+@login_required
 def pagina():
     releases = AppRelease.query.order_by(AppRelease.uploaded_at.desc()).all()
     latest   = releases[0] if releases else None
@@ -32,6 +33,7 @@ def pagina():
 
 
 @download_bp.route('/download/<int:release_id>/arquivo')
+@login_required
 def arquivo(release_id):
     release = AppRelease.query.get_or_404(release_id)
     if release.file_url:
