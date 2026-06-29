@@ -5,7 +5,7 @@ from app.models.tenant import Tenant
 from app.models.vale import Employee
 from app.models.password_reset import PasswordResetToken
 from app import limiter, db
-import os, smtplib
+import os, smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -46,11 +46,19 @@ def _enviar_email_reset(destinatario, link):
     msg.attach(MIMEText(html, 'html'))
 
     try:
-        with smtplib.SMTP(host, port) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(username, password)
-            smtp.sendmail(sender, destinatario, msg.as_string())
+        if port == 465:
+            # SSL direto
+            context = ssl.create_default_context()
+            with smtplib.SMTP_SSL(host, port, timeout=10, context=context) as smtp:
+                smtp.login(username, password)
+                smtp.sendmail(sender, destinatario, msg.as_string())
+        else:
+            # STARTTLS (porta 587)
+            with smtplib.SMTP(host, port, timeout=10) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.login(username, password)
+                smtp.sendmail(sender, destinatario, msg.as_string())
     except Exception as e:
         current_app.logger.error(f'[reset] Falha ao enviar e-mail: {e}')
 
