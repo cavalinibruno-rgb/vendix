@@ -690,7 +690,7 @@ function usarLocalizacao() {
       status.textContent = '❌ Permissão de localização negada. Ative o GPS e tente novamente.';
       status.style.color = '#eb5757';
     },
-    { timeout: 10000 }
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }
 
