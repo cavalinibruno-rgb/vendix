@@ -86,6 +86,7 @@ def form():
 
 
 @register_bp.route('/checkout', methods=['POST'])
+@csrf.exempt
 @limiter.limit("5 per minute; 20 per hour")
 def checkout():
     store_name = request.form.get('store_name', '').strip()
