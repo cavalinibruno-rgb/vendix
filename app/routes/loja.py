@@ -191,6 +191,8 @@ def fazer_pedido(slug):
     notes          = (data.get('notes') or '').strip()
     cupom_code     = (data.get('cupom_code') or '').strip().upper()
     items_raw      = data.get('items', [])
+    geo_lat        = data.get('geo_lat')
+    geo_lng        = data.get('geo_lng')
 
     if not cliente_nome:
         return jsonify({'error': 'Informe seu nome.'}), 400
@@ -205,6 +207,30 @@ def fazer_pedido(slug):
         if n:
             taxa_entrega = n.delivery_fee
             bairro_nome  = n.name
+    elif geo_lat and geo_lng:
+        # Recalcula taxa por distância server-side usando as coordenadas do cliente
+        import math as _math
+        try:
+            cfg  = tenant.config or {}
+            lat1 = float(cfg.get('loja_lat', 0))
+            lng1 = float(cfg.get('loja_lng', 0))
+            lat2 = float(geo_lat)
+            lng2 = float(geo_lng)
+            if lat1 and lng1:
+                dlat = _math.radians(lat2 - lat1)
+                dlng = _math.radians(lng2 - lng1)
+                a = _math.sin(dlat/2)**2 + _math.cos(_math.radians(lat1)) * _math.cos(_math.radians(lat2)) * _math.sin(dlng/2)**2
+                dist_km = 6371 * 2 * _math.asin(_math.sqrt(a))
+                zonas = cfg.get('zonas_entrega', [])
+                for z in sorted(zonas, key=lambda z: z['max_km']):
+                    if dist_km <= z['max_km']:
+                        taxa_entrega = z['fee']
+                        break
+                else:
+                    if zonas:
+                        return jsonify({'error': 'Endereço fora da área de entrega.'}), 400
+        except (ValueError, TypeError):
+            pass
 
     # Valida itens e calcula subtotal
     subtotal = 0.0

@@ -395,6 +395,8 @@ let taxaEntrega = 0;
 let cupomAplicado = null; // { code, type, amount, desconto }
 let geoOk  = false; // localização confirmada via GPS
 let cepOk  = false; // taxa calculada via CEP
+let geoLat = null; // coordenadas confirmadas pelo servidor
+let geoLng = null;
 
 // Carrega produtos
 fetch(`/loja/${SLUG}/produtos`)
@@ -653,6 +655,8 @@ function usarLocalizacao() {
           } else {
             taxaEntrega = d.fee;
             geoOk = true;
+            geoLat = lat;
+            geoLng = lng;
             const taxaMsg = d.fee > 0 ? ` — Taxa: R$ ${fmt(d.fee)}` : ' — Entrega grátis!';
             status.innerHTML = `✅ Localização confirmada (${d.dist_km} km)${taxaMsg}`;
             status.style.color = '#27ae60';
@@ -828,6 +832,8 @@ function fazerPedido() {
       cliente_nome:   nome,
       cliente_tel:    tel,
       bairro_id:      bairroId,
+      geo_lat:        geoLat,
+      geo_lng:        geoLng,
       endereco:       endCompleto,
       payment_method: pgto,
       troco_para:     troco,
