@@ -8,3 +8,8 @@ __pycache__/
 venv/
 dist/
 *.egg-info/
+*.bak
+fix_*.py
+migrate_*.py
+fix_result*.txt
+debug_*.py
