@@ -363,7 +363,20 @@ def create_app():
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+        # geolocation=(self) permite que a loja use GPS do cliente
+        response.headers['Permissions-Policy'] = 'geolocation=(self), microphone=(), camera=()'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: blob: https:; "
+            "connect-src 'self' https://maps.googleapis.com https://nominatim.openstreetmap.org https://viacep.com.br; "
+            "frame-src 'none'; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';"
+        )
         return response
 
     @app.errorhandler(429)
