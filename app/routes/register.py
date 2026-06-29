@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, current_app
-from app import db
+from app import db, limiter
 from app.models.pending_registration import PendingRegistration
 from app.models.tenant import Tenant
 from app.models.user import User
@@ -86,6 +86,7 @@ def form():
 
 
 @register_bp.route('/checkout', methods=['POST'])
+@limiter.limit("5 per minute; 20 per hour")
 def checkout():
     store_name = request.form.get('store_name', '').strip()
     email      = request.form.get('email', '').strip().lower()

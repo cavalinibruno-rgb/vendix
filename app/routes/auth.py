@@ -3,10 +3,12 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User, EmployeeLoginProxy
 from app.models.tenant import Tenant
 from app.models.vale import Employee
+from app import limiter
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute; 30 per hour", methods=["POST"])
 def login():
     if request.method == 'POST':
         login_input = request.form.get('email', '').strip()
