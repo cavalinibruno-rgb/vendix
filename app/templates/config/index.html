@@ -415,6 +415,10 @@
               <label class="form-label fw-semibold small mb-1">Validade <span class="text-muted fw-normal">(opcional)</span></label>
               <input type="datetime-local" name="ends_at" class="form-control form-control-sm">
             </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold small mb-1">Limite de usos <span class="text-muted fw-normal">(0 = ilimitado)</span></label>
+              <input type="number" name="max_uses" class="form-control form-control-sm" value="0" min="0" placeholder="0">
+            </div>
           </div>
           <button type="submit" class="btn btn-warning btn-sm fw-semibold mt-2">
             <i class="bi bi-plus-lg me-1"></i>Criar Cupom
@@ -428,6 +432,7 @@
             <tr>
               <th>Código</th>
               <th>Desconto</th>
+              <th>Usos</th>
               <th>Período</th>
               <th>Status</th>
               <th></th>
@@ -440,6 +445,13 @@
               <td>
                 {% if c.coupon_type == 'percent' %}{{ '%.0f'|format(c.amount) }}%
                 {% else %}R$ {{ '%.2f'|format(c.amount) }}{% endif %}
+              </td>
+              <td class="small text-muted">
+                {% if c.max_uses and c.max_uses > 0 %}
+                  {{ c.used_count or 0 }}/{{ c.max_uses }}
+                {% else %}
+                  {{ c.used_count or 0 }} / ∞
+                {% endif %}
               </td>
               <td class="small text-muted" style="white-space:nowrap;">
                 {% if c.starts_at or c.ends_at %}

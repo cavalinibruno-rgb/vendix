@@ -221,6 +221,8 @@ def _run_migrations(db):
             active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
+        "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS max_uses INTEGER DEFAULT 0",
+        "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS used_count INTEGER DEFAULT 0",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

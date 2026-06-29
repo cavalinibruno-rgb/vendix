@@ -108,9 +108,10 @@ def criar_cupom():
 
     starts_at = parse_dt('starts_at')
     ends_at   = parse_dt('ends_at')
+    max_uses  = int(request.form.get('max_uses', 0) or 0)
 
     db.session.add(Coupon(tenant_id=tid(), code=code, coupon_type=ctype, amount=amount,
-                          starts_at=starts_at, ends_at=ends_at))
+                          starts_at=starts_at, ends_at=ends_at, max_uses=max_uses, used_count=0))
     db.session.commit()
     flash(f'Cupom "{code}" criado com sucesso.', 'success')
     return redirect(url_for('config.index') + '#cupons')

@@ -12,4 +12,6 @@ class Coupon(db.Model):
     active      = db.Column(db.Boolean, default=True)
     starts_at   = db.Column(db.DateTime, nullable=True)
     ends_at     = db.Column(db.DateTime, nullable=True)
+    max_uses    = db.Column(db.Integer, default=0)   # 0 = sem limite
+    used_count  = db.Column(db.Integer, default=0)
     created_at  = db.Column(db.DateTime, default=datetime.now)

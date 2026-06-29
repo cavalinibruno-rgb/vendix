@@ -160,6 +160,8 @@ def validar_cupom(slug, code):
         return jsonify({'error': 'Este cupom ainda não está válido.'})
     if c.ends_at and now > c.ends_at:
         return jsonify({'error': 'Este cupom expirou.'})
+    if c.max_uses and c.max_uses > 0 and (c.used_count or 0) >= c.max_uses:
+        return jsonify({'error': 'Este cupom atingiu o limite de usos.'})
     return jsonify({'type': c.coupon_type, 'amount': c.amount})
 
 
@@ -219,15 +221,20 @@ def fazer_pedido(slug):
 
     # Aplica cupom de desconto
     desconto = 0.0
-    cupom_usado = None
+    cupom_obj = None
     if cupom_code:
+        from datetime import datetime as _dt
         c = Coupon.query.filter_by(tenant_id=tenant.id, code=cupom_code, active=True).first()
         if c:
-            cupom_usado = cupom_code
-            if c.coupon_type == 'percent':
-                desconto = round(subtotal * c.amount / 100, 2)
-            else:
-                desconto = min(round(c.amount, 2), subtotal)
+            now = _dt.now()
+            limite_ok = not (c.max_uses and c.max_uses > 0 and (c.used_count or 0) >= c.max_uses)
+            periodo_ok = (not c.starts_at or now >= c.starts_at) and (not c.ends_at or now <= c.ends_at)
+            if limite_ok and periodo_ok:
+                cupom_obj = c
+                if c.coupon_type == 'percent':
+                    desconto = round(subtotal * c.amount / 100, 2)
+                else:
+                    desconto = min(round(c.amount, 2), subtotal)
 
     total = round(max(0, subtotal + taxa_entrega - desconto), 2)
 
@@ -248,6 +255,11 @@ def fazer_pedido(slug):
         status         = 'pending',
     )
     db.session.add(pedido)
+
+    # Incrementa contador de usos do cupom atomicamente
+    if cupom_obj:
+        cupom_obj.used_count = (cupom_obj.used_count or 0) + 1
+
     db.session.commit()
     return jsonify({'pedido_id': pedido.id})
 
