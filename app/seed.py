@@ -3,14 +3,16 @@ from app.models.user import User
 import os
 
 def seed_master():
-    email    = os.environ.get('MASTER_EMAIL', 'bcavalini@hotmail.com')
-    password = os.environ.get('MASTER_PASSWORD', '45127579190325131528')
+    email    = os.environ.get('MASTER_EMAIL')
+    password = os.environ.get('MASTER_PASSWORD')
+    if not email or not password:
+        return  # Não cria conta master sem variáveis de ambiente definidas
     if not User.query.filter_by(email=email).first():
         master = User(
             tenant_id=None,
             username='master',
             email=email,
-            display_name='Bruno Cavalini',
+            display_name='Master',
             role='master'
         )
         master.set_password(password)

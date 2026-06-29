@@ -125,9 +125,34 @@ def confirmar():
         payment_entries_json = _json.dumps(payment_entries_raw)
         amount_paid          = round(sum(float(e.get('amount', 0)) for e in payment_entries_raw), 2)
 
-    subtotal = sum(float(i['unit_price']) * float(i['quantity']) for i in items)
+    # Valida preço server-side — nunca confia no valor enviado pelo cliente
+    _prod_cache = {}
+    def _preco_servidor(item):
+        pid = item.get('product_id')
+        is_gelado = item.get('gelado', False)
+        is_cartao = payment_method in ('cartao', 'credito', 'debito', 'combinado')
+        if pid:
+            if pid not in _prod_cache:
+                _prod_cache[pid] = Product.query.filter_by(id=pid, tenant_id=tid()).first()
+            p = _prod_cache[pid]
+            if p:
+                tenant = current_user.tenant
+                if tenant and getattr(tenant, 'event_mode', False) and getattr(p, 'sale_price_event', 0):
+                    return p.sale_price_event
+                if is_gelado and getattr(p, 'sale_price_cold', 0):
+                    if is_cartao and getattr(p, 'sale_price_cold_card', 0):
+                        return p.sale_price_cold_card
+                    return p.sale_price_cold
+                if is_cartao and getattr(p, 'sale_price_card', 0):
+                    return p.sale_price_card
+                return p.sale_price
+        # Produto sem ID (item avulso): aceita o preço do cliente
+        return float(item.get('unit_price', 0))
+
+    subtotal = sum(_preco_servidor(i) * float(i['quantity']) for i in items)
 
     if discount_type == 'percent':
+        discount_input = min(discount_input, 100)  # teto de 100%
         discount = round(subtotal * discount_input / 100, 2)
     elif discount_type == 'value':
         discount = min(discount_input, subtotal)
@@ -171,15 +196,18 @@ def confirmar():
     for i in items:
         qty = float(i['quantity'])
         pid = i.get('product_id') or None
-        prod = Product.query.filter_by(id=pid, tenant_id=tid()).first() if pid else None
+        prod = _prod_cache.get(pid) if pid else None
+        if pid and prod is None:
+            prod = Product.query.filter_by(id=pid, tenant_id=tid()).first()
+        unit_price_srv = _preco_servidor(i)
         item = SaleItem(
             sale_id      = sale.id,
             product_id   = pid,
             product_name = i['name'],
-            unit_price   = float(i['unit_price']),
+            unit_price   = unit_price_srv,
             cost_price   = (prod.cost_price or 0) if prod else 0,
             quantity     = qty,
-            total        = float(i['unit_price']) * qty,
+            total        = unit_price_srv * qty,
         )
         db.session.add(item)
 

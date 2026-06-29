@@ -88,8 +88,9 @@ def logo_publica(slug):
 
 # ── Geocodificação de CEP via Google Maps (chave no servidor) ──
 @loja_bp.route('/<slug>/geocode-cep')
+@limiter.limit("20 per minute")
 def geocode_cep(slug):
-    _get_tenant(slug)  # valida que a loja existe
+    _get_tenant(slug)
     cep = request.args.get('cep', '').replace('-', '').strip()
     if len(cep) != 8:
         return jsonify({'error': 'CEP inválido'})
@@ -107,11 +108,12 @@ def geocode_cep(slug):
             loc = data['results'][0]['geometry']['location']
             return jsonify({'lat': loc['lat'], 'lng': loc['lng']})
         return jsonify({'error': 'CEP não encontrado'})
-    except Exception as e:
-        return jsonify({'error': str(e)})
+    except Exception:
+        return jsonify({'error': 'Erro ao consultar CEP. Tente novamente.'})
 
 
 @loja_bp.route('/<slug>/reverse-geocode')
+@limiter.limit("20 per minute")
 def reverse_geocode(slug):
     _get_tenant(slug)
     lat = request.args.get('lat', '')
@@ -141,8 +143,8 @@ def reverse_geocode(slug):
                     bairro = c['long_name']
             return jsonify({'rua': rua, 'numero': numero, 'bairro': bairro})
         return jsonify({'error': 'Endereço não encontrado'})
-    except Exception as e:
-        return jsonify({'error': str(e)})
+    except Exception:
+        return jsonify({'error': 'Erro ao consultar localização. Tente novamente.'})
 
 
 # ── Validar cupom (público) ────────────────────────────

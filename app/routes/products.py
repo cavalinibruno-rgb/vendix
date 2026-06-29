@@ -441,15 +441,16 @@ def api_todos():
     } for r in rows])
 
 @products_bp.route('/<int:product_id>/imagem')
+@login_required
 def imagem(product_id):
     from flask import redirect as _redirect
-    product = Product.query.filter_by(id=product_id).first_or_404()
+    product = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
     if product.image_url:
         return _redirect(product.image_url, 301)
     if not product.image_data:
         return '', 404
     resp = Response(product.image_data, mimetype='image/jpeg')
-    resp.headers['Cache-Control'] = 'public, max-age=604800'
+    resp.headers['Cache-Control'] = 'private, max-age=604800'
     return resp
 
 @products_bp.route('/admin/recomprimir-imagens', methods=['POST'])

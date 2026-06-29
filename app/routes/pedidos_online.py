@@ -121,7 +121,8 @@ def aceitar(pedido_id):
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': f'{type(e).__name__}: {e}', 'trace': traceback.format_exc()}), 500
+        current_app.logger.error(f'Erro ao aceitar pedido {pedido_id}: {traceback.format_exc()}')
+        return jsonify({'error': 'Erro interno ao processar o pedido. Tente novamente.'}), 500
 
 
 @pedidos_online_bp.route('/<int:pedido_id>/recusar', methods=['POST'])

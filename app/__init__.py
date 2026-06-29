@@ -232,7 +232,13 @@ def _run_migrations(db):
 
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
+    secret = os.environ.get('SECRET_KEY')
+    if not secret:
+        import secrets
+        secret = secrets.token_hex(32)
+        import logging
+        logging.getLogger(__name__).warning('[SECURITY] SECRET_KEY não definida — usando chave temporária. Sessões serão invalidadas a cada reinício.')
+    app.config['SECRET_KEY'] = secret
     db_url = (
         os.environ.get('VENDIX_DB_URL') or
         os.environ.get('DATABASE_PUBLIC_URL') or
@@ -250,6 +256,10 @@ def create_app():
     from datetime import timedelta
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
     app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+    app.config['REMEMBER_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -375,7 +385,12 @@ def create_app():
 
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
-        app.logger.warning(f"[DB] Config URI = {app.config['SQLALCHEMY_DATABASE_URI'][:40]}...")
+        try:
+            from sqlalchemy.engine.url import make_url as _make_url
+            _u = _make_url(app.config['SQLALCHEMY_DATABASE_URI'])
+            app.logger.warning(f"[DB] host={_u.host} db={_u.database}")
+        except Exception:
+            app.logger.warning("[DB] URI configurada")
         from app.models.cash_withdrawal import CashWithdrawal  # noqa: F401
         from app.models.expense import Expense  # noqa: F401
         from app.models.combo import ComboItem  # noqa: F401
