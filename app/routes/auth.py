@@ -37,7 +37,7 @@ def _enviar_email_reset(destinatario, link):
             'https://api.resend.com/emails',
             headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
             json={
-                'from':    'Vendix <onboarding@resend.dev>',
+                'from':    'Vendix <noreply@vendixapp.com.br>',
                 'to':      [destinatario],
                 'subject': 'Redefinição de senha — Vendix',
                 'html':    html,
