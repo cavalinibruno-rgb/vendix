@@ -3,17 +3,22 @@ import os
 import uuid
 from botocore.config import Config
 
-_R2_ACCOUNT_ID  = os.environ.get('R2_ACCOUNT_ID', '18c5dd7f737e1362673ef529116837aa')
+_R2_ACCOUNT_ID  = os.environ.get('R2_ACCOUNT_ID', '')
 _R2_ACCESS_KEY  = os.environ.get('R2_ACCESS_KEY_ID', '')
 _R2_SECRET_KEY  = os.environ.get('R2_SECRET_ACCESS_KEY', '')
-_R2_BUCKET      = os.environ.get('R2_BUCKET', 'vendix-storage')
-_R2_PUBLIC_URL  = os.environ.get('R2_PUBLIC_URL', 'https://pub-2601de4c6cf446ad88ad9848937c5857.r2.dev')
-_R2_ENDPOINT    = f'https://{_R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
+_R2_BUCKET      = os.environ.get('R2_BUCKET', '')
+_R2_PUBLIC_URL  = os.environ.get('R2_PUBLIC_URL', '').rstrip('/')
+
+def _r2_configurado():
+    return all([_R2_ACCOUNT_ID, _R2_ACCESS_KEY, _R2_SECRET_KEY, _R2_BUCKET, _R2_PUBLIC_URL])
 
 def _client():
+    if not _r2_configurado():
+        raise RuntimeError('R2 não configurado: defina R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET e R2_PUBLIC_URL no ambiente.')
+    endpoint = f'https://{_R2_ACCOUNT_ID}.r2.cloudflarestorage.com'
     return boto3.client(
         's3',
-        endpoint_url=_R2_ENDPOINT,
+        endpoint_url=endpoint,
         aws_access_key_id=_R2_ACCESS_KEY,
         aws_secret_access_key=_R2_SECRET_KEY,
         config=Config(signature_version='s3v4'),
