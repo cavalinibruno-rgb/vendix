@@ -164,11 +164,16 @@ def checkout():
             'notification_url': f'{base_url}/assinar/webhook',
             'statement_descriptor': 'VENDIX',
             'payment_methods': {
-                'installments': 12,
-                'default_installments': 12,
+                'installments': 1 if plano_info['valor_total'] < 100 else 12,
+                'default_installments': 1 if plano_info['valor_total'] < 100 else 12,
             },
         }
-        result = sdk.preference().create(payload)
+        try:
+            result = sdk.preference().create(payload)
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f'[MP preference exception] {e}')
+            return jsonify({'error': 'Erro ao conectar ao gateway de pagamento. Tente novamente.'}), 500
         if result['status'] not in (200, 201):
             db.session.rollback()
             current_app.logger.error(f'[MP preference] {result}')
