@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, abort, send_file, make_response
-from app import db, limiter
+from app import db, limiter, csrf
 from app.models.tenant import Tenant
 from app.models.product import Product, ProductType
 from app.models.customer import Neighborhood
@@ -163,7 +163,8 @@ def validar_cupom(slug, code):
 
 # ── Fazer pedido ────────────────────────────────────────
 @loja_bp.route('/<slug>/pedido', methods=['POST'])
-@limiter.limit("10 per minute; 50 per hour")
+@csrf.exempt
+@limiter.limit("10 per minute; 50 per hora")
 def fazer_pedido(slug):
     tenant = _get_tenant(slug)
     data   = request.get_json() or {}

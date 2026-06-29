@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, current_app
-from app import db, limiter
+from app import db, limiter, csrf
 from app.models.pending_registration import PendingRegistration
 from app.models.tenant import Tenant
 from app.models.user import User
@@ -179,6 +179,7 @@ def checkout():
 
 
 @register_bp.route('/webhook', methods=['POST'])
+@csrf.exempt
 def webhook():
     data  = request.get_json(silent=True) or {}
     topic = data.get('type') or request.args.get('topic', '')
