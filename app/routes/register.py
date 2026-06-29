@@ -295,7 +295,8 @@ def webhook():
 
 @register_bp.route('/sucesso')
 def sucesso():
-    preapproval_id = request.args.get('preapproval_id') or request.args.get('collection_id')
+    preapproval_id = request.args.get('preapproval_id')   # plano mensal
+    collection_id  = request.args.get('collection_id')    # plano anual
     ext_ref        = request.args.get('external_reference')
     status         = request.args.get('status', '')
     pending        = None
@@ -307,17 +308,40 @@ def sucesso():
         except Exception:
             pass
 
-    # Tenta criar conta caso o webhook ainda não tenha chegado
+    # Fallback caso o webhook ainda não tenha chegado
     if pending and pending.status == 'pending':
         access_token = os.environ.get('MP_ACCESS_TOKEN', '')
-        if access_token and preapproval_id:
+        if access_token:
             try:
                 import mercadopago
                 sdk = mercadopago.SDK(access_token)
-                resp = sdk.preapproval().get(preapproval_id)
-                if resp['status'] == 200 and resp['response'].get('status') == 'authorized':
-                    pending.payment_id = preapproval_id
-                    _criar_conta(pending)
+
+                if preapproval_id:
+                    # Plano mensal: verifica preapproval
+                    resp = sdk.preapproval().get(preapproval_id)
+                    if resp['status'] == 200 and resp['response'].get('status') == 'authorized':
+                        if resp['response'].get('external_reference') != str(pending.id):
+                            current_app.logger.warning(
+                                f'[sucesso] preapproval external_reference inválido: '
+                                f'esperado {pending.id}, recebido {resp["response"].get("external_reference")}'
+                            )
+                        else:
+                            pending.payment_id = preapproval_id
+                            _criar_conta(pending, preapproval_id=preapproval_id)
+
+                elif collection_id and status == 'approved':
+                    # Plano anual: verifica payment
+                    resp = sdk.payment().get(collection_id)
+                    if resp['status'] == 200 and resp['response'].get('status') == 'approved':
+                        if resp['response'].get('external_reference') != str(pending.id):
+                            current_app.logger.warning(
+                                f'[sucesso] payment external_reference inválido: '
+                                f'esperado {pending.id}, recebido {resp["response"].get("external_reference")}'
+                            )
+                        else:
+                            pending.payment_id = collection_id
+                            _criar_conta(pending)
+
             except Exception as e:
                 current_app.logger.error(f'[sucesso] {e}')
                 db.session.rollback()
