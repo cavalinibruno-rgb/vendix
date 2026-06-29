@@ -178,9 +178,43 @@ def checkout():
         return jsonify({'redirect': result['response']['init_point'], 'pending_id': pending.id})
 
 
+def _verificar_assinatura_mp(request):
+    """Verifica a assinatura HMAC-SHA256 do webhook do MercadoPago.
+    Retorna True se válida ou se MP_WEBHOOK_SECRET não estiver configurado (modo legado).
+    """
+    import hmac, hashlib
+    secret = os.environ.get('MP_WEBHOOK_SECRET', '')
+    if not secret:
+        return True  # sem secret configurado, aceita (legado)
+
+    sig_header = request.headers.get('x-signature', '')
+    req_id     = request.headers.get('x-request-id', '')
+    data_id    = (request.get_json(silent=True) or {}).get('data', {}).get('id', '') or request.args.get('id', '')
+
+    # Extrai ts e v1 do header "ts=...,v1=..."
+    ts = v1 = ''
+    for part in sig_header.split(','):
+        part = part.strip()
+        if part.startswith('ts='):
+            ts = part[3:]
+        elif part.startswith('v1='):
+            v1 = part[3:]
+
+    if not ts or not v1:
+        return False
+
+    # Monta a string de validação conforme documentação do MP
+    manifest = f'id:{data_id};request-id:{req_id};ts:{ts};'
+    expected = hmac.new(secret.encode(), manifest.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, v1)
+
+
 @register_bp.route('/webhook', methods=['POST'])
 @csrf.exempt
 def webhook():
+    if not _verificar_assinatura_mp(request):
+        return jsonify({'error': 'Assinatura inválida'}), 401
+
     data  = request.get_json(silent=True) or {}
     topic = data.get('type') or request.args.get('topic', '')
     resource_id = (data.get('data') or {}).get('id') or request.args.get('id')
