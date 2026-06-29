@@ -236,6 +236,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
     <div id="prodSheetImg"></div>
     <button class="prod-sheet-close" onclick="fecharProdSheetDireto()">✕</button>
     <div class="prod-sheet-info">
+      <div class="pc-cat" id="prodSheetCat" style="margin-bottom:3px;"></div>
       <div class="prod-sheet-name" id="prodSheetName"></div>
       <div class="prod-sheet-price" id="prodSheetPrice"></div>
     </div>
@@ -515,6 +516,9 @@ function addItem(id) {
     ? `<img class="prod-sheet-img" src="${prod.thumb}" alt="${prod.name}">`
     : `<div class="prod-sheet-ph">🍽️</div>`;
 
+  const catEl = document.getElementById('prodSheetCat');
+  catEl.textContent = prod.type_name || '';
+  catEl.style.display = prod.type_name ? '' : 'none';
   document.getElementById('prodSheetName').textContent  = prod.name;
   document.getElementById('prodSheetPrice').textContent = 'R$ ' + fmt(prod.price);
 
