@@ -355,7 +355,7 @@ def sucesso():
 @register_bp.route('/status/<int:pending_id>')
 def status(pending_id):
     pending = PendingRegistration.query.get_or_404(pending_id)
-    return jsonify({'status': pending.status, 'email': pending.email if pending.status == 'created' else None})
+    return jsonify({'status': pending.status})
 
 
 @register_bp.route('/falha')
