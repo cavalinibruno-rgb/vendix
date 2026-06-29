@@ -5,29 +5,17 @@ from app.models.tenant import Tenant
 from app.models.vale import Employee
 from app.models.password_reset import PasswordResetToken
 from app import limiter, db
-import os, smtplib, ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import os, requests as _requests
 
 auth_bp = Blueprint('auth', __name__)
 
 
 def _enviar_email_reset(destinatario, link):
-    """Envia e-mail de recuperação de senha via SMTP."""
-    host     = os.environ.get('MAIL_SERVER', '')
-    port     = int(os.environ.get('MAIL_PORT', 587))
-    username = os.environ.get('MAIL_USERNAME', '')
-    password = os.environ.get('MAIL_PASSWORD', '')
-    sender   = os.environ.get('MAIL_SENDER', username)
-
-    if not host or not username or not password:
-        current_app.logger.warning('[reset] SMTP não configurado — e-mail não enviado.')
+    """Envia e-mail de recuperação de senha via Resend API."""
+    api_key = os.environ.get('RESEND_API_KEY', '')
+    if not api_key:
+        current_app.logger.warning('[reset] RESEND_API_KEY não configurada — e-mail não enviado.')
         return
-
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'Redefinição de senha — Vendix'
-    msg['From']    = f'Vendix <{sender}>'
-    msg['To']      = destinatario
 
     html = f"""
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
@@ -43,22 +31,21 @@ def _enviar_email_reset(destinatario, link):
       <p style="color:#bbb;font-size:12px;">Vendix — Sistema de Vendas</p>
     </div>
     """
-    msg.attach(MIMEText(html, 'html'))
 
     try:
-        if port == 465:
-            # SSL direto
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(host, port, timeout=10, context=context) as smtp:
-                smtp.login(username, password)
-                smtp.sendmail(sender, destinatario, msg.as_string())
-        else:
-            # STARTTLS (porta 587)
-            with smtplib.SMTP(host, port, timeout=10) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.login(username, password)
-                smtp.sendmail(sender, destinatario, msg.as_string())
+        resp = _requests.post(
+            'https://api.resend.com/emails',
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            json={
+                'from':    'Vendix <onboarding@resend.dev>',
+                'to':      [destinatario],
+                'subject': 'Redefinição de senha — Vendix',
+                'html':    html,
+            },
+            timeout=10,
+        )
+        if resp.status_code not in (200, 201):
+            current_app.logger.error(f'[reset] Resend erro {resp.status_code}: {resp.text}')
     except Exception as e:
         current_app.logger.error(f'[reset] Falha ao enviar e-mail: {e}')
 
