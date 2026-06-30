@@ -45,10 +45,32 @@
   </div>
 </div>
 
+<!-- Busca -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col">
+        <input type="text" name="q" value="{{ q or '' }}" class="form-control form-control-sm"
+               placeholder="Buscar por nome, e-mail ou telefone...">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-warning"><i class="bi bi-search"></i></button>
+      </div>
+      {% if q %}
+      <div class="col-auto">
+        <a href="{{ url_for('master.dashboard') }}" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-x"></i> Limpar
+        </a>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
 <!-- Lista de lojas -->
 <div class="card">
   <div class="card-header d-flex align-items-center justify-content-between">
-    <span><i class="bi bi-shop me-2 text-warning"></i>Lojas Cadastradas</span>
+    <span><i class="bi bi-shop me-2 text-warning"></i>Lojas Cadastradas{% if q %} — resultado para "{{ q }}"{% endif %}</span>
     <span class="badge bg-warning text-dark fw-bold">{{ tenants|length }}</span>
   </div>
   <div class="table-responsive">

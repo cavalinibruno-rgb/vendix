@@ -26,8 +26,17 @@ def master_required(f):
 @login_required
 @master_required
 def dashboard():
-    tenants = Tenant.query.order_by(Tenant.created_at.desc()).all()
-    return render_template('master/dashboard.html', tenants=tenants)
+    q = request.args.get('q', '').strip()
+    query = Tenant.query
+    if q:
+        like = f'%{q}%'
+        query = query.filter(
+            Tenant.store_name.ilike(like) |
+            Tenant.email.ilike(like) |
+            Tenant.phone.ilike(like)
+        )
+    tenants = query.order_by(Tenant.created_at.desc()).all()
+    return render_template('master/dashboard.html', tenants=tenants, q=q)
 
 @master_bp.route('/tenant/novo', methods=['GET', 'POST'])
 @login_required
