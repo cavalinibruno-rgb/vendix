@@ -563,26 +563,50 @@ function resolverEstoque(el) {
   }
 }
 
+function _safeCalc(expr) {
+  // Parser recursivo seguro — sem eval/Function (bloqueados pela CSP)
+  const tokens = expr.replace(/\s+/g,'').match(/\d+\.?\d*|[+\-*/()]/g);
+  if (!tokens) return NaN;
+  let pos = 0;
+  function atom() {
+    if (tokens[pos] === '(') { pos++; const v = addSub(); pos++; return v; }
+    const n = parseFloat(tokens[pos++]);
+    return isNaN(n) ? NaN : n;
+  }
+  function mulDiv() {
+    let v = atom();
+    while (pos < tokens.length && (tokens[pos]==='*'||tokens[pos]==='/')) {
+      const op = tokens[pos++]; const r = atom();
+      v = op==='*' ? v*r : v/r;
+    }
+    return v;
+  }
+  function addSub() {
+    let v = mulDiv();
+    while (pos < tokens.length && (tokens[pos]==='+'||tokens[pos]==='-')) {
+      const op = tokens[pos++]; const r = mulDiv();
+      v = op==='+' ? v+r : v-r;
+    }
+    return v;
+  }
+  try { return addSub(); } catch { return NaN; }
+}
+
 function calcEstoque(el) {
   const raw = el.value.trim();
   const preview = document.getElementById('stockPreview');
   const hidden  = document.getElementById('stockValue');
-  try {
-    const result = Function('"use strict"; return (' + raw + ')')();
-    if (typeof result === 'number' && isFinite(result) && result >= 0) {
-      const val = Math.floor(result);
-      hidden.value = val;
-      if (raw !== String(val)) {
-        preview.textContent = '= ' + val;
-        preview.style.display = '';
-      } else {
-        preview.style.display = 'none';
-      }
-    } else {
-      preview.textContent = 'Expressão inválida';
+  const result  = _safeCalc(raw);
+  if (isFinite(result) && result >= 0) {
+    const val = Math.floor(result);
+    hidden.value = val;
+    if (raw !== String(val)) {
+      preview.textContent = '= ' + val;
       preview.style.display = '';
+    } else {
+      preview.style.display = 'none';
     }
-  } catch {
+  } else {
     preview.textContent = 'Expressão inválida';
     preview.style.display = '';
   }
