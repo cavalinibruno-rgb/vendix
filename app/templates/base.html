@@ -275,9 +275,6 @@
       <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in ep %}active{% endif %}">
         <i class="bi bi-phone"></i><span class="nav-label"> Apps</span>
       </a>
-      <a href="{{ url_for('sales.cancelamentos') }}" class="nav-link {% if ep == 'sales.cancelamentos' %}active{% endif %}">
-        <i class="bi bi-x-circle"></i><span class="nav-label"> Cancelamentos</span>
-      </a>
 
       <div class="nav-section">Cadastro</div>
       <a href="{{ url_for('customers.index') }}" class="nav-link {% if ep in ('customers.index','customers.novo','customers.editar') %}active{% endif %}">
