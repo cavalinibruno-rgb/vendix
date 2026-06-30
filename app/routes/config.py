@@ -167,13 +167,24 @@ def geocodificar():
     if not cep:
         return jsonify({'error': 'CEP não informado.'})
     try:
-        via = _req.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=5).json()
-        if via.get('erro'):
+        via = None
+        for url in [
+            f'https://brasilapi.com.br/api/cep/v2/{cep}',
+            f'https://viacep.com.br/ws/{cep}/json/',
+        ]:
+            try:
+                r = _req.get(url, timeout=5).json()
+                if not r.get('erro') and not r.get('message'):
+                    via = r
+                    break
+            except Exception:
+                continue
+        if not via:
             return jsonify({'error': 'CEP não encontrado.'})
-        logradouro = via.get('logradouro', '')
-        bairro     = via.get('bairro', '')
-        cidade     = via.get('localidade', '')
-        uf         = via.get('uf', '')
+        logradouro = via.get('logradouro') or via.get('street', '')
+        bairro     = via.get('bairro') or via.get('neighborhood', '')
+        cidade     = via.get('localidade') or via.get('city', '')
+        uf         = via.get('uf') or via.get('state', '')
         headers = {'User-Agent': 'Vendix/1.0'}
         # Tenta do mais específico ao mais amplo
         queries = [
