@@ -30,9 +30,16 @@
             <input type="text" name="password" class="form-control" placeholder="Senha inicial do cliente" required>
             <div class="form-text">O cliente poderá trocar depois.</div>
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Plano</label>
+            <select name="plan" id="planSelect" class="form-select" onchange="atualizarDias()">
+              <option value="mensal">Mensal</option>
+              <option value="anual">Anual</option>
+            </select>
+          </div>
           <div class="mb-4">
             <label class="form-label fw-semibold">Dias de acesso</label>
-            <select name="dias" class="form-select">
+            <select name="dias" id="diasSelect" class="form-select">
               <option value="30">30 dias (1 mês)</option>
               <option value="60">60 dias (2 meses)</option>
               <option value="90">90 dias (3 meses)</option>
@@ -96,6 +103,16 @@
 
 {% block scripts %}
 <script>
+function atualizarDias() {
+  const plano = document.getElementById('planSelect').value;
+  const dias  = document.getElementById('diasSelect');
+  if (plano === 'anual') {
+    dias.value = '365';
+  } else {
+    if (dias.value === '365') dias.value = '30';
+  }
+}
+
 document.getElementById('cep').addEventListener('input', function() {
   let v = this.value.replace(/\D/g,'');
   if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);

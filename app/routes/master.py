@@ -14,6 +14,10 @@ import unicodedata
 
 master_bp = Blueprint('master', __name__, url_prefix='/master')
 
+# Preços dos planos (edite aqui conforme necessário)
+PRECO_MENSAL = 79.90
+PRECO_ANUAL  = 799.90
+
 def master_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -47,6 +51,7 @@ def tenant_novo():
         email        = request.form.get('email', '').strip().lower()
         phone        = request.form.get('phone', '').strip()
         password     = request.form.get('password', '').strip()
+        plan         = request.form.get('plan', 'mensal')
         dias         = int(request.form.get('dias', 30))
         cep          = request.form.get('cep', '').strip()
         street       = request.form.get('street', '').strip()
@@ -74,6 +79,7 @@ def tenant_novo():
                 store_name=store_name,
                 email=email,
                 phone=phone,
+                plan=plan,
                 status='active',
                 expires_at=datetime.now() + timedelta(days=dias),
                 profile_complete=True,
@@ -159,6 +165,72 @@ def tenant_adicionar_dias(tenant_id):
     db.session.commit()
     flash(f'+{dias} dias adicionados para "{tenant.store_name}". Vence em {tenant.expires_at.strftime("%d/%m/%Y")}.', 'success')
     return redirect(url_for('master.dashboard'))
+
+
+@master_bp.route('/faturamento')
+@login_required
+@master_required
+def faturamento():
+    from collections import defaultdict
+    from calendar import month_abbr
+
+    all_tenants = Tenant.query.order_by(Tenant.created_at).all()
+    hoje = datetime.now()
+
+    # Classificação por plano e status
+    mensais_ativos  = [t for t in all_tenants if t.plan == 'mensal'  and t.is_active]
+    anuais_ativos   = [t for t in all_tenants if t.plan == 'anual'   and t.is_active]
+    mensais_total   = [t for t in all_tenants if t.plan == 'mensal']
+    anuais_total    = [t for t in all_tenants if t.plan == 'anual']
+    vencidos        = [t for t in all_tenants if t.status == 'active' and not t.is_active]
+    suspensos       = [t for t in all_tenants if t.status == 'suspended']
+
+    # MRR e ARR
+    mrr = (len(mensais_ativos) * PRECO_MENSAL) + (len(anuais_ativos) * PRECO_ANUAL / 12)
+    arr = mrr * 12
+
+    # Crescimento: novas lojas por mês nos últimos 12 meses
+    meses_labels = []
+    meses_novas  = []
+    meses_mrr    = []
+    mrr_acum     = 0.0
+    mrr_acum_serie = []
+
+    for i in range(11, -1, -1):
+        alvo = hoje.replace(day=1) - timedelta(days=i * 30)
+        alvo = alvo.replace(day=1)
+        label = f"{month_abbr[alvo.month]}/{str(alvo.year)[2:]}"
+        meses_labels.append(label)
+
+        novas = [t for t in all_tenants
+                 if t.created_at.year == alvo.year and t.created_at.month == alvo.month]
+        meses_novas.append(len(novas))
+
+        # MRR daquele mês (lojas ativas naquele momento = criadas até aquele mês)
+        ate_mes = [t for t in all_tenants if
+                   (t.created_at.year, t.created_at.month) <= (alvo.year, alvo.month)]
+        mrr_mes = sum(
+            PRECO_MENSAL if t.plan == 'mensal' else PRECO_ANUAL / 12
+            for t in ate_mes if t.is_active
+        )
+        meses_mrr.append(round(mrr_mes, 2))
+
+    return render_template('master/faturamento.html',
+        tenants=all_tenants,
+        mensais_ativos=mensais_ativos,
+        anuais_ativos=anuais_ativos,
+        mensais_total=mensais_total,
+        anuais_total=anuais_total,
+        vencidos=vencidos,
+        suspensos=suspensos,
+        mrr=mrr,
+        arr=arr,
+        preco_mensal=PRECO_MENSAL,
+        preco_anual=PRECO_ANUAL,
+        meses_labels=meses_labels,
+        meses_novas=meses_novas,
+        meses_mrr=meses_mrr,
+    )
 
 
 @master_bp.route('/arquivar-vendas', methods=['POST'])
