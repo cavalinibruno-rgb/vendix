@@ -28,6 +28,10 @@
   <div class="card-body py-2">
     <form method="get" class="row g-2 align-items-center">
       <div class="col-auto">
+        <input type="text" name="q" value="{{ q or '' }}" class="form-control form-control-sm"
+               placeholder="Buscar por nome..." style="min-width:200px;">
+      </div>
+      <div class="col-auto">
         <select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">Todas as categorias</option>
           {% for t in types %}
@@ -43,7 +47,10 @@
           {% endfor %}
         </select>
       </div>
-      {% if tipo_id or marca_id %}
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-warning"><i class="bi bi-search"></i></button>
+      </div>
+      {% if q or tipo_id or marca_id %}
       <div class="col-auto">
         <a href="{{ url_for('products.index') }}" class="btn btn-sm btn-outline-secondary">
           <i class="bi bi-x"></i> Limpar

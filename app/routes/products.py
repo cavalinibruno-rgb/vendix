@@ -71,9 +71,12 @@ def _gerar_thumbnail(image_bytes, size=(80, 80), quality=55):
 def index():
     types  = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
     brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    q        = request.args.get('q', '').strip()
     tipo_id  = request.args.get('tipo', type=int)
     marca_id = request.args.get('marca', type=int)
     query = Product.query.filter_by(tenant_id=tenant_id())
+    if q:
+        query = query.filter(Product.name.ilike(f'%{q}%'))
     if tipo_id:
         query = query.filter_by(type_id=tipo_id)
     if marca_id:
@@ -101,7 +104,7 @@ def index():
         return p.min_stock
 
     return render_template('products/index.html', products=products, types=types, brands=brands,
-                           tipo_id=tipo_id, marca_id=marca_id,
+                           q=q, tipo_id=tipo_id, marca_id=marca_id,
                            eff_stock=eff_stock, eff_min=eff_min)
 
 @products_bp.route('/novo', methods=['GET', 'POST'])
