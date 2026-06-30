@@ -275,6 +275,128 @@ def excluir_pagamento(pgto_id):
     return redirect(url_for('master.faturamento'))
 
 
+@master_bp.route('/faturamento/sincronizar-mp', methods=['POST'])
+@login_required
+@master_required
+def sincronizar_mp():
+    import os, mercadopago
+    from app.models.pagamento import Pagamento
+
+    access_token = os.environ.get('MP_ACCESS_TOKEN', '')
+    if not access_token:
+        flash('MP_ACCESS_TOKEN não configurado.', 'danger')
+        return redirect(url_for('master.faturamento'))
+
+    sdk = mercadopago.SDK(access_token)
+
+    # Monta mapa: preapproval_id -> tenant  e  tenant.id -> tenant
+    all_tenants = Tenant.query.all()
+    by_preapproval = {t.preapproval_id: t for t in all_tenants if t.preapproval_id}
+    by_id          = {t.id: t for t in all_tenants}
+
+    # IDs de pagamentos já registrados para evitar duplicata
+    mp_ids_existentes = {
+        p.mp_payment_id for p in Pagamento.query.filter(Pagamento.mp_payment_id != None).all()
+    }
+
+    novos = 0
+    erros = []
+
+    # 1) Pagamentos únicos aprovados (anual + upgrades) — últimos 13 meses
+    try:
+        from datetime import timezone
+        begin = (datetime.now().replace(day=1) - timedelta(days=365)).strftime('%Y-%m-%dT00:00:00.000-03:00')
+        resp = sdk.payment().search({
+            'status': 'approved',
+            'sort': 'date_approved',
+            'criteria': 'desc',
+            'range': 'date_approved',
+            'begin_date': begin,
+            'end_date': 'NOW',
+            'offset': 0,
+            'limit': 200,
+        })
+        if resp['status'] == 200:
+            for pay in resp['response'].get('results', []):
+                mp_id = str(pay['id'])
+                if mp_id in mp_ids_existentes:
+                    continue
+                ext_ref = pay.get('external_reference', '')
+                valor   = float(pay.get('transaction_amount', 0))
+                paid_dt = datetime.fromisoformat(pay['date_approved'][:19])
+
+                # Tenta identificar o tenant pelo external_reference
+                tenant = None
+                plano  = 'mensal'
+
+                # upgrade_<tenant_id>
+                if ext_ref.startswith('upgrade_'):
+                    tid = int(ext_ref.split('_')[1])
+                    tenant = by_id.get(tid)
+                    plano  = 'anual'
+                # registro novo (pending.id não bate direto com tenant, mas valor indica plano)
+                elif ext_ref.isdigit():
+                    if abs(valor - PRECO_ANUAL) < 1:
+                        plano = 'anual'
+                    # tenta achar tenant pelo email do pagador
+                    email_pag = (pay.get('payer') or {}).get('email', '')
+                    if email_pag:
+                        tenant = next((t for t in all_tenants if t.email == email_pag), None)
+
+                if not tenant or valor < 1:
+                    continue
+
+                p = Pagamento(
+                    tenant_id=tenant.id, valor=valor, plano=plano,
+                    paid_at=paid_dt, mp_payment_id=mp_id,
+                    observacao='MP (pagamento único)',
+                )
+                db.session.add(p)
+                mp_ids_existentes.add(mp_id)
+                novos += 1
+    except Exception as e:
+        erros.append(f'Pagamentos únicos: {e}')
+
+    # 2) Cobranças recorrentes das assinaturas mensais (preapproval)
+    for preapproval_id, tenant in by_preapproval.items():
+        try:
+            resp = sdk.preapproval().get(preapproval_id)
+            if resp['status'] != 200:
+                continue
+            # Busca pagamentos autorizados desta assinatura
+            resp2 = sdk.payment().search({
+                'preapproval_id': preapproval_id,
+                'status': 'approved',
+                'limit': 50,
+            })
+            if resp2['status'] != 200:
+                continue
+            for pay in resp2['response'].get('results', []):
+                mp_id = str(pay['id'])
+                if mp_id in mp_ids_existentes:
+                    continue
+                valor   = float(pay.get('transaction_amount', 0))
+                paid_dt = datetime.fromisoformat(pay['date_approved'][:19])
+                p = Pagamento(
+                    tenant_id=tenant.id, valor=valor, plano='mensal',
+                    paid_at=paid_dt, mp_payment_id=mp_id,
+                    observacao='MP (assinatura mensal)',
+                )
+                db.session.add(p)
+                mp_ids_existentes.add(mp_id)
+                novos += 1
+        except Exception as e:
+            erros.append(f'Preapproval {preapproval_id}: {e}')
+
+    db.session.commit()
+
+    if erros:
+        flash(f'{novos} pagamento(s) importado(s). Avisos: {"; ".join(erros)}', 'warning')
+    else:
+        flash(f'{novos} pagamento(s) novo(s) importado(s) do Mercado Pago.', 'success')
+    return redirect(url_for('master.faturamento'))
+
+
 @master_bp.route('/arquivar-vendas', methods=['POST'])
 @login_required
 @master_required

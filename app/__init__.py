@@ -264,8 +264,10 @@ def _run_migrations(db):
             plano VARCHAR(16) NOT NULL,
             paid_at TIMESTAMP NOT NULL DEFAULT NOW(),
             observacao TEXT,
+            mp_payment_id VARCHAR(64) UNIQUE,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
+        "ALTER TABLE pagamentos ADD COLUMN IF NOT EXISTS mp_payment_id VARCHAR(64) UNIQUE",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:
