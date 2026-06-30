@@ -1326,7 +1326,8 @@ function selecionarSubCartao(valor, label, btn, subId) {
 
 function precoParaPgto(prod, gelado) {
   if (origem !== 'loja') return prod.sale_price;
-  if (EVENT_MODE && prod.sale_price_event && prod.sale_price_event > 0)
+  const isEntregaLoja = modo === 'entrega';
+  if (EVENT_MODE && !isEntregaLoja && prod.sale_price_event && prod.sale_price_event > 0)
     return prod.sale_price_event;
   if (gelado && prod.sale_price_cold > 0) {
     if (isCartao() && prod.sale_price_cold_card > 0) return prod.sale_price_cold_card;
