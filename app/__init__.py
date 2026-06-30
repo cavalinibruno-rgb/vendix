@@ -372,7 +372,7 @@ def create_app():
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "font-src 'self' https://cdn.jsdelivr.net; "
             "img-src 'self' data: blob: https:; "
-            "connect-src 'self' https://maps.googleapis.com https://nominatim.openstreetmap.org https://viacep.com.br; "
+            "connect-src 'self' https://maps.googleapis.com https://nominatim.openstreetmap.org https://viacep.com.br https://brasilapi.com.br; "
             "frame-src 'none'; "
             "object-src 'none'; "
             "base-uri 'self'; "
