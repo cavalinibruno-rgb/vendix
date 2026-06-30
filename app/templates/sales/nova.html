@@ -832,7 +832,7 @@ function renderCards(lista) {
     card.innerHTML = `
       ${imgHtml}
       <div class="pdv-card-name" title="${p.name}">${p.name}</div>
-      <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 ? p.sale_price_event : p.sale_price)}</div>
+      <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
     `;
     grid.appendChild(card);
   });
@@ -842,7 +842,7 @@ function renderCards(lista) {
 function abrirModalProd(p) {
   prodModalAtual = p;
   document.getElementById('modalProdNome').textContent = p.name;
-  document.getElementById('modalProdPreco').textContent = 'R$ ' + fmtNum(EVENT_MODE && p.sale_price_event > 0 ? p.sale_price_event : p.sale_price);
+  document.getElementById('modalProdPreco').textContent = 'R$ ' + fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price);
   document.getElementById('modalQtd').value = 1;
   bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAddProd')).show();
   setTimeout(() => document.getElementById('modalQtd').select(), 300);
@@ -924,6 +924,7 @@ function setModo(m) {
     }
   }
   calcTotais();
+  renderProdutos(document.getElementById('searchInput')?.value || '');
 }
 
 // ── Busca cliente ─────────────────────────────────────
@@ -1265,6 +1266,7 @@ function setOrigem(o) {
     setModo('retirada');
   }
   renderCarrinho();
+  renderProdutos(document.getElementById('searchInput')?.value || '');
 }
 
 // ── Pagamento ─────────────────────────────────────────
