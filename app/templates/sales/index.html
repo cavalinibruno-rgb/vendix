@@ -94,7 +94,7 @@
       <tbody>
         {% for s in sales %}
         <tr>
-          <td class="text-muted small ps-4">{{ s.id }}</td>
+          <td class="text-muted small ps-4">#{{ s.sale_number or s.id }}</td>
           <td>{{ s.customer.name if s.customer else '—' }}</td>
           <td class="text-muted small">{{ s.items|length }} item(s)</td>
           <td>
