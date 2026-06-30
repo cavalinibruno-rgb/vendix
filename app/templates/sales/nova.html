@@ -924,7 +924,7 @@ function setModo(m) {
     }
   }
   calcTotais();
-  renderProdutos(document.getElementById('searchInput')?.value || '');
+  aplicarFiltros();
 }
 
 // ── Busca cliente ─────────────────────────────────────
@@ -1266,7 +1266,7 @@ function setOrigem(o) {
     setModo('retirada');
   }
   renderCarrinho();
-  renderProdutos(document.getElementById('searchInput')?.value || '');
+  aplicarFiltros();
 }
 
 // ── Pagamento ─────────────────────────────────────────
