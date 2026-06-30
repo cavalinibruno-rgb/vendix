@@ -257,6 +257,15 @@ def _run_migrations(db):
                FROM brands
            ) sub
            WHERE brands.id = sub.id AND brands.brand_number IS NULL""",
+        """CREATE TABLE IF NOT EXISTS pagamentos (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
+            valor NUMERIC(10,2) NOT NULL,
+            plano VARCHAR(16) NOT NULL,
+            paid_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            observacao TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

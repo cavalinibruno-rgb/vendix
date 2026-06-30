@@ -171,49 +171,49 @@ def tenant_adicionar_dias(tenant_id):
 @login_required
 @master_required
 def faturamento():
-    from collections import defaultdict
     from calendar import month_abbr
+    from app.models.pagamento import Pagamento
 
     all_tenants = Tenant.query.order_by(Tenant.created_at).all()
     hoje = datetime.now()
 
-    # Classificação por plano e status
-    mensais_ativos  = [t for t in all_tenants if t.plan == 'mensal'  and t.is_active]
-    anuais_ativos   = [t for t in all_tenants if t.plan == 'anual'   and t.is_active]
-    mensais_total   = [t for t in all_tenants if t.plan == 'mensal']
-    anuais_total    = [t for t in all_tenants if t.plan == 'anual']
-    vencidos        = [t for t in all_tenants if t.status == 'active' and not t.is_active]
-    suspensos       = [t for t in all_tenants if t.status == 'suspended']
+    mensais_ativos = [t for t in all_tenants if t.plan == 'mensal' and t.is_active]
+    anuais_ativos  = [t for t in all_tenants if t.plan == 'anual'  and t.is_active]
+    mensais_total  = [t for t in all_tenants if t.plan == 'mensal']
+    anuais_total   = [t for t in all_tenants if t.plan == 'anual']
+    vencidos       = [t for t in all_tenants if t.status == 'active' and not t.is_active]
+    suspensos      = [t for t in all_tenants if t.status == 'suspended']
 
-    # MRR e ARR
     mrr = (len(mensais_ativos) * PRECO_MENSAL) + (len(anuais_ativos) * PRECO_ANUAL / 12)
     arr = mrr * 12
 
-    # Crescimento: novas lojas por mês nos últimos 12 meses
+    # Pagamentos reais
+    todos_pgtos = Pagamento.query.order_by(Pagamento.paid_at.desc()).all()
+
+    # Faturamento do mês atual
+    fat_mes_atual = sum(
+        float(p.valor) for p in todos_pgtos
+        if p.paid_at.year == hoje.year and p.paid_at.month == hoje.month
+    )
+
+    # Últimos 12 meses
     meses_labels = []
     meses_novas  = []
-    meses_mrr    = []
-    mrr_acum     = 0.0
-    mrr_acum_serie = []
+    meses_fat    = []
 
     for i in range(11, -1, -1):
-        alvo = hoje.replace(day=1) - timedelta(days=i * 30)
-        alvo = alvo.replace(day=1)
-        label = f"{month_abbr[alvo.month]}/{str(alvo.year)[2:]}"
-        meses_labels.append(label)
-
-        novas = [t for t in all_tenants
-                 if t.created_at.year == alvo.year and t.created_at.month == alvo.month]
-        meses_novas.append(len(novas))
-
-        # MRR daquele mês (lojas ativas naquele momento = criadas até aquele mês)
-        ate_mes = [t for t in all_tenants if
-                   (t.created_at.year, t.created_at.month) <= (alvo.year, alvo.month)]
-        mrr_mes = sum(
-            PRECO_MENSAL if t.plan == 'mensal' else PRECO_ANUAL / 12
-            for t in ate_mes if t.is_active
-        )
-        meses_mrr.append(round(mrr_mes, 2))
+        # calcula ano/mês alvo sem timedelta de 30 dias (evita saltar meses)
+        mes = (hoje.month - 1 - i) % 12 + 1
+        ano = hoje.year + ((hoje.month - 1 - i) // 12)
+        meses_labels.append(f"{month_abbr[mes]}/{str(ano)[2:]}")
+        meses_novas.append(sum(
+            1 for t in all_tenants
+            if t.created_at.year == ano and t.created_at.month == mes
+        ))
+        meses_fat.append(round(sum(
+            float(p.valor) for p in todos_pgtos
+            if p.paid_at.year == ano and p.paid_at.month == mes
+        ), 2))
 
     return render_template('master/faturamento.html',
         tenants=all_tenants,
@@ -225,12 +225,54 @@ def faturamento():
         suspensos=suspensos,
         mrr=mrr,
         arr=arr,
+        fat_mes_atual=fat_mes_atual,
         preco_mensal=PRECO_MENSAL,
         preco_anual=PRECO_ANUAL,
         meses_labels=meses_labels,
         meses_novas=meses_novas,
-        meses_mrr=meses_mrr,
+        meses_fat=meses_fat,
+        todos_pgtos=todos_pgtos,
     )
+
+
+@master_bp.route('/faturamento/registrar', methods=['POST'])
+@login_required
+@master_required
+def registrar_pagamento():
+    from app.models.pagamento import Pagamento
+    tenant_id = request.form.get('tenant_id', type=int)
+    valor     = request.form.get('valor', '').strip().replace(',', '.')
+    plano     = request.form.get('plano', 'mensal')
+    paid_at   = request.form.get('paid_at', '').strip()
+    obs       = request.form.get('observacao', '').strip()
+
+    tenant = Tenant.query.get_or_404(tenant_id)
+    try:
+        valor_f = float(valor)
+    except ValueError:
+        flash('Valor inválido.', 'danger')
+        return redirect(url_for('master.faturamento'))
+
+    paid_dt = datetime.strptime(paid_at, '%Y-%m-%d') if paid_at else datetime.now()
+
+    p = Pagamento(tenant_id=tenant_id, valor=valor_f, plano=plano,
+                  paid_at=paid_dt, observacao=obs or None)
+    db.session.add(p)
+    db.session.commit()
+    flash(f'Pagamento de R$ {valor_f:.2f} registrado para "{tenant.store_name}".', 'success')
+    return redirect(url_for('master.faturamento'))
+
+
+@master_bp.route('/faturamento/excluir/<int:pgto_id>', methods=['POST'])
+@login_required
+@master_required
+def excluir_pagamento(pgto_id):
+    from app.models.pagamento import Pagamento
+    p = Pagamento.query.get_or_404(pgto_id)
+    db.session.delete(p)
+    db.session.commit()
+    flash('Pagamento removido.', 'warning')
+    return redirect(url_for('master.faturamento'))
 
 
 @master_bp.route('/arquivar-vendas', methods=['POST'])

@@ -5,27 +5,32 @@
 <div class="page-header d-flex align-items-center justify-content-between">
   <div>
     <h1><i class="bi bi-graph-up-arrow me-2 text-warning"></i>Faturamento</h1>
-    <p class="text-muted">Receita recorrente e distribuição de planos</p>
+    <p class="text-muted">Receita real recebida + distribuição de planos</p>
   </div>
-  <a href="{{ url_for('master.dashboard') }}" class="btn btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i>Voltar
-  </a>
+  <div class="d-flex gap-2">
+    <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalPagamento">
+      <i class="bi bi-plus-circle me-1"></i>Registrar Pagamento
+    </button>
+    <a href="{{ url_for('master.dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+  </div>
 </div>
 
 <!-- Cards principais -->
 <div class="row g-3 mb-4">
   <div class="col-md-3">
     <div class="card p-3 border-0 shadow-sm">
-      <div class="text-muted small fw-semibold mb-1"><i class="bi bi-calendar-month me-1"></i>MRR</div>
-      <div class="fw-bold fs-3 text-warning">R$ {{ '%.2f'|format(mrr) }}</div>
-      <div class="text-muted" style="font-size:.75rem">Receita Mensal Recorrente</div>
+      <div class="text-muted small fw-semibold mb-1"><i class="bi bi-calendar-check me-1"></i>Este Mês</div>
+      <div class="fw-bold fs-3 text-warning">R$ {{ '%.2f'|format(fat_mes_atual) }}</div>
+      <div class="text-muted" style="font-size:.75rem">Faturamento real recebido</div>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card p-3 border-0 shadow-sm">
-      <div class="text-muted small fw-semibold mb-1"><i class="bi bi-calendar-year me-1"></i>ARR</div>
-      <div class="fw-bold fs-3 text-success">R$ {{ '%.2f'|format(arr) }}</div>
-      <div class="text-muted" style="font-size:.75rem">Receita Anual Projetada</div>
+      <div class="text-muted small fw-semibold mb-1"><i class="bi bi-arrow-repeat me-1"></i>MRR</div>
+      <div class="fw-bold fs-3 text-success">R$ {{ '%.2f'|format(mrr) }}</div>
+      <div class="text-muted" style="font-size:.75rem">Receita mensal recorrente estimada</div>
     </div>
   </div>
   <div class="col-md-3">
@@ -50,35 +55,32 @@
     <div class="card p-3 border-start border-4 border-warning shadow-sm">
       <div class="text-muted small fw-semibold mb-1">Plano Mensal — Ativas</div>
       <div class="fw-bold fs-4">{{ mensais_ativos|length }}</div>
-      <div class="text-muted" style="font-size:.75rem">R$ {{ '%.2f'|format(preco_mensal) }}/mês · total {{ mensais_total|length }} cadastradas</div>
+      <div class="text-muted" style="font-size:.75rem">R$ {{ '%.2f'|format(preco_mensal) }}/mês · {{ mensais_total|length }} total</div>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card p-3 border-start border-4 border-success shadow-sm">
       <div class="text-muted small fw-semibold mb-1">Plano Anual — Ativas</div>
       <div class="fw-bold fs-4">{{ anuais_ativos|length }}</div>
-      <div class="text-muted" style="font-size:.75rem">R$ {{ '%.2f'|format(preco_anual) }}/ano · total {{ anuais_total|length }} cadastradas</div>
+      <div class="text-muted" style="font-size:.75rem">R$ {{ '%.2f'|format(preco_anual) }}/ano · {{ anuais_total|length }} total</div>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card p-3 border-start border-4 border-warning shadow-sm">
-      <div class="text-muted small fw-semibold mb-1">Receita Mensais</div>
+      <div class="text-muted small fw-semibold mb-1">Receita Mensais/mês</div>
       <div class="fw-bold fs-4 text-warning">R$ {{ '%.2f'|format(mensais_ativos|length * preco_mensal) }}</div>
-      <div class="text-muted" style="font-size:.75rem">por mês</div>
     </div>
   </div>
   <div class="col-md-3">
     <div class="card p-3 border-start border-4 border-success shadow-sm">
-      <div class="text-muted small fw-semibold mb-1">Receita Anuais</div>
+      <div class="text-muted small fw-semibold mb-1">Receita Anuais/ano</div>
       <div class="fw-bold fs-4 text-success">R$ {{ '%.2f'|format(anuais_ativos|length * preco_anual) }}</div>
-      <div class="text-muted" style="font-size:.75rem">por ano (R$ {{ '%.2f'|format(anuais_ativos|length * preco_anual / 12) }}/mês)</div>
     </div>
   </div>
 </div>
 
 <!-- Gráficos -->
 <div class="row g-3 mb-4">
-  <!-- Donut: distribuição de planos -->
   <div class="col-md-4">
     <div class="card p-3 shadow-sm h-100">
       <div class="fw-semibold mb-3"><i class="bi bi-pie-chart me-1 text-warning"></i>Distribuição de Planos</div>
@@ -90,8 +92,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Barras: novas lojas por mês -->
   <div class="col-md-8">
     <div class="card p-3 shadow-sm h-100">
       <div class="fw-semibold mb-3"><i class="bi bi-bar-chart me-1 text-warning"></i>Novas Lojas por Mês (últimos 12 meses)</div>
@@ -100,18 +100,62 @@
   </div>
 </div>
 
-<!-- Linha: MRR acumulado -->
+<!-- Faturamento real por mês -->
 <div class="card p-3 shadow-sm mb-4">
-  <div class="fw-semibold mb-3"><i class="bi bi-graph-up me-1 text-warning"></i>MRR — Evolução (últimos 12 meses)</div>
-  <canvas id="chartLinha" height="100"></canvas>
+  <div class="fw-semibold mb-3"><i class="bi bi-cash-stack me-1 text-warning"></i>Faturamento Real por Mês (últimos 12 meses)</div>
+  <canvas id="chartFat" height="100"></canvas>
 </div>
 
-<!-- Tabela de lojas -->
-<div class="card shadow-sm">
+<!-- Histórico de pagamentos -->
+<div class="card shadow-sm mb-4">
   <div class="card-header fw-semibold d-flex align-items-center gap-2">
-    <i class="bi bi-list-ul text-warning"></i> Todas as Lojas
-    <span class="badge bg-warning text-dark ms-1">{{ tenants|length }}</span>
+    <i class="bi bi-receipt text-warning"></i> Histórico de Pagamentos
+    <span class="badge bg-warning text-dark ms-1">{{ todos_pgtos|length }}</span>
   </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-3">Data</th>
+          <th>Loja</th>
+          <th>Plano</th>
+          <th>Valor</th>
+          <th>Observação</th>
+          <th class="pe-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in todos_pgtos %}
+        <tr>
+          <td class="ps-3 small text-nowrap">{{ p.paid_at.strftime('%d/%m/%Y') }}</td>
+          <td class="fw-semibold">{{ p.tenant.store_name }}</td>
+          <td>
+            {% if p.plano == 'anual' %}
+            <span class="badge bg-success">Anual</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">Mensal</span>
+            {% endif %}
+          </td>
+          <td class="fw-semibold text-success">R$ {{ '%.2f'|format(p.valor) }}</td>
+          <td class="small text-muted">{{ p.observacao or '—' }}</td>
+          <td class="pe-3">
+            <form method="post" action="{{ url_for('master.excluir_pagamento', pgto_id=p.id) }}"
+                  data-confirm="Remover este pagamento?">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Nenhum pagamento registrado ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Tabela lojas -->
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold"><i class="bi bi-list-ul text-warning me-1"></i>Lojas por Plano</div>
   <div class="table-responsive">
     <table class="table table-hover table-sm mb-0 align-middle">
       <thead class="table-light">
@@ -137,28 +181,72 @@
             {% endif %}
           </td>
           <td class="small">
-            {% if t.plan == 'anual' %}
-            R$ {{ '%.2f'|format(preco_anual) }}/ano
-            {% else %}
-            R$ {{ '%.2f'|format(preco_mensal) }}/mês
-            {% endif %}
+            {% if t.plan == 'anual' %}R$ {{ '%.2f'|format(preco_anual) }}/ano
+            {% else %}R$ {{ '%.2f'|format(preco_mensal) }}/mês{% endif %}
           </td>
           <td>
-            {% if t.status == 'suspended' %}
-            <span class="badge bg-secondary">Suspensa</span>
-            {% elif t.is_active %}
-            <span class="badge bg-success">Ativa</span>
-            {% else %}
-            <span class="badge bg-danger">Vencida</span>
-            {% endif %}
+            {% if t.status == 'suspended' %}<span class="badge bg-secondary">Suspensa</span>
+            {% elif t.is_active %}<span class="badge bg-success">Ativa</span>
+            {% else %}<span class="badge bg-danger">Vencida</span>{% endif %}
           </td>
-          <td class="pe-3 small text-muted">
-            {{ t.expires_at.strftime('%d/%m/%Y') if t.expires_at else '—' }}
-          </td>
+          <td class="pe-3 small text-muted">{{ t.expires_at.strftime('%d/%m/%Y') if t.expires_at else '—' }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Modal registrar pagamento -->
+<div class="modal fade" id="modalPagamento" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('master.registrar_pagamento') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-plus-circle me-2 text-warning"></i>Registrar Pagamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Loja</label>
+            <select name="tenant_id" class="form-select" required>
+              <option value="">Selecione...</option>
+              {% for t in tenants|sort(attribute='store_name') %}
+              <option value="{{ t.id }}">{{ t.store_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Plano</label>
+              <select name="plano" id="modalPlano" class="form-select" onchange="preencherValor()">
+                <option value="mensal">Mensal</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Valor (R$)</label>
+              <input type="text" name="valor" id="modalValor" class="form-control"
+                     value="{{ '%.2f'|format(preco_mensal) }}" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Data do pagamento</label>
+            <input type="date" name="paid_at" class="form-control"
+                   value="{{ now.strftime('%Y-%m-%d') if now else '' }}" required>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-semibold">Observação <span class="text-muted fw-normal">(opcional)</span></label>
+            <input type="text" name="observacao" class="form-control" placeholder="Ex: Pix, renovação, desconto...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-warning fw-semibold">Salvar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -166,11 +254,27 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-const gridColor  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-const labelColor = isDark ? '#adb5bd' : '#6c757d';
+const PRECO_MENSAL = {{ preco_mensal }};
+const PRECO_ANUAL  = {{ preco_anual }};
 
-// Donut
+function preencherValor() {
+  const plano = document.getElementById('modalPlano').value;
+  document.getElementById('modalValor').value =
+    (plano === 'anual' ? PRECO_ANUAL : PRECO_MENSAL).toFixed(2);
+}
+
+// inicializa data de hoje no modal
+document.addEventListener('DOMContentLoaded', function() {
+  const dtInput = document.querySelector('input[name="paid_at"]');
+  if (dtInput && !dtInput.value) {
+    dtInput.value = new Date().toISOString().slice(0, 10);
+  }
+});
+
+const isDark    = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+const lblColor  = isDark ? '#adb5bd' : '#6c757d';
+
 new Chart(document.getElementById('chartDonut'), {
   type: 'doughnut',
   data: {
@@ -181,13 +285,9 @@ new Chart(document.getElementById('chartDonut'), {
       borderWidth: 2,
     }]
   },
-  options: {
-    cutout: '65%',
-    plugins: { legend: { display: false } },
-  }
+  options: { cutout: '65%', plugins: { legend: { display: false } } }
 });
 
-// Barras
 new Chart(document.getElementById('chartBarras'), {
   type: 'bar',
   data: {
@@ -202,25 +302,21 @@ new Chart(document.getElementById('chartBarras'), {
   options: {
     plugins: { legend: { display: false } },
     scales: {
-      y: { beginAtZero: true, ticks: { color: labelColor, stepSize: 1 }, grid: { color: gridColor } },
-      x: { ticks: { color: labelColor }, grid: { display: false } },
+      y: { beginAtZero: true, ticks: { color: lblColor, stepSize: 1 }, grid: { color: gridColor } },
+      x: { ticks: { color: lblColor }, grid: { display: false } },
     }
   }
 });
 
-// Linha MRR
-new Chart(document.getElementById('chartLinha'), {
-  type: 'line',
+new Chart(document.getElementById('chartFat'), {
+  type: 'bar',
   data: {
     labels: {{ meses_labels | tojson }},
     datasets: [{
-      label: 'MRR (R$)',
-      data: {{ meses_mrr | tojson }},
-      borderColor: '#28a745',
-      backgroundColor: 'rgba(40,167,69,0.1)',
-      fill: true,
-      tension: 0.3,
-      pointBackgroundColor: '#28a745',
+      label: 'Faturamento (R$)',
+      data: {{ meses_fat | tojson }},
+      backgroundColor: '#28a745',
+      borderRadius: 4,
     }]
   },
   options: {
@@ -228,10 +324,10 @@ new Chart(document.getElementById('chartLinha'), {
     scales: {
       y: {
         beginAtZero: true,
-        ticks: { color: labelColor, callback: v => 'R$ ' + v.toFixed(2) },
+        ticks: { color: lblColor, callback: v => 'R$ ' + v.toFixed(2) },
         grid: { color: gridColor }
       },
-      x: { ticks: { color: labelColor }, grid: { display: false } },
+      x: { ticks: { color: lblColor }, grid: { display: false } },
     }
   }
 });
