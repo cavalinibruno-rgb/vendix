@@ -243,6 +243,20 @@ def _run_migrations(db):
                FROM products
            ) sub
            WHERE products.id = sub.id AND products.product_number IS NULL""",
+        "ALTER TABLE product_types ADD COLUMN IF NOT EXISTS type_number INTEGER",
+        """UPDATE product_types SET type_number = sub.rn
+           FROM (
+               SELECT id, ROW_NUMBER() OVER (PARTITION BY tenant_id ORDER BY id) AS rn
+               FROM product_types
+           ) sub
+           WHERE product_types.id = sub.id AND product_types.type_number IS NULL""",
+        "ALTER TABLE brands ADD COLUMN IF NOT EXISTS brand_number INTEGER",
+        """UPDATE brands SET brand_number = sub.rn
+           FROM (
+               SELECT id, ROW_NUMBER() OVER (PARTITION BY tenant_id ORDER BY id) AS rn
+               FROM brands
+           ) sub
+           WHERE brands.id = sub.id AND brands.brand_number IS NULL""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

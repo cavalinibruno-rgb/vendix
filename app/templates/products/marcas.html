@@ -46,7 +46,7 @@
           <tbody>
             {% for b in brands %}
             <tr>
-              <td class="text-muted small ps-4">{{ b.id }}</td>
+              <td class="text-muted small ps-4">{{ b.brand_number or b.id }}</td>
               <td class="fw-semibold">{{ b.name }}</td>
               <td><span class="badge bg-secondary">{{ b.products|length }}</span></td>
               <td class="pe-4">

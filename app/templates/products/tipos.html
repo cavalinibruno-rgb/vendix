@@ -46,7 +46,7 @@
           <tbody>
             {% for t in types %}
             <tr>
-              <td class="text-muted small ps-4">{{ t.id }}</td>
+              <td class="text-muted small ps-4">{{ t.type_number or t.id }}</td>
               <td class="fw-semibold">{{ t.name }}</td>
               <td><span class="badge bg-secondary">{{ t.products|length }}</span></td>
               <td class="pe-4">

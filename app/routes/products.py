@@ -337,6 +337,11 @@ def tipo_novo():
     if name:
         t = ProductType(tenant_id=tenant_id(), name=name)
         db.session.add(t)
+        db.session.flush()
+        last_num = db.session.query(db.func.max(ProductType.type_number)).filter(
+            ProductType.tenant_id == tenant_id(), ProductType.id != t.id
+        ).scalar() or 0
+        t.type_number = last_num + 1
         db.session.commit()
         flash(f'Categoria "{name}" criada!', 'success')
     return redirect(url_for('products.tipos'))
@@ -364,6 +369,11 @@ def marca_nova():
     if name:
         b = Brand(tenant_id=tenant_id(), name=name)
         db.session.add(b)
+        db.session.flush()
+        last_num = db.session.query(db.func.max(Brand.brand_number)).filter(
+            Brand.tenant_id == tenant_id(), Brand.id != b.id
+        ).scalar() or 0
+        b.brand_number = last_num + 1
         db.session.commit()
         flash(f'Marca "{name}" criada!', 'success')
     return redirect(url_for('products.marcas'))
@@ -539,6 +549,11 @@ def api_categoria_rapida():
         return jsonify({'id': existing.id, 'name': existing.name})
     t = ProductType(tenant_id=tenant_id(), name=name)
     db.session.add(t)
+    db.session.flush()
+    last_num = db.session.query(db.func.max(ProductType.type_number)).filter(
+        ProductType.tenant_id == tenant_id(), ProductType.id != t.id
+    ).scalar() or 0
+    t.type_number = last_num + 1
     db.session.commit()
     return jsonify({'id': t.id, 'name': t.name})
 
@@ -553,5 +568,10 @@ def api_marca_rapida():
         return jsonify({'id': existing.id, 'name': existing.name})
     b = Brand(tenant_id=tenant_id(), name=name)
     db.session.add(b)
+    db.session.flush()
+    last_num = db.session.query(db.func.max(Brand.brand_number)).filter(
+        Brand.tenant_id == tenant_id(), Brand.id != b.id
+    ).scalar() or 0
+    b.brand_number = last_num + 1
     db.session.commit()
     return jsonify({'id': b.id, 'name': b.name})
