@@ -910,15 +910,26 @@ async function buscarCepLoja(val) {
       }
     }
 
-    // Bairro não cadastrado e loja tem GPS → tenta Google Geocoding
+    // Bairro não cadastrado e loja tem GPS → usa coordenadas do BrasilAPI ou geocode-cep
     if (!bairroCasado && geoStatus) {
       geoStatus.textContent = '🔍 Calculando taxa de entrega…';
       geoStatus.style.color = '#888';
       cepOk = false;
       try {
-        const geo = await fetch(`/loja/${SLUG}/geocode-cep?cep=${cep}`);
-        const gd  = await geo.json();
-        if (!gd.error) {
+        // BrasilAPI v2 já retorna coordenadas — usa direto, sem chamar servidor
+        const coords = d.location && d.location.coordinates;
+        const lat = coords && coords.latitude;
+        const lng = coords && coords.longitude;
+        let gd = lat && lng ? { lat, lng } : null;
+
+        // Fallback: geocode-cep do servidor (ViaCEP + Google/Nominatim)
+        if (!gd) {
+          const geoR = await fetch(`/loja/${SLUG}/geocode-cep?cep=${cep}`);
+          const geoJ = await geoR.json();
+          if (!geoJ.error) gd = { lat: geoJ.lat, lng: geoJ.lng };
+        }
+
+        if (gd) {
           const res = await fetch(`/loja/${SLUG}/taxa-distancia?lat=${gd.lat}&lng=${gd.lng}`);
           const td  = await res.json();
           if (!td.error && !td.fora) {
