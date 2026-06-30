@@ -919,7 +919,7 @@ function setModo(m) {
       document.getElementById('taxaEntrega').value = fmtNum(clienteAtual.delivery_fee);
     const endDiv = document.getElementById('clienteEndereco');
     if (clienteAtual.address) {
-      document.getElementById('clienteEnderecoTexto').value = clienteAtual.address;
+      document.getElementById('clienteEnderecoTexto').value = formatEndereco(clienteAtual);
       endDiv.style.display = '';
     }
   }
@@ -1739,6 +1739,15 @@ function fmtNum(n) { return parseFloat(n || 0).toFixed(2).replace('.', ','); }
 // ── Endereços de entrega ─────────────────────────────
 let enderecoSelecionado = null;
 
+function formatEndereco(e) {
+  const partes = [];
+  if (e.address)          partes.push(e.address);
+  if (e.address_number)   partes.push(e.address_number);
+  if (e.neighborhood_name)partes.push(e.neighborhood_name);
+  if (e.address_ref)      partes.push(`REF: ${e.address_ref}`);
+  return partes.join(' - ');
+}
+
 function carregarEnderecos(clienteId) {
   document.getElementById('endSemCliente').style.display = 'none';
   document.getElementById('endComCliente').style.display = '';
@@ -1795,7 +1804,7 @@ function selecionarEndereco(e, itemEl, silencioso) {
     bairroSel.value = '';
   }
   document.getElementById('taxaEntrega').value = fmtNum(e.delivery_fee);
-  document.getElementById('clienteEnderecoTexto').value = e.address || '';
+  document.getElementById('clienteEnderecoTexto').value = formatEndereco(e);
   calcTotais();
 }
 
