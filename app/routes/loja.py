@@ -40,11 +40,10 @@ def api_produtos(slug):
             thumb = f'/loja/{slug}/produto/{p.id}/foto'
         else:
             thumb = None
-        evento = tenant.event_mode and (p.sale_price_event or 0) > 0
         out.append({
             'id':         p.id,
             'name':       p.name,
-            'price':      p.sale_price_event if evento else p.sale_price,
+            'price':      p.sale_price,
             'price_cold': p.sale_price_cold or 0,
             'type_id':    p.type_id,
             'type_name':  p.type.name if p.type else None,
@@ -242,14 +241,12 @@ def fazer_pedido(slug):
         prod = Product.query.filter_by(id=pid, tenant_id=tenant.id, active=True).first()
         if not prod or qty <= 0:
             continue
-        evento = tenant.event_mode and (prod.sale_price_event or 0) > 0
-        unit   = prod.sale_price_event if evento else prod.sale_price
-        line   = round(unit * qty, 2)
+        line = round(prod.sale_price * qty, 2)
         subtotal += line
         items_ok.append({
             'product_id': prod.id,
             'name':       prod.name,
-            'unit_price': unit,
+            'unit_price': prod.sale_price,
             'quantity':   qty,
             'total':      line,
         })
