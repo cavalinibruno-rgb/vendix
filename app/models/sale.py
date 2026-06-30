@@ -9,6 +9,7 @@ class Sale(db.Model):
     customer_id     = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)
     delivery_mode   = db.Column(db.String(16), default='retirada')  # retirada | entrega
     delivery_fee    = db.Column(db.Float, default=0)
+    delivery_address = db.Column(db.String(256), nullable=True)
     subtotal        = db.Column(db.Float, default=0)
     total           = db.Column(db.Float, default=0)
     payment_method  = db.Column(db.String(32), nullable=False)  # dinheiro | cartao | pix | conta

@@ -1591,6 +1591,7 @@ function finalizarVenda() {
     const payload = {
       customer_id:     clienteAtual ? clienteAtual.id : null,
       delivery_mode:   modo, delivery_fee: taxa,
+      delivery_address: modo === 'entrega' ? document.getElementById('clienteEnderecoTexto').value : null,
       payment_method:  'combinado',
       payment_entries: linhas,
       notes:           document.getElementById('obsVenda').value,
@@ -1627,6 +1628,7 @@ function finalizarVenda() {
   const payload = {
     customer_id:    clienteAtual ? clienteAtual.id : null,
     delivery_mode:  modo, delivery_fee: taxa,
+    delivery_address: modo === 'entrega' ? document.getElementById('clienteEnderecoTexto').value : null,
     payment_method: pgto,
     notes:          document.getElementById('obsVenda').value,
     source:         origem,

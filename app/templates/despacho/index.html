@@ -47,7 +47,7 @@
           <td class="small text-nowrap">{{ v.created_at.strftime('%H:%M') }}</td>
           <td class="fw-semibold">{{ v.customer.name if v.customer else (po.cliente_nome if po else '—') }}</td>
           <td class="small text-muted">{{ (v.customer.phone if v.customer else None) or (po.cliente_tel if po else '—') or '—' }}</td>
-          <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.notes or '—') }}</td>
+          <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.delivery_address or (v.customer.address if v.customer and v.customer.address else None) or '—') }}</td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
           <td>
             <select class="form-select form-select-sm" id="motoboy-{{ v.id }}">
@@ -108,7 +108,7 @@
           <td class="small text-nowrap">{{ v.dispatched_at.strftime('%H:%M') }}</td>
           <td class="fw-semibold">{{ v.customer.name if v.customer else (po.cliente_nome if po else '—') }}</td>
           <td class="small text-muted">{{ (v.customer.phone if v.customer else None) or (po.cliente_tel if po else '—') or '—' }}</td>
-          <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.notes or '—') }}</td>
+          <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.delivery_address or (v.customer.address if v.customer and v.customer.address else None) or '—') }}</td>
           <td><span class="badge bg-secondary">{{ v.motoboy_name or '—' }}</span></td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
           <td class="pe-4 d-flex gap-1">
@@ -156,7 +156,7 @@
           <td class="small text-nowrap text-success">{{ v.delivered_at.strftime('%d/%m %H:%M') }}</td>
           <td>{{ v.customer.name if v.customer else (po.cliente_nome if po else '—') }}</td>
           <td class="small text-muted">{{ (v.customer.phone if v.customer else None) or (po.cliente_tel if po else '—') or '—' }}</td>
-          <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.notes or '—') }}</td>
+          <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.delivery_address or (v.customer.address if v.customer and v.customer.address else None) or '—') }}</td>
           <td><span class="badge bg-success">{{ v.motoboy_name or '—' }}</span></td>
           <td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>
         </tr>

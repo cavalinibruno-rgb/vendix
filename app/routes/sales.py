@@ -107,6 +107,7 @@ def confirmar():
     customer_id    = data.get('customer_id') or None
     delivery_mode  = data.get('delivery_mode', 'retirada')
     delivery_fee   = float(data.get('delivery_fee', 0))
+    delivery_address = (data.get('delivery_address') or '').strip() or None
     payment_method = data.get('payment_method', 'dinheiro')
     notes          = data.get('notes', '')
     source         = data.get('source', 'loja')
@@ -170,6 +171,7 @@ def confirmar():
         customer_id    = customer_id,
         delivery_mode  = delivery_mode,
         delivery_fee   = delivery_fee if delivery_mode == 'entrega' else 0,
+        delivery_address = delivery_address if delivery_mode == 'entrega' else None,
         subtotal       = subtotal,
         discount       = discount,
         discount_type  = discount_type,

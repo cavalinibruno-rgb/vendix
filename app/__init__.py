@@ -227,6 +227,7 @@ def _run_migrations(db):
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS rua VARCHAR(128)",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS numero VARCHAR(16)",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS complemento VARCHAR(64)",
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS delivery_address VARCHAR(256)",
         """CREATE TABLE IF NOT EXISTS password_reset_tokens (
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id) NOT NULL,
