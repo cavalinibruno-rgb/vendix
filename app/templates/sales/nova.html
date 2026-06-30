@@ -229,13 +229,16 @@
   .end-addr-item:hover { border-color: #555; background: #2d2d2d; }
   .end-addr-item.active { border-color: #c9a84c; background: rgba(201,168,76,.08); }
   .end-addr-item .end-radio {
+    position: relative; box-sizing: border-box;
     width: 18px; height: 18px; border-radius: 50%; border: 2px solid #555;
-    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
     transition: border-color .15s;
   }
   .end-addr-item.active .end-radio { border-color: #c9a84c; }
   .end-addr-item.active .end-radio::after {
-    content: ''; width: 9px; height: 9px; border-radius: 50%; background: #c9a84c;
+    content: ''; position: absolute; top: 50%; left: 50%;
+    width: 9px; height: 9px; border-radius: 50%; background: #c9a84c;
+    transform: translate(-50%, -50%);
   }
   .end-addr-label { font-weight: 600; font-size: .85rem; color: #ddd; }
   .end-addr-text  { font-size: .78rem; color: #888; margin-top: 2px; }
