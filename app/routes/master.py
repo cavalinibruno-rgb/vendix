@@ -321,7 +321,7 @@ def sincronizar_mp():
                 mp_id = str(pay['id'])
                 if mp_id in mp_ids_existentes:
                     continue
-                ext_ref = pay.get('external_reference', '')
+                ext_ref = pay.get('external_reference') or ''
                 valor   = float(pay.get('transaction_amount', 0))
                 paid_dt = datetime.fromisoformat(pay['date_approved'][:19])
 
@@ -331,19 +331,33 @@ def sincronizar_mp():
 
                 # upgrade_<tenant_id>
                 if ext_ref.startswith('upgrade_'):
-                    tid = int(ext_ref.split('_')[1])
-                    tenant = by_id.get(tid)
-                    plano  = 'anual'
-                # registro novo (pending.id não bate direto com tenant, mas valor indica plano)
-                elif ext_ref.isdigit():
-                    if abs(valor - PRECO_ANUAL) < 1:
-                        plano = 'anual'
-                    # tenta achar tenant pelo email do pagador
-                    email_pag = (pay.get('payer') or {}).get('email', '')
-                    if email_pag:
-                        tenant = next((t for t in all_tenants if t.email == email_pag), None)
+                    try:
+                        tid = int(ext_ref.split('_')[1])
+                        tenant = by_id.get(tid)
+                    except (IndexError, ValueError):
+                        pass
+                    plano = 'anual'
+                else:
+                    # Tenta resolver pelo PendingRegistration (ext_ref = pending.id)
+                    if ext_ref.isdigit():
+                        from app.models.pending_registration import PendingRegistration
+                        pend = PendingRegistration.query.get(int(ext_ref))
+                        if pend:
+                            plano = pend.plano or 'mensal'
+                            tenant = next((t for t in all_tenants if t.email == pend.email), None)
 
-                if not tenant or valor < 1:
+                    # Fallback: e-mail do pagador
+                    if not tenant:
+                        email_pag = (pay.get('payer') or {}).get('email', '')
+                        if email_pag:
+                            tenant = next((t for t in all_tenants if t.email == email_pag), None)
+
+                    # Fallback: detecta plano pelo valor se ainda indefinido
+                    if plano == 'mensal' and not ext_ref.isdigit():
+                        if abs(valor - PRECO_ANUAL) <= 5:
+                            plano = 'anual'
+
+                if not tenant:
                     continue
 
                 p = Pagamento(
