@@ -1391,8 +1391,10 @@ function setPgto(card) {
 }
 
 function calcTroco() {
-  const total = carrinho.reduce((s, i) => s + i.total, 0)
-              + (modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0);
+  const subtotal = carrinho.reduce((s, i) => s + i.total, 0);
+  const taxa     = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
+  const desconto = getDesconto(subtotal);
+  const total    = Math.max(0, subtotal - desconto + taxa);
   const recebido = parseFloat(document.getElementById('valorRecebido').value.replace(',', '.')) || 0;
   const troco = recebido - total;
   const val = document.getElementById('trocoValor');
