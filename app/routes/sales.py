@@ -404,12 +404,16 @@ def comprovante(sale_id):
         except Exception:
             pass
 
+    from app.models.pedido_online import PedidoOnline
+    pedido_online = PedidoOnline.query.filter_by(sale_id=sale_id, tenant_id=tid()).first()
+
     return render_template('sales/receipt.html',
         sale=sale,
         store_name=store_name,
         combo_map=combo_map,
         autoprint=autoprint,
         payment_entries=payment_entries,
+        pedido_online=pedido_online,
     )
 
 @sales_bp.route('/<int:sale_id>/escpos')

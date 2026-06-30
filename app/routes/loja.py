@@ -186,6 +186,9 @@ def fazer_pedido(slug):
     cliente_tel    = (data.get('cliente_tel') or '').strip()
     bairro_id      = data.get('bairro_id') or None
     endereco       = (data.get('endereco') or '').strip()
+    rua            = (data.get('rua') or '').strip()
+    numero         = (data.get('numero') or '').strip()
+    complemento    = (data.get('complemento') or '').strip()
     payment_method = data.get('payment_method', 'entrega_dinheiro')
     troco_para     = float(data.get('troco_para') or 0) or None
     notes          = (data.get('notes') or '').strip()
@@ -282,6 +285,9 @@ def fazer_pedido(slug):
         bairro_id      = bairro_id,
         bairro_nome    = bairro_nome,
         endereco       = endereco,
+        rua            = rua,
+        numero         = numero,
+        complemento    = complemento,
         taxa_entrega   = taxa_entrega,
         payment_method = payment_method,
         troco_para     = troco_para,

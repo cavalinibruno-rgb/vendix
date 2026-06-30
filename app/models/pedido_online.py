@@ -18,6 +18,9 @@ class PedidoOnline(db.Model):
     bairro_id      = db.Column(db.Integer, db.ForeignKey('neighborhoods.id'), nullable=True)
     bairro_nome    = db.Column(db.String(64))
     endereco       = db.Column(db.String(256))
+    rua            = db.Column(db.String(128))
+    numero         = db.Column(db.String(16))
+    complemento    = db.Column(db.String(64))
     taxa_entrega   = db.Column(db.Float, default=0)
     # Pagamento
     payment_method = db.Column(db.String(32))  # entrega_dinheiro | entrega_cartao | entrega_pix

@@ -224,6 +224,9 @@ def _run_migrations(db):
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS max_uses INTEGER DEFAULT 0",
         "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS used_count INTEGER DEFAULT 0",
         "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS token VARCHAR(48) UNIQUE",
+        "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS rua VARCHAR(128)",
+        "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS numero VARCHAR(16)",
+        "ALTER TABLE pedidos_online ADD COLUMN IF NOT EXISTS complemento VARCHAR(64)",
         """CREATE TABLE IF NOT EXISTS password_reset_tokens (
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id) NOT NULL,

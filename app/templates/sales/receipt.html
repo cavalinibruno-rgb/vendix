@@ -241,7 +241,28 @@
   </div>
 
   <!-- CLIENTE -->
-  {% if sale.customer %}
+  {% if pedido_online %}
+  <div style="margin: 2mm 0 1mm;">
+    <span class="small" style="text-transform:uppercase;letter-spacing:.5px">Cliente:</span>
+    <span class="bold"> {{ pedido_online.cliente_nome }}</span>
+  </div>
+  {% if sale.delivery_mode == 'entrega' %}
+    {% if pedido_online.rua %}
+    <div class="small" style="margin: 0 0 1mm;">Rua: <strong>{{ pedido_online.rua }}{% if pedido_online.numero %}, {{ pedido_online.numero }}{% endif %}</strong></div>
+    {% if pedido_online.complemento %}
+    <div class="small" style="margin: 0 0 1mm;">Complemento: <strong>{{ pedido_online.complemento }}</strong></div>
+    {% endif %}
+    {% if pedido_online.bairro_nome %}
+    <div class="small" style="margin: 0 0 1mm;">Bairro: <strong>{{ pedido_online.bairro_nome }}</strong></div>
+    {% endif %}
+    {% elif pedido_online.endereco %}
+    <div class="small" style="margin: 0 0 1mm;">Endereço: <strong>{{ pedido_online.endereco }}</strong></div>
+    {% endif %}
+    {% if pedido_online.cliente_tel %}
+    <div class="small" style="margin: 0 0 1mm;">Tel: {{ pedido_online.cliente_tel }}</div>
+    {% endif %}
+  {% endif %}
+  {% elif sale.customer %}
   <div style="margin: 2mm 0 1mm;">
     <span class="small" style="text-transform:uppercase;letter-spacing:.5px">Cliente:</span>
     <span class="bold"> {{ sale.customer.name }}</span>
@@ -394,7 +415,27 @@
     {% endif %}
   </div>
 
-  {% if sale.customer %}
+  {% if pedido_online %}
+  <div style="margin:2mm 0 1mm;text-align:center;">
+    <span class="bold" style="font-size:12pt;">{{ pedido_online.cliente_nome }}</span>
+  </div>
+  {% if sale.delivery_mode == 'entrega' %}
+    {% if pedido_online.rua %}
+    <div class="small" style="margin:0 0 1mm;text-align:center;">Rua: <strong>{{ pedido_online.rua }}{% if pedido_online.numero %}, {{ pedido_online.numero }}{% endif %}</strong></div>
+    {% if pedido_online.complemento %}
+    <div class="small" style="margin:0 0 1mm;text-align:center;">Complemento: <strong>{{ pedido_online.complemento }}</strong></div>
+    {% endif %}
+    {% if pedido_online.bairro_nome %}
+    <div class="small" style="margin:0 0 1mm;text-align:center;">Bairro: <strong>{{ pedido_online.bairro_nome }}</strong></div>
+    {% endif %}
+    {% elif pedido_online.endereco %}
+    <div class="small" style="margin:0 0 1mm;text-align:center;">{{ pedido_online.endereco }}</div>
+    {% endif %}
+    {% if pedido_online.cliente_tel %}
+    <div class="small" style="margin:0 0 1mm;text-align:center;">Tel: {{ pedido_online.cliente_tel }}</div>
+    {% endif %}
+  {% endif %}
+  {% elif sale.customer %}
   <div style="margin:2mm 0 1mm;text-align:center;">
     <span class="bold" style="font-size:12pt;">{{ sale.customer.name }}</span>
   </div>
