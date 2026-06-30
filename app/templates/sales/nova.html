@@ -253,7 +253,7 @@
 {% if event_mode and evento_visivel %}
 <div class="alert alert-warning py-2 mb-3 fw-semibold">
   <i class="bi bi-music-note-beamed me-2"></i>Modo Evento ativo — preços de evento sendo aplicados.
-  <a href="{{ url_for('dashboard.evento_toggle') }}" class="alert-link float-end" onclick="this.closest('form') && this.closest('form').submit(); return false;">Desativar</a>
+  <a href="#" class="alert-link float-end" onclick="document.getElementById('formDesativarEvento').submit(); return false;">Desativar</a>
   <form method="post" action="{{ url_for('dashboard.evento_toggle') }}" id="formDesativarEvento" style="display:none;"></form>
 </div>
 {% endif %}
