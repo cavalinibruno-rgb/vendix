@@ -211,7 +211,7 @@ def fazer_pedido(slug):
         # Recalcula taxa por distância server-side usando as coordenadas do cliente
         import math as _math
         try:
-            cfg  = tenant.config or {}
+            cfg  = tenant.get_settings()
             lat1 = float(cfg.get('loja_lat', 0))
             lng1 = float(cfg.get('loja_lng', 0))
             lat2 = float(geo_lat)
