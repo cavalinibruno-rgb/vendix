@@ -92,11 +92,38 @@ def concluir(sale_id):
 @login_required
 def cancelar(sale_id):
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
-    motivo = request.form.get('motivo', '').strip() or 'Cancelado pelo operador'
-    sale.status           = 'cancelled'
-    sale.cancelled_at     = datetime.now()
-    sale.cancelled_by_name = current_user.display_name or current_user.username
-    sale.cancel_reason    = motivo
+    motivo      = request.form.get('cancel_reason', '').strip()
+    op_username = request.form.get('op_username', '').strip()
+    op_password = request.form.get('op_password', '').strip()
+
+    if not motivo:
+        flash('Informe o motivo do cancelamento.', 'danger')
+        return redirect(url_for('entregas.index'))
+
+    from app.models.user import User
+    from app.models.vale import Employee
+    from werkzeug.security import check_password_hash
+    autenticado = False
+    nome_op = op_username
+    u = User.query.filter_by(username=op_username, tenant_id=tid()).first()
+    if u and u.check_password(op_password):
+        autenticado = True
+        nome_op = u.display_name or u.username
+    if not autenticado:
+        emp = Employee.query.filter_by(username=op_username, tenant_id=tid()).first()
+        if emp and emp.password_hash and check_password_hash(emp.password_hash, op_password):
+            autenticado = True
+            nome_op = emp.name
+
+    if not autenticado:
+        flash('Usuário ou senha incorretos.', 'danger')
+        return redirect(url_for('entregas.index'))
+
+    sale.status            = 'cancelled'
+    sale.cancelled_at      = datetime.now()
+    sale.cancelled_by_id   = current_user.id
+    sale.cancelled_by_name = nome_op
+    sale.cancel_reason     = motivo
     db.session.commit()
     flash('Entrega cancelada.', 'warning')
     return redirect(url_for('entregas.index'))
