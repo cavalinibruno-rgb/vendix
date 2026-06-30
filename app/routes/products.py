@@ -153,6 +153,12 @@ def novo():
         )
         db.session.add(product)
         db.session.flush()
+
+        last_num = db.session.query(db.func.max(Product.product_number)).filter(
+            Product.tenant_id == tenant_id(), Product.id != product.id
+        ).scalar() or 0
+        product.product_number = last_num + 1
+
         def _salvar_foto(prod, file_field):
             foto = request.files.get(file_field)
             if foto and foto.filename:
@@ -223,6 +229,10 @@ def novo():
             )
             db.session.add(pack)
             db.session.flush()
+            last_num = db.session.query(db.func.max(Product.product_number)).filter(
+                Product.tenant_id == tenant_id(), Product.id != pack.id
+            ).scalar() or 0
+            pack.product_number = last_num + 1
             _salvar_foto(pack, pd['foto_key'])
 
         db.session.commit()

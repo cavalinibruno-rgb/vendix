@@ -236,6 +236,13 @@ def _run_migrations(db):
             used BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS product_number INTEGER",
+        """UPDATE products SET product_number = sub.rn
+           FROM (
+               SELECT id, ROW_NUMBER() OVER (PARTITION BY tenant_id ORDER BY id) AS rn
+               FROM products
+           ) sub
+           WHERE products.id = sub.id AND products.product_number IS NULL""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

@@ -26,6 +26,7 @@ class Product(db.Model):
 
     id             = db.Column(db.Integer, primary_key=True)
     tenant_id      = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
+    product_number = db.Column(db.Integer, nullable=True)
     type_id        = db.Column(db.Integer, db.ForeignKey('product_types.id'), nullable=True)
     brand_id       = db.Column(db.Integer, db.ForeignKey('brands.id'), nullable=True)
     name           = db.Column(db.String(128), nullable=False)
