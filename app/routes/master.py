@@ -133,33 +133,34 @@ def tenant_excluir(tenant_id):
         ex = db.session.execute
         t  = db.text
 
-        # 1. Nulifica user_id em stock_movements (essa coluna aceita NULL)
-        ex(t("UPDATE stock_movements SET user_id = NULL WHERE tenant_id = :tid"), {'tid': tid})
-
-        # 2. Deleta tokens de reset dos users desta loja
+        # Deleta tudo na ordem correta respeitando todas as FKs
         ex(t("""DELETE FROM password_reset_tokens WHERE user_id IN
                 (SELECT id FROM users WHERE tenant_id = :tid)"""), {'tid': tid})
-
-        # 3. Deleta registros dependentes do tenant em ordem segura
+        ex(t("DELETE FROM account_payments WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM cash_withdrawals WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM expenses WHERE tenant_id = :tid"), {'tid': tid})
-        ex(t("DELETE FROM cash_registers WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM pedidos_online WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM vales WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("""DELETE FROM sale_items WHERE sale_id IN
                 (SELECT id FROM sales WHERE tenant_id = :tid)"""), {'tid': tid})
-        ex(t("DELETE FROM sales WHERE tenant_id = :tid"), {'tid': tid})
-        ex(t("DELETE FROM vales WHERE tenant_id = :tid"), {'tid': tid})
-        ex(t("DELETE FROM employees WHERE tenant_id = :tid"), {'tid': tid})
-        ex(t("DELETE FROM customer_addresses WHERE tenant_id = :tid"), {'tid': tid})
-        ex(t("DELETE FROM customers WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("""DELETE FROM combo_items WHERE combo_id IN
                 (SELECT id FROM products WHERE tenant_id = :tid)"""), {'tid': tid})
+        ex(t("DELETE FROM sales_archive WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM sales WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM cash_registers WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM stock_movements WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM customer_addresses WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM customers WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("""UPDATE products SET pack_parent_id = NULL
+                WHERE tenant_id = :tid AND pack_parent_id IS NOT NULL"""), {'tid': tid})
         ex(t("DELETE FROM products WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM product_types WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM brands WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM motoboys WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM neighborhoods WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM coupons WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM pagamentos WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM employees WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM users WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM tenants WHERE id = :tid"), {'tid': tid})
 
