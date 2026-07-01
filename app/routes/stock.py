@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from app.auth_utils import autenticar_operador
 from flask_login import login_required, current_user
 from app import db
@@ -98,9 +98,8 @@ def index():
         eff_stock=eff_stock, eff_min=eff_min,
     )
 
-@stock_bp.route('/relatorio')
-@login_required
-def relatorio():
+def _dados_relatorio():
+    """Retorna (produtos, eff_stock, tenant, agora) para os relatórios de estoque."""
     from app.models.combo import ComboItem
     combo_ids = db.session.query(ComboItem.combo_id).distinct()
     produtos = Product.query\
@@ -120,9 +119,26 @@ def relatorio():
             return parent_stock_map.get(p.pack_parent_id, 0) // p.pack_qty
         return p.stock_quantity
 
-    tenant = current_user.tenant
-    agora  = datetime.now()
+    return produtos, eff_stock, current_user.tenant, datetime.now()
+
+
+@stock_bp.route('/relatorio')
+@login_required
+def relatorio():
+    if current_user.is_employee:
+        abort(403)
+    produtos, eff_stock, tenant, agora = _dados_relatorio()
     return render_template('stock/relatorio.html',
+        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
+
+
+@stock_bp.route('/balanco')
+@login_required
+def balanco():
+    if current_user.is_employee:
+        abort(403)
+    produtos, eff_stock, tenant, agora = _dados_relatorio()
+    return render_template('stock/balanco.html',
         produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
 
 

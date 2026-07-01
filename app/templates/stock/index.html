@@ -8,9 +8,14 @@
     <p>Dê entrada e gerencie o estoque dos produtos</p>
   </div>
   <div class="d-flex gap-2">
+    {% if not current_user.is_employee %}
     <a href="{{ url_for('stock.relatorio') }}" target="_blank" class="btn btn-outline-secondary">
-      <i class="bi bi-printer me-1"></i>Imprimir Relatório
+      <i class="bi bi-printer me-1"></i>Imprimir Relatório de Estoque
     </a>
+    <a href="{{ url_for('stock.balanco') }}" target="_blank" class="btn btn-outline-secondary">
+      <i class="bi bi-clipboard-check me-1"></i>Imprimir Relatório de Balanço
+    </a>
+    {% endif %}
     <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEntrada">
       <i class="bi bi-plus-circle me-1"></i>Entrada de Estoque
     </button>
