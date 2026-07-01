@@ -256,8 +256,8 @@
       </a>
       <a href="{{ url_for('entregas.index') }}" class="nav-link {% if 'entregas' in ep %}active{% endif %}">
         <i class="bi bi-send"></i><span class="nav-label"> Entregas</span>
-        <span id="badge-entrega-pend" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;color:#1a1a2e;display:none;"></span>
-        <span id="badge-entrega-ret" class="badge rounded-pill ms-1" style="font-size:.65rem;background:#c9a84c;color:#1a1a2e;display:none;"></span>
+        <span id="badge-entrega-pend" class="badge rounded-pill bg-danger ms-1" style="font-size:.65rem;color:#1a1a2e;{% if entregas_pendentes == 0 %}display:none{% endif %}">{{ entregas_pendentes }}</span>
+        <span id="badge-entrega-ret" class="badge rounded-pill ms-1" style="font-size:.65rem;background:#c9a84c;color:#1a1a2e;{% if entregas_retorno == 0 %}display:none{% endif %}">{{ entregas_retorno }}</span>
       </a>
       <a href="{{ url_for('pedidos_online.index') }}" class="nav-link {% if 'pedidos_online' in ep %}active{% endif %}">
         <i class="bi bi-phone"></i><span class="nav-label"> Pedidos Online</span>
@@ -476,8 +476,8 @@ document.addEventListener('DOMContentLoaded', function() {
 {% if current_user.is_authenticated %}
 (function() {
   let _ultimaVendaId    = null;
-  let _entregasPend     = 0;
-  let _entregasRet      = 0;
+  let _entregasPend     = {{ entregas_pendentes }};
+  let _entregasRet      = {{ entregas_retorno }};
   let _pedidosPend      = 0;
   let _ultimoPedidoId   = null;
   let _alarmInterval    = null;
@@ -652,14 +652,6 @@ document.addEventListener('DOMContentLoaded', function() {
     _ultimoPedidoId = d.ultimo_pedido_id;
     const bPO = document.getElementById('badge-pedidos-online');
     if (bPO && _pedidosPend > 0) { bPO.textContent = _pedidosPend; bPO.style.display = ''; }
-
-    // Badges de entregas — popula assim que a pagina carrega, sem esperar o polling de 10s
-    _entregasPend = d.entregas_pendentes || 0;
-    _entregasRet  = d.entregas_retorno || 0;
-    const bP = document.getElementById('badge-entrega-pend');
-    const bR = document.getElementById('badge-entrega-ret');
-    if (bP) { bP.textContent = _entregasPend; bP.style.display = _entregasPend > 0 ? '' : 'none'; }
-    if (bR) { bR.textContent = _entregasRet;  bR.style.display = _entregasRet  > 0 ? '' : 'none'; }
   }).catch(() => {});
 
   // Polling a cada 10 segundos

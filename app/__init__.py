@@ -279,18 +279,6 @@ def _run_migrations(db):
             used BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
-        # Índices adicionais — tabelas consultadas por tenant_id em quase toda tela
-        "CREATE INDEX IF NOT EXISTS idx_stock_movements_tenant_created ON stock_movements(tenant_id, created_at DESC)",
-        "CREATE INDEX IF NOT EXISTS idx_employees_tenant_username ON employees(tenant_id, username)",
-        "CREATE INDEX IF NOT EXISTS idx_users_tenant_username ON users(tenant_id, username)",
-        "CREATE INDEX IF NOT EXISTS idx_customers_tenant_id ON customers(tenant_id)",
-        "CREATE INDEX IF NOT EXISTS idx_expenses_tenant_date ON expenses(tenant_id, date)",
-        "CREATE INDEX IF NOT EXISTS idx_vales_tenant_date ON vales(tenant_id, date)",
-        "CREATE INDEX IF NOT EXISTS idx_cash_registers_tenant_status ON cash_registers(tenant_id, status)",
-        "CREATE INDEX IF NOT EXISTS idx_coupons_tenant_code ON coupons(tenant_id, code)",
-        "CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_id ON customer_addresses(customer_id)",
-        "CREATE INDEX IF NOT EXISTS idx_combo_items_combo_id ON combo_items(combo_id)",
-        "CREATE INDEX IF NOT EXISTS idx_products_tenant_active ON products(tenant_id, active)",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:
@@ -322,15 +310,6 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAX_CONTENT_LENGTH'] = 150 * 1024 * 1024  # 150 MB
-    # pool_pre_ping evita erro em conexão ociosa derrubada pelo Postgres;
-    # pool_recycle renova antes do timeout do provedor (Railway costuma fechar ~5min ocioso)
-    if db_url.startswith('postgresql'):
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'pool_pre_ping': True,
-            'pool_recycle': 280,
-            'pool_size': 5,
-            'max_overflow': 10,
-        }
 
     from datetime import timedelta
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
@@ -405,22 +384,18 @@ def create_app():
         if req.blueprint not in _BP_LIBERADOS_MASTER:
             return redirect(url_for('master.dashboard'))
 
-    _ROTAS_SEM_CHECK = {'auth.login', 'auth.logout', 'static', 'main.index',
-                         'register.form', 'register.checkout', 'register.webhook',
-                         'register.sucesso', 'register.status', 'register.falha',
-                         'register.pendente', 'download.pagina', 'download.arquivo',
-                         'download.latest_yml', 'download.update_file',
-                         'completar_cadastro.index'}
-
     @app.before_request
-    def verificar_tenant():
+    def verificar_assinatura_ativa():
         from flask import request as req, redirect, url_for
         from flask_login import current_user, logout_user
-        if req.endpoint in _ROTAS_SEM_CHECK:
+        rotas_liberadas = {'auth.login', 'auth.logout', 'static', 'main.index',
+                           'register.form', 'register.checkout', 'register.webhook',
+                           'register.sucesso', 'register.status', 'register.falha',
+                           'register.pendente', 'download.pagina', 'download.arquivo',
+                           'download.latest_yml', 'download.update_file'}
+        if req.endpoint in rotas_liberadas:
             return
         if not current_user.is_authenticated or current_user.is_master:
-            return
-        if current_user.is_employee:
             return
         tenant = current_user.tenant
         if tenant and not tenant.is_active:
@@ -428,6 +403,19 @@ def create_app():
             from flask import flash
             flash('Sua assinatura venceu. Renove para continuar acessando.', 'warning')
             return redirect(url_for('auth.login'))
+
+    @app.before_request
+    def verificar_perfil_completo():
+        from flask import request as req, redirect, url_for
+        from flask_login import current_user
+        rotas_liberadas = {'completar_cadastro.index', 'auth.logout', 'auth.login', 'static'}
+        if req.endpoint in rotas_liberadas:
+            return
+        if not current_user.is_authenticated:
+            return
+        if current_user.is_master or current_user.is_employee:
+            return
+        tenant = current_user.tenant
         if tenant and not tenant.profile_complete:
             return redirect(url_for('completar_cadastro.index'))
 
@@ -464,6 +452,21 @@ def create_app():
     @app.context_processor
     def inject_app_version():
         return {'app_version': APP_VERSION}
+
+    @app.context_processor
+    def inject_nav_badges():
+        from flask_login import current_user
+        badges = {'entregas_pendentes': 0, 'entregas_retorno': 0}
+        try:
+            if current_user.is_authenticated:
+                from app.models.sale import Sale
+                tid = current_user.tenant_id
+                base = Sale.query.filter_by(tenant_id=tid, status='confirmed', delivery_mode='entrega')
+                badges['entregas_pendentes'] = base.filter(Sale.dispatched_at == None).count()
+                badges['entregas_retorno']   = base.filter(Sale.dispatched_at != None, Sale.delivered_at == None).count()
+        except Exception:
+            pass
+        return badges
 
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
