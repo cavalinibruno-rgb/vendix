@@ -28,12 +28,17 @@
     }
     .btn-print { background: #c9a84c; color: #1a1a2e; border: none; padding: 8px 20px;
                  border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; }
+    .btn-back { background: #e5e5e5; color: #1a1a2e; border: none; padding: 8px 20px;
+                border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; margin-left: 8px; }
   </style>
 </head>
 <body>
 
 <button class="btn-print no-print" onclick="window.print()">
   🖨️ Imprimir
+</button>
+<button class="btn-back no-print" onclick="history.back()">
+  ← Voltar
 </button>
 
 <h1>{{ tenant.store_name }}</h1>
