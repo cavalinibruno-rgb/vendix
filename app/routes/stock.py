@@ -122,11 +122,20 @@ def _dados_relatorio():
     return produtos, eff_stock, current_user.tenant, datetime.now()
 
 
-@stock_bp.route('/relatorio')
+@stock_bp.route('/relatorio', methods=['GET', 'POST'])
 @login_required
 def relatorio():
     if current_user.is_employee:
         abort(403)
+    # "Valor de Estoque" mostra valores financeiros — exige senha do admin.
+    if request.method != 'POST':
+        return redirect(url_for('stock.index'))
+    from app.models.user import User
+    senha = request.form.get('senha', '')
+    user = User.query.get(current_user.id)
+    if not user or not user.check_password(senha):
+        flash('Senha incorreta. Acesso ao Valor de Estoque negado.', 'danger')
+        return redirect(url_for('stock.index'))
     produtos, eff_stock, tenant, agora = _dados_relatorio()
     return render_template('stock/relatorio.html',
         produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
