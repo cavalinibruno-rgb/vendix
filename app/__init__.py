@@ -465,25 +465,6 @@ def create_app():
     def inject_app_version():
         return {'app_version': APP_VERSION}
 
-    @app.context_processor
-    def inject_nav_badges():
-        from flask import request as req
-        from flask_login import current_user
-        badges = {'entregas_pendentes': 0, 'entregas_retorno': 0}
-        try:
-            ep = req.endpoint or ''
-            if ep.startswith('static') or ep.startswith('loja.') or ep.startswith('register.'):
-                return badges
-            if current_user.is_authenticated and current_user.tenant_id:
-                from app.models.sale import Sale
-                tid = current_user.tenant_id
-                base = Sale.query.filter_by(tenant_id=tid, status='confirmed', delivery_mode='entrega')
-                badges['entregas_pendentes'] = base.filter(Sale.dispatched_at == None).count()
-                badges['entregas_retorno']   = base.filter(Sale.dispatched_at != None, Sale.delivered_at == None).count()
-        except Exception:
-            pass
-        return badges
-
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         try:
