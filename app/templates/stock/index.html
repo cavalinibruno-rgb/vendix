@@ -8,6 +8,11 @@
     <p>Dê entrada e gerencie o estoque dos produtos</p>
   </div>
   <div class="d-flex gap-2">
+    {% if not current_user.is_employee %}
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalValorEstoque">
+      <i class="bi bi-cash-coin me-1"></i>Valor de Estoque
+    </button>
+    {% endif %}
     <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEntrada">
       <i class="bi bi-plus-circle me-1"></i>Entrada de Estoque
     </button>
@@ -285,6 +290,28 @@
         <div class="modal-footer">
           <button type="submit" class="btn btn-warning fw-semibold">Salvar Ajuste</button>
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Valor de Estoque (exige senha do admin) -->
+<div class="modal fade" id="modalValorEstoque" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('stock.relatorio') }}">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-lock me-2 text-warning"></i>Valor de Estoque</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">Digite a senha do administrador para visualizar o valor do estoque.</p>
+          <input type="password" name="senha" class="form-control" placeholder="Senha do administrador" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning fw-semibold"><i class="bi bi-eye me-1"></i>Visualizar</button>
         </div>
       </form>
     </div>

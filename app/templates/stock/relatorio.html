@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Estoque — {{ tenant.store_name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; background: #fff; padding: 24px; }
+    h1 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
+    .sub { color: #666; font-size: 11px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    thead th { background: #1a1a2e; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+    thead th.right { text-align: right; }
+    tbody tr:nth-child(even) { background: #f8f8f8; }
+    tbody td { padding: 7px 10px; border-bottom: 1px solid #eee; }
+    tbody td.right { text-align: right; }
+    .badge-ok   { color: #166534; font-weight: 700; }
+    .badge-low  { color: #92400e; font-weight: 700; }
+    .badge-zero { color: #991b1b; font-weight: 700; }
+    .totais { margin-top: 20px; border-top: 2px solid #1a1a2e; padding-top: 12px; display: flex; justify-content: flex-end; gap: 40px; }
+    .totais div { text-align: right; }
+    .totais .label { font-size: 11px; color: #666; text-transform: uppercase; }
+    .totais .value { font-size: 15px; font-weight: 800; margin-top: 2px; }
+    @media print {
+      body { padding: 12px; }
+      .no-print { display: none; }
+      @page { margin: 1cm; }
+    }
+    .btn-print { background: #c9a84c; color: #1a1a2e; border: none; padding: 8px 20px;
+                 border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; }
+    .btn-pdf { background: #1a1a2e; color: #fff; border: none; padding: 8px 20px;
+               border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; margin-left: 8px; }
+    .btn-back { background: #e5e5e5; color: #1a1a2e; border: none; padding: 8px 20px;
+                border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; margin-left: 8px; }
+  </style>
+</head>
+<body>
+
+<button class="btn-print no-print" onclick="window.print()">
+  🖨️ Imprimir
+</button>
+<button class="btn-pdf no-print" onclick="baixarPDF()">
+  📄 Baixar PDF
+</button>
+<button class="btn-back no-print" onclick="history.back()">
+  ← Voltar
+</button>
+
+<h1 id="titulo">{{ tenant.store_name }}</h1>
+<div class="sub" id="sub">Relatório de Estoque — gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }}</div>
+
+<table id="tabela">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Produto</th>
+      <th>Categoria</th>
+      <th class="right">Estoque</th>
+      <th class="right">Mín.</th>
+      <th class="right">Preço Custo</th>
+      <th class="right">Preço Venda</th>
+      <th class="right">Total (custo)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set ns = namespace(total_custo=0, total_venda=0, total_itens=0) %}
+    {% for p in produtos %}
+    {% set es = eff_stock(p) %}
+    {% set custo_total = (p.cost_price or 0) * es %}
+    {% set venda_total = (p.sale_price or 0) * es %}
+    {% set ns.total_custo = ns.total_custo + custo_total %}
+    {% set ns.total_venda = ns.total_venda + venda_total %}
+    {% set ns.total_itens = ns.total_itens + es %}
+    <tr>
+      <td class="right" style="color:#888;">{{ loop.index }}</td>
+      <td><strong>{{ p.name }}</strong></td>
+      <td style="color:#666;">{{ p.type.name if p.type else '—' }}</td>
+      <td class="right">
+        {% if es <= 0 %}
+          <span class="badge-zero">{{ es }}</span>
+        {% elif p.min_stock and es <= p.min_stock %}
+          <span class="badge-low">{{ es }}</span>
+        {% else %}
+          <span class="badge-ok">{{ es }}</span>
+        {% endif %}
+      </td>
+      <td class="right" style="color:#888;">{{ p.min_stock or 0 }}</td>
+      <td class="right">R$ {{ '%.2f'|format(p.cost_price or 0) }}</td>
+      <td class="right">R$ {{ '%.2f'|format(p.sale_price or 0) }}</td>
+      <td class="right"><strong>R$ {{ '%.2f'|format(custo_total) }}</strong></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="totais">
+  <div>
+    <div class="label">Total de itens</div>
+    <div class="value" id="tot-itens">{{ ns.total_itens }}</div>
+  </div>
+  <div>
+    <div class="label">Valor total (custo)</div>
+    <div class="value" id="tot-custo">R$ {{ '%.2f'|format(ns.total_custo) }}</div>
+  </div>
+  <div>
+    <div class="label">Valor total (venda)</div>
+    <div class="value" id="tot-venda">R$ {{ '%.2f'|format(ns.total_venda) }}</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+function _nomeArquivo(tipo) {
+  const nome = document.getElementById('titulo').textContent.trim().replace(/[^\w]+/g, '-');
+  const d = new Date();
+  const data = String(d.getDate()).padStart(2,'0') + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + d.getFullYear();
+  return tipo + '-' + nome + '-' + data + '.pdf';
+}
+function baixarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
+  doc.text(document.getElementById('titulo').textContent, 40, 42);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120);
+  doc.text(document.getElementById('sub').textContent, 40, 58);
+  doc.autoTable({
+    html: '#tabela',
+    startY: 72,
+    theme: 'striped',
+    styles: { fontSize: 8, cellPadding: 4, textColor: [20,20,20] },
+    headStyles: { fillColor: [26,26,46], textColor: 255, fontStyle: 'bold' },
+  });
+  let y = doc.lastAutoTable.finalY + 24;
+  doc.setDrawColor(26,26,46); doc.setLineWidth(1.5);
+  doc.line(40, y - 12, doc.internal.pageSize.getWidth() - 40, y - 12);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20,20,20);
+  const linhas = [
+    'Total de itens: ' + document.getElementById('tot-itens').textContent.trim(),
+    'Valor total (custo): ' + document.getElementById('tot-custo').textContent.trim(),
+    'Valor total (venda): ' + document.getElementById('tot-venda').textContent.trim(),
+  ];
+  linhas.forEach((t, i) => doc.text(t, 40, y + i * 16));
+  doc.save(_nomeArquivo('estoque'));
+}
+</script>
+
+</body>
+</html>
