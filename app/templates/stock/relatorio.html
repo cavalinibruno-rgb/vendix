@@ -28,6 +28,8 @@
     }
     .btn-print { background: #c9a84c; color: #1a1a2e; border: none; padding: 8px 20px;
                  border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; }
+    .btn-pdf { background: #1a1a2e; color: #fff; border: none; padding: 8px 20px;
+               border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; margin-left: 8px; }
     .btn-back { background: #e5e5e5; color: #1a1a2e; border: none; padding: 8px 20px;
                 border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; margin-left: 8px; }
   </style>
@@ -37,14 +39,17 @@
 <button class="btn-print no-print" onclick="window.print()">
   🖨️ Imprimir
 </button>
+<button class="btn-pdf no-print" onclick="baixarPDF()">
+  📄 Baixar PDF
+</button>
 <button class="btn-back no-print" onclick="history.back()">
   ← Voltar
 </button>
 
-<h1>{{ tenant.store_name }}</h1>
-<div class="sub">Relatório de Estoque — gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }}</div>
+<h1 id="titulo">{{ tenant.store_name }}</h1>
+<div class="sub" id="sub">Relatório de Estoque — gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }}</div>
 
-<table>
+<table id="tabela">
   <thead>
     <tr>
       <th>#</th>
@@ -91,17 +96,54 @@
 <div class="totais">
   <div>
     <div class="label">Total de itens</div>
-    <div class="value">{{ ns.total_itens }}</div>
+    <div class="value" id="tot-itens">{{ ns.total_itens }}</div>
   </div>
   <div>
     <div class="label">Valor total (custo)</div>
-    <div class="value">R$ {{ '%.2f'|format(ns.total_custo) }}</div>
+    <div class="value" id="tot-custo">R$ {{ '%.2f'|format(ns.total_custo) }}</div>
   </div>
   <div>
     <div class="label">Valor total (venda)</div>
-    <div class="value">R$ {{ '%.2f'|format(ns.total_venda) }}</div>
+    <div class="value" id="tot-venda">R$ {{ '%.2f'|format(ns.total_venda) }}</div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+function _nomeArquivo(tipo) {
+  const nome = document.getElementById('titulo').textContent.trim().replace(/[^\w]+/g, '-');
+  const d = new Date();
+  const data = String(d.getDate()).padStart(2,'0') + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + d.getFullYear();
+  return tipo + '-' + nome + '-' + data + '.pdf';
+}
+function baixarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
+  doc.text(document.getElementById('titulo').textContent, 40, 42);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120);
+  doc.text(document.getElementById('sub').textContent, 40, 58);
+  doc.autoTable({
+    html: '#tabela',
+    startY: 72,
+    theme: 'striped',
+    styles: { fontSize: 8, cellPadding: 4, textColor: [20,20,20] },
+    headStyles: { fillColor: [26,26,46], textColor: 255, fontStyle: 'bold' },
+  });
+  let y = doc.lastAutoTable.finalY + 24;
+  doc.setDrawColor(26,26,46); doc.setLineWidth(1.5);
+  doc.line(40, y - 12, doc.internal.pageSize.getWidth() - 40, y - 12);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20,20,20);
+  const linhas = [
+    'Total de itens: ' + document.getElementById('tot-itens').textContent.trim(),
+    'Valor total (custo): ' + document.getElementById('tot-custo').textContent.trim(),
+    'Valor total (venda): ' + document.getElementById('tot-venda').textContent.trim(),
+  ];
+  linhas.forEach((t, i) => doc.text(t, 40, y + i * 16));
+  doc.save(_nomeArquivo('estoque'));
+}
+</script>
 
 </body>
 </html>

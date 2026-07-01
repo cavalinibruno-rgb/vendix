@@ -25,6 +25,8 @@
     }
     .btn-print { background: #c9a84c; color: #1a1a2e; border: none; padding: 8px 20px;
                  border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; }
+    .btn-pdf { background: #1a1a2e; color: #fff; border: none; padding: 8px 20px;
+               border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; margin-left: 8px; }
     .btn-back { background: #e5e5e5; color: #1a1a2e; border: none; padding: 8px 20px;
                 border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 13px; margin-bottom: 16px; margin-left: 8px; }
   </style>
@@ -34,14 +36,17 @@
 <button class="btn-print no-print" onclick="window.print()">
   🖨️ Imprimir
 </button>
+<button class="btn-pdf no-print" onclick="baixarPDF()">
+  📄 Baixar PDF
+</button>
 <button class="btn-back no-print" onclick="history.back()">
   ← Voltar
 </button>
 
-<h1>{{ tenant.store_name }}</h1>
-<div class="sub">Relatório de Balanço — gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }}</div>
+<h1 id="titulo">{{ tenant.store_name }}</h1>
+<div class="sub" id="sub">Relatório de Balanço — gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }}</div>
 
-<table>
+<table id="tabela">
   <thead>
     <tr>
       <th>#</th>
@@ -63,6 +68,34 @@
     {% endfor %}
   </tbody>
 </table>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+function _nomeArquivo(tipo) {
+  const nome = document.getElementById('titulo').textContent.trim().replace(/[^\w]+/g, '-');
+  const d = new Date();
+  const data = String(d.getDate()).padStart(2,'0') + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + d.getFullYear();
+  return tipo + '-' + nome + '-' + data + '.pdf';
+}
+function baixarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(15);
+  doc.text(document.getElementById('titulo').textContent, 40, 42);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120);
+  doc.text(document.getElementById('sub').textContent, 40, 58);
+  doc.autoTable({
+    html: '#tabela',
+    startY: 72,
+    theme: 'grid',
+    styles: { fontSize: 9, cellPadding: 5, lineColor: [210,210,210], textColor: [20,20,20] },
+    headStyles: { fillColor: [26,26,46], textColor: 255, fontStyle: 'bold' },
+    columnStyles: { 4: { cellWidth: 110, minCellHeight: 24 } },
+  });
+  doc.save(_nomeArquivo('balanco'));
+}
+</script>
 
 </body>
 </html>
