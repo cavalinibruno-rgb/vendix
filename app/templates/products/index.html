@@ -102,10 +102,10 @@
               <a href="{{ url_for('products.editar', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-pencil"></i>
               </a>
-              <button class="btn btn-sm {% if p.online_active %}btn-outline-success{% else %}btn-outline-secondary{% endif %}"
+              <button class="btn btn-sm {% if p.online_active %}btn-outline-success{% else %}btn-outline-warning{% endif %}"
                       onclick="toggleOnline(this, {{ p.id }})"
                       title="{{ 'Pausar no link' if p.online_active else 'Reativar no link' }}">
-                <i class="bi {% if p.online_active %}bi-globe{% else %}bi-globe-x{% endif %}"></i>
+                <i class="bi {% if p.online_active %}bi-pause-fill{% else %}bi-play-fill{% endif %}"></i>
               </button>
               <form method="post" action="{{ url_for('products.excluir', product_id=p.id) }}"
                     data-confirm='Excluir {{ p.name }}?'>
@@ -133,11 +133,11 @@ async function toggleOnline(btn, productId) {
   if (d.online_active) {
     btn.className = 'btn btn-sm btn-outline-success';
     btn.title = 'Pausar no link';
-    icon.className = 'bi bi-globe';
+    icon.className = 'bi bi-pause-fill';
   } else {
-    btn.className = 'btn btn-sm btn-outline-secondary';
+    btn.className = 'btn btn-sm btn-outline-warning';
     btn.title = 'Reativar no link';
-    icon.className = 'bi bi-globe-x';
+    icon.className = 'bi bi-play-fill';
   }
   btn.disabled = false;
 }
