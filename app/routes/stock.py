@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash
 from app.auth_utils import autenticar_operador
 from flask_login import login_required, current_user
 from app import db
@@ -97,59 +97,6 @@ def index():
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
         eff_stock=eff_stock, eff_min=eff_min,
     )
-
-def _dados_relatorio():
-    """Retorna (produtos, eff_stock, tenant, agora) para os relatórios de estoque."""
-    from app.models.combo import ComboItem
-    combo_ids = db.session.query(ComboItem.combo_id).distinct()
-    produtos = Product.query\
-        .filter(Product.tenant_id == tid(), Product.active == True)\
-        .filter(~Product.id.in_(combo_ids))\
-        .order_by(Product.name).all()
-
-    parent_ids = {p.pack_parent_id for p in produtos if p.pack_parent_id}
-    parent_stock_map = {}
-    if parent_ids:
-        for pr in Product.query.filter(Product.id.in_(parent_ids))\
-                .with_entities(Product.id, Product.stock_quantity).all():
-            parent_stock_map[pr.id] = pr.stock_quantity
-
-    def eff_stock(p):
-        if p.pack_parent_id and p.pack_qty:
-            return parent_stock_map.get(p.pack_parent_id, 0) // p.pack_qty
-        return p.stock_quantity
-
-    return produtos, eff_stock, current_user.tenant, datetime.now()
-
-
-@stock_bp.route('/relatorio', methods=['GET', 'POST'])
-@login_required
-def relatorio():
-    if current_user.is_employee:
-        abort(403)
-    # "Valor de Estoque" mostra valores financeiros — exige senha do admin.
-    if request.method != 'POST':
-        return redirect(url_for('stock.index'))
-    from app.models.user import User
-    senha = request.form.get('senha', '')
-    user = User.query.get(current_user.id)
-    if not user or not user.check_password(senha):
-        flash('Senha incorreta. Acesso ao Valor de Estoque negado.', 'danger')
-        return redirect(url_for('stock.index'))
-    produtos, eff_stock, tenant, agora = _dados_relatorio()
-    return render_template('stock/relatorio.html',
-        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
-
-
-@stock_bp.route('/balanco')
-@login_required
-def balanco():
-    if current_user.is_employee:
-        abort(403)
-    produtos, eff_stock, tenant, agora = _dados_relatorio()
-    return render_template('stock/balanco.html',
-        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
-
 
 @stock_bp.route('/entrada', methods=['POST'])
 @login_required

@@ -370,20 +370,6 @@ def create_app():
     app.register_blueprint(completar_cadastro_bp)
     app.register_blueprint(download_bp)
 
-    # Blueprints que o master (admin do sistema) pode acessar.
-    # O master não tem loja própria, então é bloqueado das telas internas de loja.
-    _BP_LIBERADOS_MASTER = {'master', 'auth', 'main', 'loja',
-                            'register', 'download', None}
-
-    @app.before_request
-    def bloquear_master_em_loja():
-        from flask import request as req, redirect, url_for
-        from flask_login import current_user
-        if not current_user.is_authenticated or not current_user.is_master:
-            return
-        if req.blueprint not in _BP_LIBERADOS_MASTER:
-            return redirect(url_for('master.dashboard'))
-
     @app.before_request
     def verificar_assinatura_ativa():
         from flask import request as req, redirect, url_for
