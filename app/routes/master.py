@@ -133,8 +133,7 @@ def tenant_excluir(tenant_id):
         ex = db.session.execute
         t  = db.text
 
-        # 1. Nulifica FKs que apontam para users (antes de deletar users)
-        ex(t("UPDATE cash_registers SET opened_by = NULL WHERE tenant_id = :tid"), {'tid': tid})
+        # 1. Nulifica user_id em stock_movements (essa coluna aceita NULL)
         ex(t("UPDATE stock_movements SET user_id = NULL WHERE tenant_id = :tid"), {'tid': tid})
 
         # 2. Deleta tokens de reset dos users desta loja
@@ -144,11 +143,11 @@ def tenant_excluir(tenant_id):
         # 3. Deleta registros dependentes do tenant em ordem segura
         ex(t("DELETE FROM cash_withdrawals WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM expenses WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM cash_registers WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("""DELETE FROM sale_items WHERE sale_id IN
                 (SELECT id FROM sales WHERE tenant_id = :tid)"""), {'tid': tid})
         ex(t("DELETE FROM sales WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM pedidos_online WHERE tenant_id = :tid"), {'tid': tid})
-        ex(t("DELETE FROM cash_registers WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM vales WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM employees WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM customer_addresses WHERE tenant_id = :tid"), {'tid': tid})
