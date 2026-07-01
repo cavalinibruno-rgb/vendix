@@ -16,6 +16,20 @@
     {% endfor %}
   {% endwith %}
 
+  {% if tenant.subscription_cancelled %}
+  <div class="alert d-flex align-items-start gap-3 mb-4" style="background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.35);border-radius:12px;padding:16px 18px;">
+    <i class="bi bi-exclamation-triangle-fill text-warning mt-1" style="font-size:1.2rem;flex-shrink:0;"></i>
+    <div>
+      <div class="fw-bold text-warning mb-1">Assinatura cancelada</div>
+      <div class="text-muted small">
+        Sua renovação automática foi cancelada. Você continua com acesso completo até
+        <strong>{% if tenant.expires_at %}{{ tenant.expires_at.strftime('%d/%m/%Y') }}{% else %}o fim do período pago{% endif %}</strong>.
+        Após essa data, o acesso será suspenso.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Card do plano atual -->
   <div class="card mb-4">
     <div class="card-body">

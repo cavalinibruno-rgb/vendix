@@ -268,6 +268,7 @@ def _run_migrations(db):
             created_at TIMESTAMP DEFAULT NOW()
         )""",
         "ALTER TABLE pagamentos ADD COLUMN IF NOT EXISTS mp_payment_id VARCHAR(64) UNIQUE",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_cancelled BOOLEAN DEFAULT FALSE",
         """CREATE TABLE IF NOT EXISTS master_otp (
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id) NOT NULL,

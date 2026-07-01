@@ -37,6 +37,7 @@ def cancelar():
             logging.error(f'[cancelar assinatura] {e}')
 
     tenant.preapproval_id = None
+    tenant.subscription_cancelled = True
     db.session.commit()
 
     flash('Assinatura cancelada. Seu acesso permanece ativo até o vencimento.', 'warning')
