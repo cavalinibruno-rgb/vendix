@@ -101,11 +101,8 @@ def index():
 @stock_bp.route('/relatorio')
 @login_required
 def relatorio():
-    from app.models.combo import ComboItem
-    combo_ids = db.session.query(ComboItem.combo_id).distinct()
     produtos = Product.query\
-        .filter(Product.tenant_id == tid(), Product.active == True)\
-        .filter(~Product.id.in_(combo_ids))\
+        .filter(Product.tenant_id == tid())\
         .order_by(Product.name).all()
 
     parent_ids = {p.pack_parent_id for p in produtos if p.pack_parent_id}
