@@ -4,9 +4,43 @@ from app.models.pending_registration import PendingRegistration
 from app.models.tenant import Tenant
 from app.models.user import User
 from datetime import datetime, timedelta
-import os, re, unicodedata
+import os, re, unicodedata, hashlib, time, requests as _requests
 
 register_bp = Blueprint('register', __name__, url_prefix='/assinar')
+
+_META_PIXEL_ID = '4148947032072003'
+_META_API_URL  = f'https://graph.facebook.com/v19.0/{_META_PIXEL_ID}/events'
+
+def _send_meta_event(event_name, email=None, value=None, currency='BRL', content_name=None,
+                     client_ip=None, user_agent=None):
+    token = os.environ.get('META_PIXEL_TOKEN', '')
+    if not token:
+        return
+    user_data = {}
+    if email:
+        user_data['em'] = [hashlib.sha256(email.strip().lower().encode()).hexdigest()]
+    if client_ip:
+        user_data['client_ip_address'] = client_ip
+    if user_agent:
+        user_data['client_user_agent'] = user_agent
+    event = {
+        'event_name': event_name,
+        'event_time': int(time.time()),
+        'action_source': 'website',
+        'user_data': user_data,
+    }
+    if value is not None:
+        event['custom_data'] = {'value': value, 'currency': currency}
+        if content_name:
+            event['custom_data']['content_name'] = content_name
+    payload = {'data': [event]}
+    test_code = os.environ.get('META_TEST_EVENT_CODE', '')
+    if test_code:
+        payload['test_event_code'] = test_code
+    try:
+        _requests.post(_META_API_URL, params={'access_token': token}, json=payload, timeout=5)
+    except Exception as e:
+        current_app.logger.warning(f'[meta_capi] {e}')
 
 # Mensal: R$129,90/mês sem fidelidade
 # Anual:  R$99,90/mês com fidelidade de 12 meses
@@ -64,6 +98,9 @@ def _criar_conta(pending, preapproval_id=None):
     db.session.add(user)
     pending.status = 'created'
     db.session.commit()
+    valor = PLANOS.get(pending.plano, PLANOS['mensal']).get('valor_total') or \
+            PLANOS.get(pending.plano, PLANOS['mensal']).get('valor_mensal')
+    _send_meta_event('Purchase', email=pending.email, value=valor, content_name=pending.plano)
 
 
 def _renovar_conta(pending):
@@ -100,6 +137,11 @@ def checkout():
         return jsonify({'error': 'Plano inválido.'}), 400
     if Tenant.query.filter_by(email=email).first():
         return jsonify({'error': 'E-mail já cadastrado. Acesse o sistema para entrar.'}), 400
+
+    valor = PLANOS[plano].get('valor_total') or PLANOS[plano].get('valor_mensal')
+    _send_meta_event('InitiateCheckout', email=email, value=valor, content_name=plano,
+                     client_ip=request.remote_addr,
+                     user_agent=request.headers.get('User-Agent'))
 
     access_token = os.environ.get('MP_ACCESS_TOKEN', '')
     if not access_token:
