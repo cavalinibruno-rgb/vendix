@@ -268,6 +268,14 @@ def _run_migrations(db):
             created_at TIMESTAMP DEFAULT NOW()
         )""",
         "ALTER TABLE pagamentos ADD COLUMN IF NOT EXISTS mp_payment_id VARCHAR(64) UNIQUE",
+        """CREATE TABLE IF NOT EXISTS master_otp (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) NOT NULL,
+            code VARCHAR(6) NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            used BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

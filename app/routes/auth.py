@@ -1,13 +1,48 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User, EmployeeLoginProxy
 from app.models.tenant import Tenant
 from app.models.vale import Employee
 from app.models.password_reset import PasswordResetToken
+from app.models.master_otp import MasterOTP
 from app import limiter, db
 import os, requests as _requests
 
 auth_bp = Blueprint('auth', __name__)
+
+
+def _enviar_otp_master(destinatario, code):
+    api_key = os.environ.get('RESEND_API_KEY', '')
+    if not api_key:
+        current_app.logger.warning('[2fa] RESEND_API_KEY não configurada.')
+        return
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
+      <h2 style="color:#c9a84c;">Código de verificação</h2>
+      <p>Use o código abaixo para acessar o painel master do Vendix.</p>
+      <p style="text-align:center;margin:32px 0;">
+        <span style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#c9a84c;">{code}</span>
+      </p>
+      <p style="color:#888;font-size:13px;">Válido por <strong>10 minutos</strong>. Se não foi você, ignore este e-mail.</p>
+      <p style="color:#bbb;font-size:12px;">Vendix — Sistema de Vendas</p>
+    </div>
+    """
+    try:
+        resp = _requests.post(
+            'https://api.resend.com/emails',
+            headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
+            json={
+                'from':    'Vendix <noreply@vendixapp.com.br>',
+                'to':      [destinatario],
+                'subject': f'{code} — Código de acesso Vendix Master',
+                'html':    html,
+            },
+            timeout=10,
+        )
+        if resp.status_code not in (200, 201):
+            current_app.logger.error(f'[2fa] Resend erro {resp.status_code}: {resp.text}')
+    except Exception as e:
+        current_app.logger.error(f'[2fa] Falha ao enviar e-mail: {e}')
 
 
 def _enviar_email_reset(destinatario, link):
@@ -60,14 +95,18 @@ def login():
 
         user = User.query.filter_by(email=login_input.lower()).first()
         if user and user.check_password(password):
-            if not user.is_master:
-                tenant = Tenant.query.get(user.tenant_id)
-                if not tenant or not tenant.is_active:
-                    flash('Sua assinatura está suspensa. Entre em contato com o suporte.', 'danger')
-                    return render_template('auth/login.html')
-            login_user(user, remember=remember)
             if user.is_master:
-                return redirect(url_for('master.dashboard'))
+                otp = MasterOTP.gerar(user.id)
+                db.session.commit()
+                _enviar_otp_master(user.email, otp.code)
+                session['master_pending_id'] = user.id
+                session['master_remember']   = remember
+                return redirect(url_for('auth.verificar_2fa'))
+            tenant = Tenant.query.get(user.tenant_id)
+            if not tenant or not tenant.is_active:
+                flash('Sua assinatura está suspensa. Entre em contato com o suporte.', 'danger')
+                return render_template('auth/login.html')
+            login_user(user, remember=remember)
             return redirect(url_for('dashboard.index'))
 
         emp = Employee.query.filter_by(username=login_input).first()
@@ -82,6 +121,45 @@ def login():
 
         flash('Usuário ou senha incorretos.', 'danger')
     return render_template('auth/login.html')
+
+
+@auth_bp.route('/verificar-2fa', methods=['GET', 'POST'])
+@limiter.limit("10 per minute", methods=["POST"])
+def verificar_2fa():
+    user_id  = session.get('master_pending_id')
+    remember = session.get('master_remember', False)
+    if not user_id:
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        code = request.form.get('code', '').strip()
+        otp  = MasterOTP.query.filter_by(user_id=user_id, code=code, used=False).first()
+        if otp and otp.valido:
+            otp.used = True
+            db.session.commit()
+            user = User.query.get(user_id)
+            session.pop('master_pending_id', None)
+            session.pop('master_remember', None)
+            login_user(user, remember=remember)
+            return redirect(url_for('master.dashboard'))
+        flash('Código inválido ou expirado.', 'danger')
+
+    return render_template('auth/verificar_2fa.html')
+
+
+@auth_bp.route('/reenviar-2fa', methods=['POST'])
+@limiter.limit("3 per minute", methods=["POST"])
+def reenviar_2fa():
+    user_id = session.get('master_pending_id')
+    if not user_id:
+        return redirect(url_for('auth.login'))
+    user = User.query.get(user_id)
+    if user:
+        otp = MasterOTP.gerar(user.id)
+        db.session.commit()
+        _enviar_otp_master(user.email, otp.code)
+        flash('Novo código enviado para o seu e-mail.', 'info')
+    return redirect(url_for('auth.verificar_2fa'))
 
 
 @auth_bp.route('/logout')
