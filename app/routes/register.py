@@ -333,7 +333,11 @@ def webhook():
                 pending.payment_id = str(resource_id)
                 _criar_conta(pending)
             elif pending.status == 'created':
-                # Cobrança recorrente (mensal) → renova
+                # Cobrança recorrente (mensal) → renova e salva payment_id se ainda não tiver
+                tenant = Tenant.query.filter_by(email=pending.email).first()
+                if tenant and not tenant.payment_id:
+                    tenant.payment_id = str(resource_id)
+                    db.session.commit()
                 _renovar_conta(pending)
 
     except Exception as e:
