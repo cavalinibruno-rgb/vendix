@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from flask_login import login_required, current_user
+from app import db
 from app.models.tenant import Tenant
 from app.models.sale import Sale
 from app.models.cash import CashRegister
@@ -56,27 +57,37 @@ def index():
     # Ticket médio do dia
     ticket_dia = (total_geral / len(vendas_hoje)) if vendas_hoje else 0
 
-    # Ticket médio mensal (mês atual)
+    # Ticket médio mensal (mês atual) — usa aggregate no banco
+    from sqlalchemy import func as sa_func
     mes_inicio = datetime.combine(date.today().replace(day=1), datetime.min.time())
-    vendas_mes = Sale.query.filter(
+    _agg_mes = db.session.query(
+        sa_func.avg(Sale.total)
+    ).filter(
         Sale.tenant_id == tid,
         Sale.status == 'confirmed',
         Sale.created_at >= mes_inicio,
-    ).all()
-    ticket_mensal = (sum(v.total for v in vendas_mes) / len(vendas_mes)) if vendas_mes else 0
+    ).first()
+    ticket_mensal = float(_agg_mes[0] or 0)
 
-    # Ticket médio geral (todos os tempos)
-    todas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed').all()
-    ticket_geral = (sum(v.total for v in todas_vendas) / len(todas_vendas)) if todas_vendas else 0
+    # Ticket médio geral (todos os tempos) — usa aggregate no banco
+    from sqlalchemy import func as sa_func
+    _agg = db.session.query(
+        sa_func.avg(Sale.total)
+    ).filter_by(tenant_id=tid, status='confirmed').first()
+    ticket_geral = float(_agg[0] or 0)
 
     caixa = CashRegister.query.filter_by(tenant_id=tid, status='open').first()
 
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
                                .order_by(Sale.created_at.desc()).limit(10).all()
 
-    # Produtos com estoque baixo ou zerado (exclui combos, que não têm estoque próprio)
+    # Produtos com estoque baixo ou zerado (exclui combos)
     from app.models.product import Product
-    produtos_tenant = Product.query.filter_by(tenant_id=tid, active=True).all()
+    from app.models.combo import ComboItem
+    combo_ids = db.session.query(ComboItem.combo_id).distinct()
+    produtos_tenant = Product.query.filter_by(tenant_id=tid, active=True)\
+        .filter(~Product.id.in_(combo_ids))\
+        .filter(Product.stock_quantity <= Product.min_stock).all()
 
     # Mapa de estoque dos pais para calcular estoque efetivo dos packs
     parent_ids = {p.pack_parent_id for p in produtos_tenant if p.pack_parent_id}
