@@ -98,6 +98,32 @@ def index():
         eff_stock=eff_stock, eff_min=eff_min,
     )
 
+@stock_bp.route('/relatorio')
+@login_required
+def relatorio():
+    from app.models.combo import ComboItem
+    combo_ids = db.session.query(ComboItem.combo_id).distinct()
+    produtos = Product.query.filter_by(tenant_id=tid(), active=True)\
+        .filter(~Product.id.in_(combo_ids)).order_by(Product.name).all()
+
+    parent_ids = {p.pack_parent_id for p in produtos if p.pack_parent_id}
+    parent_stock_map = {}
+    if parent_ids:
+        for pr in Product.query.filter(Product.id.in_(parent_ids))\
+                .with_entities(Product.id, Product.stock_quantity).all():
+            parent_stock_map[pr.id] = pr.stock_quantity
+
+    def eff_stock(p):
+        if p.pack_parent_id and p.pack_qty:
+            return parent_stock_map.get(p.pack_parent_id, 0) // p.pack_qty
+        return p.stock_quantity
+
+    tenant = current_user.tenant
+    agora  = datetime.now()
+    return render_template('stock/relatorio.html',
+        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
+
+
 @stock_bp.route('/entrada', methods=['POST'])
 @login_required
 def entrada():
