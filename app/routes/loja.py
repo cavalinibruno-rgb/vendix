@@ -5,6 +5,7 @@ from app.models.product import Product, ProductType
 from app.models.customer import Neighborhood
 from app.models.pedido_online import PedidoOnline
 from app.models.sale import Sale
+from app.models.cash import CashRegister
 from app.models.coupon import Coupon
 import json, io, os, requests
 from PIL import Image
@@ -20,10 +21,11 @@ def _get_tenant(slug):
 @loja_bp.route('/<slug>')
 def cardapio(slug):
     tenant = _get_tenant(slug)
+    caixa_aberto = CashRegister.query.filter_by(tenant_id=tenant.id, status='open').first() is not None
     categorias   = ProductType.query.filter_by(tenant_id=tenant.id).order_by(ProductType.name).all()
     bairros      = Neighborhood.query.filter_by(tenant_id=tenant.id).order_by(Neighborhood.name).all()
     return render_template('loja/cardapio.html',
-        tenant=tenant, categorias=categorias, bairros=bairros)
+        tenant=tenant, categorias=categorias, bairros=bairros, caixa_aberto=caixa_aberto)
 
 
 # ── API pública: lista de produtos ─────────────────────
@@ -180,6 +182,9 @@ def validar_cupom(slug, code):
 @limiter.limit("10 per minute; 50 per hora")
 def fazer_pedido(slug):
     tenant = _get_tenant(slug)
+    caixa_aberto = CashRegister.query.filter_by(tenant_id=tenant.id, status='open').first() is not None
+    if not caixa_aberto:
+        return jsonify({'error': 'A loja está offline no momento. Tente novamente mais tarde.'}), 503
     data   = request.get_json() or {}
 
     cliente_nome   = (data.get('cliente_nome') or '').strip()

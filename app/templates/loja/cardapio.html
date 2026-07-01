@@ -177,6 +177,23 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 </head>
 <body>
 
+{% if not caixa_aberto %}
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+            background:#1a1a2e;padding:32px 20px;text-align:center;">
+  {% if tenant.logo_url %}
+  <img src="{{ tenant.logo_url }}" style="height:64px;object-fit:contain;margin-bottom:24px;" alt="{{ tenant.store_name }}">
+  {% elif tenant.logo_data %}
+  <img src="{{ url_for('loja.logo_publica', slug=tenant.slug) }}" style="height:64px;object-fit:contain;margin-bottom:24px;" alt="{{ tenant.store_name }}">
+  {% endif %}
+  <div style="font-size:3rem;margin-bottom:16px;">🔴</div>
+  <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:8px;">{{ tenant.store_name }}</div>
+  <div style="font-size:1rem;font-weight:700;color:#eb5757;margin-bottom:12px;">Estamos offline no momento</div>
+  <div style="font-size:.88rem;color:#888;max-width:280px;line-height:1.6;">
+    Nosso cardápio estará disponível assim que abrirmos. Volte em breve!
+  </div>
+</div>
+{% else %}
+
 <!-- Header -->
 <div class="lh">
   <div style="display:flex;align-items:center;gap:8px;">
@@ -970,5 +987,6 @@ async function buscarCepLoja(val) {
   } catch(e) {}
 }
 </script>
+{% endif %}
 </body>
 </html>
