@@ -279,6 +279,18 @@ def _run_migrations(db):
             used BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT NOW()
         )""",
+        # Índices adicionais — tabelas consultadas por tenant_id em quase toda tela
+        "CREATE INDEX IF NOT EXISTS idx_stock_movements_tenant_created ON stock_movements(tenant_id, created_at DESC)",
+        "CREATE INDEX IF NOT EXISTS idx_employees_tenant_username ON employees(tenant_id, username)",
+        "CREATE INDEX IF NOT EXISTS idx_users_tenant_username ON users(tenant_id, username)",
+        "CREATE INDEX IF NOT EXISTS idx_customers_tenant_id ON customers(tenant_id)",
+        "CREATE INDEX IF NOT EXISTS idx_expenses_tenant_date ON expenses(tenant_id, date)",
+        "CREATE INDEX IF NOT EXISTS idx_vales_tenant_date ON vales(tenant_id, date)",
+        "CREATE INDEX IF NOT EXISTS idx_cash_registers_tenant_status ON cash_registers(tenant_id, status)",
+        "CREATE INDEX IF NOT EXISTS idx_coupons_tenant_code ON coupons(tenant_id, code)",
+        "CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_id ON customer_addresses(customer_id)",
+        "CREATE INDEX IF NOT EXISTS idx_combo_items_combo_id ON combo_items(combo_id)",
+        "CREATE INDEX IF NOT EXISTS idx_products_tenant_active ON products(tenant_id, active)",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:
@@ -310,6 +322,15 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['MAX_CONTENT_LENGTH'] = 150 * 1024 * 1024  # 150 MB
+    # pool_pre_ping evita erro em conexão ociosa derrubada pelo Postgres;
+    # pool_recycle renova antes do timeout do provedor (Railway costuma fechar ~5min ocioso)
+    if db_url.startswith('postgresql'):
+        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+            'pool_pre_ping': True,
+            'pool_recycle': 280,
+            'pool_size': 10,
+            'max_overflow': 20,
+        }
 
     from datetime import timedelta
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
