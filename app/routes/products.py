@@ -578,3 +578,12 @@ def api_marca_rapida():
     b.brand_number = last_num + 1
     db.session.commit()
     return jsonify({'id': b.id, 'name': b.name})
+
+
+@products_bp.route('/<int:product_id>/toggle-online', methods=['POST'])
+@login_required
+def toggle_online(product_id):
+    p = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
+    p.online_active = not p.online_active
+    db.session.commit()
+    return jsonify({'online_active': p.online_active})

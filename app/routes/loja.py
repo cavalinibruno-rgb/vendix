@@ -33,7 +33,7 @@ def cardapio(slug):
 @limiter.limit("60 per minute")
 def api_produtos(slug):
     tenant   = _get_tenant(slug)
-    produtos = Product.query.filter_by(tenant_id=tenant.id, active=True).order_by(Product.name).all()
+    produtos = Product.query.filter_by(tenant_id=tenant.id, active=True, online_active=True).order_by(Product.name).all()
     out = []
     for p in produtos:
         if p.image_url:

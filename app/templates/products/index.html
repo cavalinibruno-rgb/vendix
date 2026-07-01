@@ -102,6 +102,11 @@
               <a href="{{ url_for('products.editar', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-pencil"></i>
               </a>
+              <button class="btn btn-sm {% if p.online_active %}btn-outline-success{% else %}btn-outline-secondary{% endif %}"
+                      onclick="toggleOnline(this, {{ p.id }})"
+                      title="{{ 'Pausar no link' if p.online_active else 'Reativar no link' }}">
+                <i class="bi {% if p.online_active %}bi-globe{% else %}bi-globe-x{% endif %}"></i>
+              </button>
               <form method="post" action="{{ url_for('products.excluir', product_id=p.id) }}"
                     data-confirm='Excluir {{ p.name }}?'>
                 <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
@@ -116,4 +121,25 @@
     </table>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleOnline(btn, productId) {
+  btn.disabled = true;
+  const r = await fetch(`/produtos/${productId}/toggle-online`, {method:'POST', headers:{'X-CSRFToken': '{{ csrf_token() }}'}});
+  const d = await r.json();
+  const icon = btn.querySelector('i');
+  if (d.online_active) {
+    btn.className = 'btn btn-sm btn-outline-success';
+    btn.title = 'Pausar no link';
+    icon.className = 'bi bi-globe';
+  } else {
+    btn.className = 'btn btn-sm btn-outline-secondary';
+    btn.title = 'Reativar no link';
+    icon.className = 'bi bi-globe-x';
+  }
+  btn.disabled = false;
+}
+</script>
 {% endblock %}
