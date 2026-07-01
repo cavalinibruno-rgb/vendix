@@ -38,6 +38,7 @@
 
 <h1>{{ tenant.store_name }}</h1>
 <div class="sub">Relatório de Estoque — gerado em {{ agora.strftime('%d/%m/%Y às %H:%M') }}</div>
+<div style="color:red;font-size:11px;margin-bottom:8px">D: uid={{ _d.uid }} tid={{ _d.tid }} total_banco={{ _d.total }} do_tenant={{ _d.do_tenant }} encontrados={{ produtos|length }}</div>
 
 <table>
   <thead>

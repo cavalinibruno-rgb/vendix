@@ -101,10 +101,13 @@ def index():
 @stock_bp.route('/relatorio')
 @login_required
 def relatorio():
+    t_id = tid()
+    total_db = Product.query.count()
+    total_tenant = Product.query.filter(Product.tenant_id == t_id).count()
     from app.models.combo import ComboItem
     combo_ids = db.session.query(ComboItem.combo_id).distinct()
     produtos = Product.query\
-        .filter(Product.tenant_id == tid(), Product.active == True)\
+        .filter(Product.tenant_id == t_id, Product.active == True)\
         .filter(~Product.id.in_(combo_ids))\
         .order_by(Product.name).all()
 
@@ -123,7 +126,8 @@ def relatorio():
     tenant = current_user.tenant
     agora  = datetime.now()
     return render_template('stock/relatorio.html',
-        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
+        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora,
+        _d={'tid': t_id, 'total': total_db, 'do_tenant': total_tenant, 'uid': current_user.get_id()})
 
 
 @stock_bp.route('/entrada', methods=['POST'])
