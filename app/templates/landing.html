@@ -305,6 +305,11 @@
 </footer>
 
 <script>
+history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+</script>
+
+<script>
 (function() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((e, i) => {
