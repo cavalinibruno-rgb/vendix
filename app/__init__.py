@@ -22,7 +22,7 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[], storage_uri="m
 csrf = CSRFProtect()
 
 LOJA_DOMAIN_SUFFIX = '.vendixapp.com.br'
-APP_VERSION = '1.0.3'
+APP_VERSION = '1.0.4'
 
 
 class LojaSubdomainMiddleware:
