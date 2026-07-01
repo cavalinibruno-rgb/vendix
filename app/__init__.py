@@ -329,7 +329,7 @@ def create_app():
             'pool_pre_ping': True,
             'pool_recycle': 280,
             'pool_size': 5,
-            'max_overflow': 5,
+            'max_overflow': 10,
         }
 
     from datetime import timedelta
