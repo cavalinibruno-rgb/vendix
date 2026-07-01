@@ -128,11 +128,17 @@
   <div class="card border-danger" style="border-color:rgba(220,53,69,.3) !important;">
     <div class="card-body">
       <div class="fw-bold text-danger mb-1"><i class="bi bi-x-circle me-1"></i>Cancelar assinatura</div>
-      <p class="text-muted small mb-3">
+      {% if dentro_garantia %}
+      <p class="text-muted small mb-1">
+        Você está dentro do <strong>período de garantia de 7 dias</strong>. Ao cancelar, o valor pago será <strong>estornado automaticamente</strong> em até 10 dias úteis e seu acesso será encerrado imediatamente.
+      </p>
+      {% else %}
+      <p class="text-muted small mb-1">
         Ao cancelar, a cobrança automática é interrompida. Seu acesso continua até
         {% if tenant.expires_at %}{{ tenant.expires_at.strftime('%d/%m/%Y') }}{% else %}o vencimento atual{% endif %}.
       </p>
-      <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar">
+      {% endif %}
+      <button class="btn btn-outline-danger btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#modalCancelar">
         Cancelar assinatura
       </button>
     </div>
@@ -150,7 +156,11 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body small">
-        Tem certeza? A cobrança mensal será cancelada. Seu acesso permanece ativo até o fim do período pago.
+        {% if dentro_garantia %}
+        Você está dentro dos <strong>7 dias de garantia</strong>. Ao confirmar, o valor pago será <strong>estornado automaticamente</strong> e seu acesso será encerrado imediatamente.
+        {% else %}
+        Tem certeza? A cobrança automática será cancelada. Seu acesso permanece ativo até o fim do período pago.
+        {% endif %}
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Voltar</button>

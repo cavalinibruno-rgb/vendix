@@ -17,6 +17,7 @@ class Tenant(db.Model):
     logo_data        = db.Column(db.LargeBinary, nullable=True)
     logo_mime        = db.Column(db.String(32), nullable=True)
     preapproval_id         = db.Column(db.String(128), nullable=True)
+    payment_id             = db.Column(db.String(128), nullable=True)
     subscription_cancelled = db.Column(db.Boolean, default=False, nullable=False)
     profile_complete = db.Column(db.Boolean, default=True, nullable=False)
     street           = db.Column(db.String(256), nullable=True)

@@ -269,6 +269,7 @@ def _run_migrations(db):
         )""",
         "ALTER TABLE pagamentos ADD COLUMN IF NOT EXISTS mp_payment_id VARCHAR(64) UNIQUE",
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS subscription_cancelled BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS payment_id VARCHAR(128)",
         """CREATE TABLE IF NOT EXISTS master_otp (
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id) NOT NULL,

@@ -15,8 +15,10 @@ def index():
         return redirect(url_for('dashboard.index'))
     tenant = current_user.tenant
     aguardando_upgrade = session.pop('upgrade_pending_id', None)
+    dentro_garantia = (datetime.now() - tenant.created_at) <= timedelta(days=7)
     return render_template('assinatura/index.html', tenant=tenant,
-                           aguardando_upgrade=aguardando_upgrade)
+                           aguardando_upgrade=aguardando_upgrade,
+                           dentro_garantia=dentro_garantia)
 
 
 @assinatura_bp.route('/cancelar', methods=['POST'])
@@ -26,21 +28,40 @@ def cancelar():
         return redirect(url_for('dashboard.index'))
     tenant = current_user.tenant
 
+    dentro_garantia = (datetime.now() - tenant.created_at) <= timedelta(days=7)
+    reembolsado = False
+
     access_token = os.environ.get('MP_ACCESS_TOKEN', '')
-    if access_token and tenant.preapproval_id:
+    if access_token:
         try:
             import mercadopago
             sdk = mercadopago.SDK(access_token)
-            sdk.preapproval().update(tenant.preapproval_id, {'status': 'cancelled'})
+
+            if tenant.preapproval_id:
+                sdk.preapproval().update(tenant.preapproval_id, {'status': 'cancelled'})
+
+            if dentro_garantia and tenant.payment_id:
+                result = sdk.payment().refund(tenant.payment_id)
+                if result.get('status') in (200, 201):
+                    reembolsado = True
+
         except Exception as e:
             import logging
             logging.error(f'[cancelar assinatura] {e}')
 
     tenant.preapproval_id = None
     tenant.subscription_cancelled = True
+    if dentro_garantia:
+        tenant.status = 'suspended'
+
     db.session.commit()
 
-    flash('Assinatura cancelada. Seu acesso permanece ativo até o vencimento.', 'warning')
+    if dentro_garantia and reembolsado:
+        flash('Assinatura cancelada e reembolso processado. O valor será estornado em até 10 dias úteis.', 'success')
+    elif dentro_garantia:
+        flash('Assinatura cancelada dentro do período de garantia. Entre em contato conosco para o reembolso.', 'warning')
+    else:
+        flash('Assinatura cancelada. Seu acesso permanece ativo até o vencimento.', 'warning')
     return redirect(url_for('assinatura.index'))
 
 
