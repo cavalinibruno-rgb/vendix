@@ -79,11 +79,11 @@
             {% set baixo   = es > 0 and es <= ms %}
             <tr>
               <td class="ps-4">
-                {% if p.image_url or p.image_data %}
-                <img src="{{ p.image_url if p.image_url else url_for('products.imagem', product_id=p.id) }}"
+                {% if p.image_url %}
+                <img src="{{ p.image_url }}"
                      style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
                 {% else %}
-                <div style="width:32px;height:32px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                <div class="stock-img-ph" data-pid="{{ p.id }}" style="width:32px;height:32px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;">
                   <i class="bi bi-box text-muted" style="font-size:.75rem;"></i>
                 </div>
                 {% endif %}
@@ -336,5 +336,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const tipoAtual = document.getElementById('filtroTipo').value;
   if (tipoAtual) filtrarTipoEstoque(tipoAtual);
 });
+
+// Miniaturas carregadas de forma assincrona (mesma API do Nova Venda) --
+// evita disparar uma requisicao ao servidor por produto ao abrir o Estoque.
+fetch('/produtos/api/todos').then(r => r.json()).then(produtos => {
+  produtos.forEach(p => {
+    if (!p.thumbnail) return;
+    const ph = document.querySelector(`.stock-img-ph[data-pid="${p.id}"]`);
+    if (!ph) return;
+    const img = document.createElement('img');
+    img.src = p.thumbnail;
+    img.style.cssText = 'width:32px;height:32px;object-fit:cover;border-radius:6px;';
+    ph.replaceWith(img);
+  });
+}).catch(() => {});
 </script>
 {% endblock %}
