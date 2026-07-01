@@ -109,6 +109,19 @@
       nav { padding: 14px 20px; }
       .hero { padding: 70px 20px 60px; }
     }
+
+    /* SCROLL ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .reveal.from-left  { transform: translateX(-40px); }
+    .reveal.from-right { transform: translateX(40px); }
+    .reveal.visible {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
   </style>
   <!-- Meta Pixel -->
   <script>
@@ -148,100 +161,52 @@
 
 <!-- FEATURES -->
 <section class="features">
-  <div class="section-title">Tudo que o seu negócio precisa</div>
-  <div class="section-sub">Do balcão ao delivery, em um único sistema.</div>
+  <div class="section-title reveal">Tudo que o seu negócio precisa</div>
+  <div class="section-sub reveal">Do balcão ao delivery, em um único sistema.</div>
   <div class="feat-grid">
-    <div class="feat-card">
-      <div class="feat-icon">🥃</div>
-      <h3>PDV para Bebidas</h3>
-      <p>Registre vendas no balcão em segundos. Controle de troco, múltiplas formas de pagamento e comprovante impresso.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📱</div>
-      <h3>Pedidos pelo Link</h3>
-      <p>Seus clientes abrem o link no celular e fazem o pedido direto — com taxa de entrega por bairro ou distância.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🏍️</div>
-      <h3>Controle de Entregas</h3>
-      <p>Despache pedidos para motoboys e acompanhe cada entrega em tempo real, do aceite até a chegada.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🍺</div>
-      <h3>Estoque de Bebidas</h3>
-      <p>Controle caixas, latas e garrafas com alertas de estoque mínimo e histórico completo de movimentações.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📊</div>
-      <h3>Relatórios e DRE</h3>
-      <p>Veja quanto você vendeu, como pagaram e qual foi o resultado financeiro do dia, semana ou mês.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🖨️</div>
-      <h3>Impressão Automática</h3>
-      <p>Cada pedido aceito ou venda finalizada já sai impresso automaticamente na sua impressora térmica.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">📦</div>
-      <h3>Estoque Unificado com Packs</h3>
-      <p>Venda em unidade ou em pack — o sistema desconta automaticamente do mesmo estoque, sem duplicidade nem retrabalho.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🧩</div>
-      <h3>Combos que Controlam o Estoque</h3>
-      <p>Monte kits e composições: ao vender um combo, cada item é descontado individualmente do estoque em tempo real.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🛵</div>
-      <h3>Taxa de Entrega Dinâmica</h3>
-      <p>Configure faixas de preço por período do dia e o sistema calcula a taxa do motoboy automaticamente no pedido.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🍔</div>
-      <h3>Vendas de Apps Integradas</h3>
-      <p>Registre pedidos do iFood, Zé Delivery e outros em área exclusiva — seu estoque fica sempre atualizado.</p>
-    </div>
-    <div class="feat-card">
-      <div class="feat-icon">🔍</div>
-      <h3>Rastreabilidade Total</h3>
-      <p>Cancelamento, ajuste de estoque ou despesa: o sistema registra o nome do responsável em cada operação.</p>
-    </div>
-<div class="feat-card">
-      <div class="feat-icon">🎉</div>
-      <h3>Modo Evento com 1 Clique</h3>
-      <p>Pagode, roda de samba ou evento especial? Ative preços diferenciados para todo o catálogo sem fechar o caixa.</p>
-    </div>
+    <div class="feat-card reveal"><div class="feat-icon">🥃</div><h3>PDV para Bebidas</h3><p>Registre vendas no balcão em segundos. Controle de troco, múltiplas formas de pagamento e comprovante impresso.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">📱</div><h3>Pedidos pelo Link</h3><p>Seus clientes abrem o link no celular e fazem o pedido direto — com taxa de entrega por bairro ou distância.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🏍️</div><h3>Controle de Entregas</h3><p>Despache pedidos para motoboys e acompanhe cada entrega em tempo real, do aceite até a chegada.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🍺</div><h3>Estoque de Bebidas</h3><p>Controle caixas, latas e garrafas com alertas de estoque mínimo e histórico completo de movimentações.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">📊</div><h3>Relatórios e DRE</h3><p>Veja quanto você vendeu, como pagaram e qual foi o resultado financeiro do dia, semana ou mês.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🖨️</div><h3>Impressão Automática</h3><p>Cada pedido aceito ou venda finalizada já sai impresso automaticamente na sua impressora térmica.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">📦</div><h3>Estoque Unificado com Packs</h3><p>Venda em unidade ou em pack — o sistema desconta automaticamente do mesmo estoque, sem duplicidade nem retrabalho.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🧩</div><h3>Combos que Controlam o Estoque</h3><p>Monte kits e composições: ao vender um combo, cada item é descontado individualmente do estoque em tempo real.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🛵</div><h3>Taxa de Entrega Dinâmica</h3><p>Configure faixas de preço por período do dia e o sistema calcula a taxa do motoboy automaticamente no pedido.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🍔</div><h3>Vendas de Apps Integradas</h3><p>Registre pedidos do iFood, Zé Delivery e outros em área exclusiva — seu estoque fica sempre atualizado.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🔍</div><h3>Rastreabilidade Total</h3><p>Cancelamento, ajuste de estoque ou despesa: o sistema registra o nome do responsável em cada operação.</p></div>
+    <div class="feat-card reveal"><div class="feat-icon">🎉</div><h3>Modo Evento com 1 Clique</h3><p>Pagode, roda de samba ou evento especial? Ative preços diferenciados para todo o catálogo sem fechar o caixa.</p></div>
   </div>
 </section>
 
 <!-- COMO FUNCIONA -->
 <section class="como">
   <div class="como-inner">
-    <div class="section-title">Como funciona?</div>
-    <div class="section-sub">Configure em minutos e comece a vender hoje.</div>
+    <div class="section-title reveal">Como funciona?</div>
+    <div class="section-sub reveal">Configure em minutos e comece a vender hoje.</div>
     <div class="steps">
-      <div class="step">
+      <div class="step reveal from-left">
         <div class="step-num">1</div>
         <div class="step-text">
           <h4>Escolha seu plano e assine</h4>
           <p>Selecione o plano que melhor se encaixa no seu negócio e finalize a assinatura direto no site. Sem burocracia, sem contrato.</p>
         </div>
       </div>
-      <div class="step">
+      <div class="step reveal from-right">
         <div class="step-num">2</div>
         <div class="step-text">
           <h4>Acesse o sistema na hora</h4>
           <p>Após a confirmação do pagamento, seu acesso é liberado automaticamente. Faça login e comece agora.</p>
         </div>
       </div>
-      <div class="step">
+      <div class="step reveal from-left">
         <div class="step-num">3</div>
         <div class="step-text">
           <h4>Cadastre seus produtos</h4>
           <p>Adicione seus produtos com foto, preço e estoque em minutos. O link de pedidos online já fica disponível automaticamente.</p>
         </div>
       </div>
-      <div class="step">
+      <div class="step reveal from-right">
         <div class="step-num">4</div>
         <div class="step-text">
           <h4>Venda no balcão e receba pelo link</h4>
@@ -254,13 +219,13 @@
 
 <!-- PLANOS -->
 <section class="planos">
-  <div class="section-title">Escolha seu plano</div>
-  <div class="section-sub">Tudo incluído. Sem taxas escondidas.</div>
+  <div class="section-title reveal">Escolha seu plano</div>
+  <div class="section-sub reveal">Tudo incluído. Sem taxas escondidas.</div>
 
   <div class="planos-grid">
 
     <!-- MENSAL -->
-    <div class="plano-card">
+    <div class="plano-card reveal from-left">
       <div class="plano-nome">Mensal</div>
       <div class="plano-price"><sup>R$</sup>129<span>,90</span></div>
       <div class="plano-price-alt">por mês · cancele quando quiser</div>
@@ -280,7 +245,7 @@
     </div>
 
     <!-- ANUAL -->
-    <div class="plano-card destaque">
+    <div class="plano-card destaque reveal from-right">
       <div class="plano-badge">🏆 MELHOR VALOR</div>
       <div class="plano-nome">Anual</div>
       <div class="plano-price"><sup>R$</sup>99<span>,90</span></div>
@@ -338,6 +303,20 @@
   <p>Dúvidas? Fale conosco pelo <a href="https://wa.me/5524988130069" target="_blank">WhatsApp</a></p>
   <p style="margin-top:8px;">© 2025 Vendix. Todos os direitos reservados.</p>
 </footer>
+
+<script>
+(function() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+})();
+</script>
 
 <script>
 (function() {
