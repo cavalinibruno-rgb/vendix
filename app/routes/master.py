@@ -190,19 +190,30 @@ def faturamento():
     # Pagamentos reais
     todos_pgtos = Pagamento.query.order_by(Pagamento.paid_at.desc()).all()
 
+    def _fat_pgtos(pgtos):
+        """Calcula faturamento pelo preço fixo do plano, ignorando valor bruto do MP."""
+        return sum(
+            PRECO_ANUAL if p.plano == 'anual' else PRECO_MENSAL
+            for p in pgtos
+        )
+
     # Faturamento do mês atual
-    fat_mes_atual = sum(
-        float(p.valor) for p in todos_pgtos
+    pgtos_mes_atual = [
+        p for p in todos_pgtos
         if p.paid_at.year == hoje.year and p.paid_at.month == hoje.month
-    )
+    ]
+    fat_mes_atual    = _fat_pgtos(pgtos_mes_atual)
+    mensais_mes      = sum(1 for p in pgtos_mes_atual if p.plano == 'mensal')
+    anuais_mes       = sum(1 for p in pgtos_mes_atual if p.plano == 'anual')
 
     # Últimos 12 meses
-    meses_labels = []
-    meses_novas  = []
-    meses_fat    = []
+    meses_labels     = []
+    meses_novas      = []
+    meses_fat        = []
+    meses_fat_mensal = []
+    meses_fat_anual  = []
 
     for i in range(11, -1, -1):
-        # calcula ano/mês alvo sem timedelta de 30 dias (evita saltar meses)
         mes = (hoje.month - 1 - i) % 12 + 1
         ano = hoje.year + ((hoje.month - 1 - i) // 12)
         meses_labels.append(f"{month_abbr[mes]}/{str(ano)[2:]}")
@@ -210,10 +221,12 @@ def faturamento():
             1 for t in all_tenants
             if t.created_at.year == ano and t.created_at.month == mes
         ))
-        meses_fat.append(round(sum(
-            float(p.valor) for p in todos_pgtos
-            if p.paid_at.year == ano and p.paid_at.month == mes
-        ), 2))
+        pgtos_mes = [p for p in todos_pgtos if p.paid_at.year == ano and p.paid_at.month == mes]
+        fat_m = sum(PRECO_MENSAL for p in pgtos_mes if p.plano == 'mensal')
+        fat_a = sum(PRECO_ANUAL  for p in pgtos_mes if p.plano == 'anual')
+        meses_fat_mensal.append(round(fat_m, 2))
+        meses_fat_anual.append(round(fat_a, 2))
+        meses_fat.append(round(fat_m + fat_a, 2))
 
     return render_template('master/faturamento.html',
         tenants=all_tenants,
@@ -226,11 +239,15 @@ def faturamento():
         mrr=mrr,
         arr=arr,
         fat_mes_atual=fat_mes_atual,
+        mensais_mes=mensais_mes,
+        anuais_mes=anuais_mes,
         preco_mensal=PRECO_MENSAL,
         preco_anual=PRECO_ANUAL,
         meses_labels=meses_labels,
         meses_novas=meses_novas,
         meses_fat=meses_fat,
+        meses_fat_mensal=meses_fat_mensal,
+        meses_fat_anual=meses_fat_anual,
         todos_pgtos=todos_pgtos,
     )
 

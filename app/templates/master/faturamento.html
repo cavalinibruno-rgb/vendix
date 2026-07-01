@@ -29,7 +29,9 @@
     <div class="card p-3 border-0 shadow-sm">
       <div class="text-muted small fw-semibold mb-1"><i class="bi bi-calendar-check me-1"></i>Este Mês</div>
       <div class="fw-bold fs-3 text-warning">R$ {{ '%.2f'|format(fat_mes_atual) }}</div>
-      <div class="text-muted" style="font-size:.75rem">Faturamento real recebido</div>
+      <div class="text-muted" style="font-size:.75rem">
+        {{ mensais_mes }}× mensal · {{ anuais_mes }}× anual
+      </div>
     </div>
   </div>
   <div class="col-md-3">
@@ -318,22 +320,40 @@ new Chart(document.getElementById('chartFat'), {
   type: 'bar',
   data: {
     labels: {{ meses_labels | tojson }},
-    datasets: [{
-      label: 'Faturamento (R$)',
-      data: {{ meses_fat | tojson }},
-      backgroundColor: '#28a745',
-      borderRadius: 4,
-    }]
+    datasets: [
+      {
+        label: 'Mensal (R$ {{ '%.2f'|format(preco_mensal) }})',
+        data: {{ meses_fat_mensal | tojson }},
+        backgroundColor: '#f0b429',
+        borderRadius: 4,
+        stack: 'fat',
+      },
+      {
+        label: 'Anual (R$ {{ '%.2f'|format(preco_anual) }})',
+        data: {{ meses_fat_anual | tojson }},
+        backgroundColor: '#28a745',
+        borderRadius: 4,
+        stack: 'fat',
+      },
+    ]
   },
   options: {
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: true, labels: { color: lblColor } },
+      tooltip: {
+        callbacks: {
+          footer: items => 'Total: R$ ' + items.reduce((s,i) => s + i.parsed.y, 0).toFixed(2),
+        }
+      }
+    },
     scales: {
       y: {
         beginAtZero: true,
-        ticks: { color: lblColor, callback: v => 'R$ ' + v.toFixed(2) },
+        stacked: true,
+        ticks: { color: lblColor, callback: v => 'R$ ' + v.toFixed(0) },
         grid: { color: gridColor }
       },
-      x: { ticks: { color: lblColor }, grid: { display: false } },
+      x: { stacked: true, ticks: { color: lblColor }, grid: { display: false } },
     }
   }
 });
