@@ -38,6 +38,7 @@ class PedidoOnline(db.Model):
     created_at     = db.Column(db.DateTime, default=datetime.now)
 
     tenant = db.relationship('Tenant', foreign_keys=[tenant_id])
+    sale   = db.relationship('Sale',   foreign_keys=[sale_id])
 
     @property
     def items(self):
