@@ -413,11 +413,11 @@ def create_app():
         response.headers['Permissions-Policy'] = 'geolocation=(self), microphone=(), camera=()'
         response.headers['Content-Security-Policy'] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://connect.facebook.net https://www.googletagmanager.com; "
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             "font-src 'self' https://cdn.jsdelivr.net; "
             "img-src 'self' data: blob: https:; "
-            "connect-src 'self' https://maps.googleapis.com https://nominatim.openstreetmap.org https://viacep.com.br https://brasilapi.com.br; "
+            "connect-src 'self' https://maps.googleapis.com https://nominatim.openstreetmap.org https://viacep.com.br https://brasilapi.com.br https://www.facebook.com https://connect.facebook.net; "
             "frame-src 'none'; "
             "object-src 'none'; "
             "base-uri 'self'; "
