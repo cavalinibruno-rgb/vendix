@@ -288,18 +288,6 @@ def _run_migrations(db):
             except Exception:
                 conn.rollback()
 
-def _fix_orphan_users():
-    """Liga usuários sem tenant_id ao tenant cujo email coincide com o do usuário."""
-    from app.models.user import User
-    from app.models.tenant import Tenant
-    orphans = User.query.filter(User.tenant_id.is_(None), User.role != 'master').all()
-    for u in orphans:
-        t = Tenant.query.filter_by(email=u.email).first()
-        if t:
-            u.tenant_id = t.id
-            db.session.commit()
-
-
 def create_app():
     app = Flask(__name__)
     secret = os.environ.get('SECRET_KEY')
@@ -487,7 +475,6 @@ def create_app():
         _run_migrations(db)
         from app.seed import seed_master
         seed_master()
-        _fix_orphan_users()
 
     app.wsgi_app = LojaSubdomainMiddleware(app.wsgi_app)
     return app

@@ -101,13 +101,10 @@ def index():
 @stock_bp.route('/relatorio')
 @login_required
 def relatorio():
-    t_id = tid()
-    total_db = Product.query.count()
-    total_tenant = Product.query.filter(Product.tenant_id == t_id).count()
     from app.models.combo import ComboItem
     combo_ids = db.session.query(ComboItem.combo_id).distinct()
     produtos = Product.query\
-        .filter(Product.tenant_id == t_id, Product.active == True)\
+        .filter(Product.tenant_id == tid(), Product.active == True)\
         .filter(~Product.id.in_(combo_ids))\
         .order_by(Product.name).all()
 
@@ -125,16 +122,8 @@ def relatorio():
 
     tenant = current_user.tenant
     agora  = datetime.now()
-    from app.models.user import User
-    from app.models.tenant import Tenant
-    _users = [{'id': u.id, 'email': u.email, 'tid': u.tenant_id, 'role': u.role}
-              for u in User.query.all()]
-    _tenants = [{'id': t.id, 'email': t.email, 'nome': t.store_name}
-                for t in Tenant.query.all()]
     return render_template('stock/relatorio.html',
-        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora,
-        _d={'tid': t_id, 'total': total_db, 'do_tenant': total_tenant,
-            'uid': current_user.get_id(), 'users': _users, 'tenants': _tenants})
+        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
 
 
 @stock_bp.route('/entrada', methods=['POST'])
