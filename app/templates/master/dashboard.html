@@ -156,12 +156,12 @@
       </div>
       <div class="d-flex align-items-center gap-2 ms-auto">
         <label class="form-label mb-0 small fw-semibold">Meses:</label>
-        <select id="arquivarMeses" class="form-select form-select-sm" style="width:80px;">
+        <select id="arquivarMeses" class="form-select form-select-sm" style="width:80px;" onchange="atualizarConfirmArquivar()">
           <option value="3">3</option>
           <option value="6" selected>6</option>
           <option value="12">12</option>
         </select>
-        <button class="btn btn-info btn-sm fw-semibold text-white" onclick="executarArquivamento()">
+        <button id="btnArquivar" class="btn btn-info btn-sm fw-semibold text-white" data-confirm-click="" onclick="executarArquivamento()">
           <i class="bi bi-archive me-1"></i>Arquivar agora
         </button>
       </div>
@@ -262,9 +262,12 @@ function abrirAdicionarDias(id, nome, venc) {
   }, { once: true });
   modal.show();
 }
+function atualizarConfirmArquivar() {
+  const meses = document.getElementById('arquivarMeses').value;
+  document.getElementById('btnArquivar').dataset.confirmClick = `Arquivar todas as vendas com mais de ${meses} meses? O histórico será preservado.`;
+}
 function executarArquivamento() {
   const meses = document.getElementById('arquivarMeses').value;
-  if (!confirm(`Arquivar todas as vendas com mais de ${meses} meses? O histórico será preservado.`)) return;
   const btn = event.target;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Arquivando...';
@@ -295,6 +298,8 @@ function executarArquivamento() {
       btn.innerHTML = '<i class="bi bi-archive me-1"></i>Arquivar agora';
     });
 }
+
+atualizarConfirmArquivar();
 
 function abrirAtivar(id, nome) {
   document.getElementById('ativarForm').action = `/master/tenant/${id}/ativar`;

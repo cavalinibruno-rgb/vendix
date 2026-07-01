@@ -95,7 +95,7 @@
                     <i class="bi bi-download"></i>
                   </a>
                   <form method="POST" action="{{ url_for('download.excluir_release', release_id=r.id) }}"
-                        onsubmit="return confirm('Remover v{{ r.version }}?')">
+                        data-confirm="Remover v{{ r.version }}?">
                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover">
                       <i class="bi bi-trash"></i>
                     </button>
