@@ -141,6 +141,16 @@ def relatorio():
         produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
 
 
+@stock_bp.route('/balanco')
+@login_required
+def balanco():
+    if current_user.is_employee:
+        abort(403)
+    produtos, eff_stock, tenant, agora = _dados_relatorio()
+    return render_template('stock/balanco.html',
+        produtos=produtos, eff_stock=eff_stock, tenant=tenant, agora=agora)
+
+
 @stock_bp.route('/entrada', methods=['POST'])
 @login_required
 def entrada():
