@@ -384,18 +384,22 @@ def create_app():
         if req.blueprint not in _BP_LIBERADOS_MASTER:
             return redirect(url_for('master.dashboard'))
 
+    _ROTAS_SEM_CHECK = {'auth.login', 'auth.logout', 'static', 'main.index',
+                         'register.form', 'register.checkout', 'register.webhook',
+                         'register.sucesso', 'register.status', 'register.falha',
+                         'register.pendente', 'download.pagina', 'download.arquivo',
+                         'download.latest_yml', 'download.update_file',
+                         'completar_cadastro.index'}
+
     @app.before_request
-    def verificar_assinatura_ativa():
+    def verificar_tenant():
         from flask import request as req, redirect, url_for
         from flask_login import current_user, logout_user
-        rotas_liberadas = {'auth.login', 'auth.logout', 'static', 'main.index',
-                           'register.form', 'register.checkout', 'register.webhook',
-                           'register.sucesso', 'register.status', 'register.falha',
-                           'register.pendente', 'download.pagina', 'download.arquivo',
-                           'download.latest_yml', 'download.update_file'}
-        if req.endpoint in rotas_liberadas:
+        if req.endpoint in _ROTAS_SEM_CHECK:
             return
         if not current_user.is_authenticated or current_user.is_master:
+            return
+        if current_user.is_employee:
             return
         tenant = current_user.tenant
         if tenant and not tenant.is_active:
@@ -403,19 +407,6 @@ def create_app():
             from flask import flash
             flash('Sua assinatura venceu. Renove para continuar acessando.', 'warning')
             return redirect(url_for('auth.login'))
-
-    @app.before_request
-    def verificar_perfil_completo():
-        from flask import request as req, redirect, url_for
-        from flask_login import current_user
-        rotas_liberadas = {'completar_cadastro.index', 'auth.logout', 'auth.login', 'static'}
-        if req.endpoint in rotas_liberadas:
-            return
-        if not current_user.is_authenticated:
-            return
-        if current_user.is_master or current_user.is_employee:
-            return
-        tenant = current_user.tenant
         if tenant and not tenant.profile_complete:
             return redirect(url_for('completar_cadastro.index'))
 
