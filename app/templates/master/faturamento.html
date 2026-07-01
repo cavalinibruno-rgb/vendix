@@ -218,7 +218,7 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label fw-semibold">Loja</label>
-            <select name="tenant_id" class="form-select" required>
+            <select name="tenant_id" id="selectLoja" class="form-select" required>
               <option value="">Selecione...</option>
               {% for t in tenants|sort(attribute='store_name') %}
               <option value="{{ t.id }}">{{ t.store_name }}</option>
@@ -260,8 +260,16 @@
 {% endblock %}
 
 {% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+new TomSelect('#selectLoja', {
+  placeholder: 'Buscar loja...',
+  allowEmptyOption: true,
+  maxOptions: null,
+});
+
 const PRECO_MENSAL = {{ preco_mensal }};
 const PRECO_ANUAL  = {{ preco_anual }};
 
