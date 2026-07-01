@@ -156,6 +156,8 @@ def tenant_excluir(tenant_id):
                 (SELECT id FROM products WHERE tenant_id = :tid)"""), {'tid': tid})
         ex(t("DELETE FROM stock_movements WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM products WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM product_types WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM brands WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM neighborhoods WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM pagamentos WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM users WHERE tenant_id = :tid"), {'tid': tid})
