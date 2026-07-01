@@ -8,15 +8,10 @@
     body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; background: #fff; padding: 24px; }
     h1 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
     .sub { color: #666; font-size: 11px; margin-bottom: 16px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    thead th { background: #1a1a2e; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
-    thead th.right { text-align: right; }
-    thead th.center { text-align: center; }
-    tbody tr:nth-child(even) { background: #f8f8f8; }
-    tbody td { padding: 9px 10px; border-bottom: 1px solid #ddd; }
-    tbody td.right { text-align: right; }
-    tbody td.contado { border-left: 2px solid #1a1a2e; }
-    .box { display: inline-block; min-width: 70px; height: 20px; border-bottom: 1px solid #999; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; border: 1px solid #cfcfcf; }
+    thead th { background: #1a1a2e; color: #fff; padding: 8px 10px; text-align: left; font-size: 12px; border: 1px solid #1a1a2e; }
+    tbody td { padding: 9px 10px; border: 1px solid #cfcfcf; font-size: 12px; }
+    tbody td.contado { min-width: 130px; }
     @media print {
       body { padding: 12px; }
       .no-print { display: none; }
@@ -52,18 +47,18 @@
       <th>#</th>
       <th>Produto</th>
       <th>Categoria</th>
-      <th class="right">Estoque Esperado</th>
-      <th class="center">Contado</th>
+      <th>Estoque Esperado</th>
+      <th>Contado</th>
     </tr>
   </thead>
   <tbody>
     {% for p in produtos %}
     <tr>
-      <td class="right" style="color:#888;">{{ loop.index }}</td>
+      <td style="color:#888;">{{ loop.index }}</td>
       <td><strong>{{ p.name }}</strong></td>
       <td style="color:#666;">{{ p.type.name if p.type else '—' }}</td>
-      <td class="right"><strong>{{ eff_stock(p) }}</strong></td>
-      <td class="contado" style="text-align:center;"><span class="box">&nbsp;</span></td>
+      <td>{{ eff_stock(p) }}</td>
+      <td class="contado">&nbsp;</td>
     </tr>
     {% endfor %}
   </tbody>
