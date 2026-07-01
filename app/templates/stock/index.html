@@ -87,8 +87,14 @@
             {% set baixo   = es > 0 and es <= ms %}
             <tr>
               <td class="ps-4">
-                {% if p.image_url or p.image_data %}
-                <img src="{{ p.image_url if p.image_url else url_for('products.imagem', product_id=p.id) }}"
+                {% if p.image_url %}
+                <img src="{{ p.image_url }}"
+                     style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
+                {% elif p.thumbnail_data %}
+                <img src="data:image/jpeg;base64,{{ p.thumbnail_data.decode() }}"
+                     style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
+                {% elif p.image_data %}
+                <img src="{{ url_for('products.imagem', product_id=p.id) }}"
                      style="width:32px;height:32px;object-fit:cover;border-radius:6px;">
                 {% else %}
                 <div style="width:32px;height:32px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;">
