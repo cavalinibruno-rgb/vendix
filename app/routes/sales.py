@@ -340,7 +340,7 @@ def index():
         sales = Sale.query.filter(
             Sale.tenant_id == tid(),
             Sale.status == 'confirmed',
-            Sale.id == int(busca_pedido),
+            Sale.sale_number == int(busca_pedido),
         ).all() if busca_pedido.isdigit() else []
     else:
         busca_pedido = ''
