@@ -144,10 +144,10 @@ def tenant_excluir(tenant_id):
         ex(t("DELETE FROM cash_withdrawals WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM expenses WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM cash_registers WHERE tenant_id = :tid"), {'tid': tid})
+        ex(t("DELETE FROM pedidos_online WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("""DELETE FROM sale_items WHERE sale_id IN
                 (SELECT id FROM sales WHERE tenant_id = :tid)"""), {'tid': tid})
         ex(t("DELETE FROM sales WHERE tenant_id = :tid"), {'tid': tid})
-        ex(t("DELETE FROM pedidos_online WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM vales WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM employees WHERE tenant_id = :tid"), {'tid': tid})
         ex(t("DELETE FROM customer_addresses WHERE tenant_id = :tid"), {'tid': tid})
