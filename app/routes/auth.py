@@ -92,6 +92,12 @@ def login():
         login_input = request.form.get('email', '').strip()
         password    = request.form.get('password', '')
         remember    = 'remember' in request.form
+        next_url    = request.form.get('next') or request.args.get('next') or ''
+
+        from urllib.parse import urlparse
+        def _safe_next(url):
+            parsed = urlparse(url)
+            return url if (not parsed.netloc and url.startswith('/')) else ''
 
         user = User.query.filter_by(email=login_input.lower()).first()
         if user and user.check_password(password):
@@ -101,13 +107,14 @@ def login():
                 _enviar_otp_master(user.email, otp.code)
                 session['master_pending_id'] = user.id
                 session['master_remember']   = remember
+                session['master_next']       = _safe_next(next_url)
                 return redirect(url_for('auth.verificar_2fa'))
             tenant = Tenant.query.get(user.tenant_id)
             if not tenant or not tenant.is_active:
                 flash('Sua assinatura está suspensa. Entre em contato com o suporte.', 'danger')
                 return render_template('auth/login.html')
             login_user(user, remember=remember)
-            return redirect(url_for('dashboard.index'))
+            return redirect(_safe_next(next_url) or url_for('dashboard.index'))
 
         emp = Employee.query.filter_by(username=login_input).first()
         if emp and emp.check_password(password):
@@ -117,7 +124,7 @@ def login():
                 return render_template('auth/login.html')
             proxy = EmployeeLoginProxy(emp)
             login_user(proxy, remember=remember)
-            return redirect(url_for('dashboard.index'))
+            return redirect(_safe_next(next_url) or url_for('dashboard.index'))
 
         flash('Usuário ou senha incorretos.', 'danger')
     return render_template('auth/login.html')
@@ -138,10 +145,11 @@ def verificar_2fa():
             otp.used = True
             db.session.commit()
             user = User.query.get(user_id)
+            next_url = session.pop('master_next', '') or ''
             session.pop('master_pending_id', None)
             session.pop('master_remember', None)
             login_user(user, remember=remember)
-            return redirect(url_for('master.dashboard'))
+            return redirect(next_url or url_for('master.dashboard'))
         flash('Código inválido ou expirado.', 'danger')
 
     return render_template('auth/verificar_2fa.html')
