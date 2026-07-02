@@ -198,17 +198,25 @@ def live_stats():
     tid = current_user.tenant_id
     hoje_inicio = datetime.combine(date.today(), datetime.min.time())
 
-    vendas_hoje = Sale.query.filter(
+    # Conta e soma as vendas do caixa direto no banco (COUNT/SUM) em vez de
+    # carregar todas as vendas do dia pra memoria. Mesmo criterio do entra_no_caixa:
+    # source='loja' OU source nulo OU pagamento de entrega.
+    from sqlalchemy import func as sa_func, or_
+    _cx = db.session.query(
+        sa_func.count(Sale.id),
+        sa_func.coalesce(sa_func.sum(Sale.total), 0.0),
+    ).filter(
         Sale.tenant_id == tid,
         Sale.status == 'confirmed',
         Sale.created_at >= hoje_inicio,
-    ).all()
-
-    def entra_no_caixa(v):
-        return v.source in ('loja', None) or v.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
-
-    vendas_caixa = [v for v in vendas_hoje if entra_no_caixa(v)]
-    total_geral  = sum(v.total for v in vendas_caixa)
+        or_(
+            Sale.source == 'loja',
+            Sale.source.is_(None),
+            Sale.payment_method.in_(('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')),
+        ),
+    ).first()
+    qtd_vendas   = _cx[0] or 0
+    total_geral  = float(_cx[1] or 0)
 
     # Entregas
     base = Sale.query.filter_by(tenant_id=tid, status='confirmed', delivery_mode='entrega')
@@ -226,7 +234,7 @@ def live_stats():
                                           .order_by(PedidoOnline.created_at.desc()).first()
 
     return jsonify({
-        'qtd_vendas':           len(vendas_caixa),
+        'qtd_vendas':           qtd_vendas,
         'total_geral':          total_geral,
         'entregas_pendentes':   entregas_pendentes,
         'entregas_retorno':     entregas_retorno,
