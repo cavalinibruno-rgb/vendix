@@ -654,8 +654,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (bPO && _pedidosPend > 0) { bPO.textContent = _pedidosPend; bPO.style.display = ''; }
   }).catch(() => {});
 
-  // Polling a cada 10 segundos
-  setInterval(poll, 10000);
+  // Polling a cada 20 segundos (equilibra responsividade de pedidos online
+  // com carga no servidor — a 10s dobrava as requisições de fundo)
+  setInterval(poll, 20000);
 
   // Expõe funções do modal para uso no onclick do HTML
   window.aceitarPedidoModal  = aceitarPedidoModal;
