@@ -229,7 +229,7 @@ def salvar_identidade():
             return redirect(url_for('config.index') + '#identidade')
         key = r2.unique_key('logos', '.png')
         try:
-            tenant.logo_url = r2.upload(data, key, logo.content_type or 'image/png')
+            tenant.logo_url = r2.upload(data, key, logo.content_type or 'image/png', long_cache=True)
             tenant.logo_data = None
         except Exception:
             tenant.logo_data = data

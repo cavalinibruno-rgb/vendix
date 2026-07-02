@@ -169,7 +169,7 @@ def novo():
                     img_bytes, mime = _comprimir_imagem(foto)
                     key = r2.unique_key('produtos', '.jpg')
                     try:
-                        prod.image_url = r2.upload(img_bytes, key, mime)
+                        prod.image_url = r2.upload(img_bytes, key, mime, long_cache=True)
                         prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
                     except Exception:
                         prod.image_data = img_bytes
@@ -272,7 +272,7 @@ def editar(product_id):
             img_bytes, mime = _comprimir_imagem(foto)
             key = r2.unique_key('produtos', '.jpg')
             try:
-                product.image_url = r2.upload(img_bytes, key, mime)
+                product.image_url = r2.upload(img_bytes, key, mime, long_cache=True)
                 product.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
             except Exception:
                 product.image_data = img_bytes

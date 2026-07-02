@@ -25,13 +25,20 @@ def _client():
         region_name='auto',
     )
 
-def upload(data: bytes, key: str, content_type: str = 'application/octet-stream') -> str:
-    """Upload bytes to R2, return public URL."""
+# Cache longo para conteudo imutavel (chaves uuid nunca sao reutilizadas).
+# NAO usar em releases (download.py), cuja chave pode ser reaproveitada.
+_IMG_CACHE = 'public, max-age=31536000, immutable'  # 1 ano
+
+def upload(data: bytes, key: str, content_type: str = 'application/octet-stream',
+           long_cache: bool = False) -> str:
+    """Upload bytes to R2, return public URL. long_cache=True aplica cache de 1 ano."""
+    extra = {'CacheControl': _IMG_CACHE} if long_cache else {}
     _client().put_object(
         Bucket=_R2_BUCKET,
         Key=key,
         Body=data,
         ContentType=content_type,
+        **extra,
     )
     return f'{_R2_PUBLIC_URL}/{key}'
 
