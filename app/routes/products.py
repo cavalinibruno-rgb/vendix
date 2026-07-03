@@ -482,8 +482,13 @@ def api_buscar():
 @products_bp.route('/api/todos')
 @login_required
 def api_todos():
+    from sqlalchemy import or_
+    agora = datetime.now()
     rows = (db.session.query(*_cols())
             .filter(Product.tenant_id == tenant_id(), Product.active == True)
+            # Promoções fora da janela de validade não aparecem/vendem no PDV
+            .filter(or_(Product.promo_starts_at == None, Product.promo_starts_at <= agora))
+            .filter(or_(Product.promo_ends_at == None, Product.promo_ends_at >= agora))
             .order_by(Product.name).all())
 
     tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}

@@ -8,6 +8,8 @@ from app.models.sale import Sale
 from app.models.cash import CashRegister
 from app.models.coupon import Coupon
 import json, io, os, requests
+from datetime import datetime
+from sqlalchemy import or_
 from PIL import Image
 
 loja_bp = Blueprint('loja', __name__, url_prefix='/loja')
@@ -17,12 +19,18 @@ def _get_tenant(slug):
     return Tenant.query.filter_by(slug=slug).first_or_404()
 
 
+def _is_promo_cat(nome):
+    return 'promo' in (nome or '').lower()
+
+
 # ── Cardápio público ────────────────────────────────────
 @loja_bp.route('/<slug>')
 def cardapio(slug):
     tenant = _get_tenant(slug)
     caixa_aberto = CashRegister.query.filter_by(tenant_id=tenant.id, status='open').first() is not None
     categorias   = ProductType.query.filter_by(tenant_id=tenant.id).order_by(ProductType.name).all()
+    # "Promoção" é a primeira categoria depois de "Todos" (sort estável mantém o resto alfabético)
+    categorias.sort(key=lambda c: 0 if _is_promo_cat(c.name) else 1)
     bairros      = Neighborhood.query.filter_by(tenant_id=tenant.id).order_by(Neighborhood.name).all()
     return render_template('loja/cardapio.html',
         tenant=tenant, categorias=categorias, bairros=bairros, caixa_aberto=caixa_aberto)
@@ -32,8 +40,14 @@ def cardapio(slug):
 @loja_bp.route('/<slug>/produtos')
 @limiter.limit("60 per minute")
 def api_produtos(slug):
-    tenant   = _get_tenant(slug)
-    produtos = Product.query.filter_by(tenant_id=tenant.id, active=True, online_active=True).order_by(Product.name).all()
+    tenant = _get_tenant(slug)
+    agora  = datetime.now()
+    produtos = Product.query.filter_by(tenant_id=tenant.id, active=True, online_active=True)\
+        .filter(or_(Product.promo_starts_at == None, Product.promo_starts_at <= agora))\
+        .filter(or_(Product.promo_ends_at == None, Product.promo_ends_at >= agora))\
+        .order_by(Product.name).all()
+    # Promoções aparecem primeiro na vitrine (sort estável mantém o resto alfabético)
+    produtos.sort(key=lambda p: 0 if (p.type and _is_promo_cat(p.type.name)) else 1)
     out = []
     for p in produtos:
         if p.image_url:
@@ -52,6 +66,7 @@ def api_produtos(slug):
             'brand_id':   p.brand_id,
             'brand_name': p.brand.name if p.brand else None,
             'thumb':      thumb,
+            'is_promo':   bool(p.type and _is_promo_cat(p.type.name)),
         })
     return jsonify(out)
 

@@ -39,7 +39,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 /* Grid */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px;}
 .pc{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.09);
-    display:flex;flex-direction:column;}
+    display:flex;flex-direction:column;position:relative;}
+.pc-promo{position:absolute;top:8px;left:8px;z-index:2;background:#e11d48;color:#fff;
+          font-size:.6rem;font-weight:800;letter-spacing:.05em;padding:3px 9px;
+          border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.3);}
 .pc-img{width:100%;height:140px;object-fit:contain;display:block;background:#fff;padding:8px;}
 .pc-ph{width:100%;height:140px;background:#f5f5f5;display:flex;align-items:center;
        justify-content:center;font-size:2rem;color:#ddd;}
@@ -229,7 +232,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 <div class="cats" id="catTabs">
   <button class="cat active" onclick="filtrarCat(null, this)">Todos</button>
   {% for c in categorias %}
-  <button class="cat" onclick="filtrarCat({{ c.id }}, this)">{{ c.name }}</button>
+  <button class="cat" data-cat="{{ c.id }}" onclick="filtrarCat({{ c.id }}, this)">{{ c.name }}</button>
   {% endfor %}
 </div>
 
@@ -415,10 +418,18 @@ let cepOk  = false; // taxa calculada via CEP
 let geoLat = null; // coordenadas confirmadas pelo servidor
 let geoLng = null;
 
+// Esconde abas de categorias sem produtos visíveis (ex: Promoção sem promo ativa)
+function ocultarCatsVazias() {
+  document.querySelectorAll('#catTabs .cat[data-cat]').forEach(btn => {
+    const id = parseInt(btn.dataset.cat);
+    btn.style.display = todos.some(p => p.type_id === id) ? '' : 'none';
+  });
+}
+
 // Carrega produtos
 fetch(`/loja/${SLUG}/produtos`)
   .then(r => r.json())
-  .then(d => { todos = d; renderGrid(d); })
+  .then(d => { todos = d; renderGrid(d); ocultarCatsVazias(); })
   .catch(() => {
     document.getElementById('prodGrid').innerHTML =
       '<p style="color:#999;text-align:center;padding:40px;grid-column:1/-1;">Erro ao carregar cardápio.</p>';
@@ -478,6 +489,7 @@ function renderGrid(lista) {
   }
   grid.innerHTML = lista.map(p => `
     <div class="pc">
+      ${p.is_promo ? '<span class="pc-promo">🔥 PROMOÇÃO</span>' : ''}
       ${p.thumb
         ? `<img class="pc-img" src="${p.thumb}" alt="${p.name}" loading="lazy">`
         : `<div class="pc-ph">🍽️</div>`}
