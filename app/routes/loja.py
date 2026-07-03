@@ -16,7 +16,15 @@ loja_bp = Blueprint('loja', __name__, url_prefix='/loja')
 
 
 def _get_tenant(slug):
-    return Tenant.query.filter_by(slug=slug).first_or_404()
+    t = Tenant.query.filter_by(slug=slug).first()
+    if not t and '-' not in slug:
+        # Alias sem hífens: whiskeriadoninho.vendixapp.com.br atende whiskeria-do-ninho
+        from sqlalchemy import func
+        t = Tenant.query.filter(func.replace(Tenant.slug, '-', '') == slug)\
+                        .order_by(Tenant.id).first()
+    if not t:
+        abort(404)
+    return t
 
 
 def _is_promo_cat(nome):

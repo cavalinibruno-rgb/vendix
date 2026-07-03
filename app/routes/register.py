@@ -62,10 +62,15 @@ PLANOS = {
 
 
 def _make_slug(store_name):
+    from sqlalchemy import func
     base = unicodedata.normalize('NFKD', store_name).encode('ascii', 'ignore').decode()
     base = re.sub(r'[^a-z0-9]+', '-', base.lower()).strip('-') or 'loja'
     slug, n = base, 1
-    while Tenant.query.filter_by(slug=slug).first():
+    # Evita colisão direta E de alias sem hífens (whiskeriado-ninho vs whiskeria-do-ninho)
+    while Tenant.query.filter(
+        (Tenant.slug == slug) |
+        (func.replace(Tenant.slug, '-', '') == slug.replace('-', ''))
+    ).first():
         slug = f'{base}-{n}'; n += 1
     return slug
 

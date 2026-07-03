@@ -65,7 +65,12 @@ def tenant_novo():
         slug_base = re.sub(r'[^a-z0-9]+', '-', slug_base.lower()).strip('-') or 'loja'
         slug = slug_base
         counter = 1
-        while Tenant.query.filter_by(slug=slug).first():
+        from sqlalchemy import func as _f
+        # Evita colisão direta e de alias sem hífens
+        while Tenant.query.filter(
+            (Tenant.slug == slug) |
+            (_f.replace(Tenant.slug, '-', '') == slug.replace('-', ''))
+        ).first():
             slug = f'{slug_base}-{counter}'
             counter += 1
 
