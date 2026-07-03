@@ -197,6 +197,28 @@
     .topbar-store-name { font-weight: 700; font-size: .95rem; color: var(--gold, #c9a84c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
     .topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
     .topbar.collapsed { margin-left: 60px; }
+
+    /* ── Mobile: sidebar vira menu deslizante (off-canvas) ── */
+    .menu-mobile-btn { display: none; align-items: center; justify-content: center; border: none;
+                       background: none; color: var(--text-main); font-size: 1.6rem; padding: 2px 10px 2px 2px; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1049; }
+    @media (max-width: 991.98px) {
+      .sidebar { transform: translateX(-105%); transition: transform .25s ease;
+                 width: 240px !important; z-index: 1050; }
+      .sidebar.mobile-open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,.45); }
+      /* neutraliza o modo "recolhido" do desktop dentro do menu mobile */
+      .sidebar .nav-label { display: inline !important; }
+      .sidebar .nav-section { display: block !important; }
+      .sidebar .sidebar-footer .footer-name { display: inline !important; }
+      .sidebar .nav-link { padding: 10px 24px !important; justify-content: flex-start !important; border-right: none !important; }
+      .sidebar-brand .btn-collapse { display: none; }
+      .sidebar-brand .brand-logo-row img { display: inline !important; }
+      /* conteúdo e topbar ocupam a tela toda */
+      .main-content, .main-content.collapsed { margin-left: 0 !important; padding: 18px 14px; }
+      .topbar, .topbar.collapsed { margin-left: 0 !important; }
+      .menu-mobile-btn { display: inline-flex; }
+      .sidebar-backdrop.show { display: block; }
+    }
     .page-header { margin-bottom: 24px; }
     .page-header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-main); margin: 0; }
     .page-header p  { color: var(--text-muted); margin: 4px 0 0; font-size: .9rem; }
@@ -323,9 +345,14 @@
   </div>
 </div>
 
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="fecharMenuMobile()"></div>
+
 <div class="topbar" id="topbar">
   <!-- Esquerda: logo ou nome da loja -->
   <div class="topbar-brand">
+    <button class="menu-mobile-btn" type="button" onclick="abrirMenuMobile()" aria-label="Abrir menu">
+      <i class="bi bi-list"></i>
+    </button>
     {% if current_user.is_authenticated and not current_user.is_master %}
       {% set tenant = current_user.tenant %}
       {% if tenant %}
@@ -718,6 +745,18 @@ document.addEventListener('DOMContentLoaded', function() {
     localStorage.setItem('sidebarCollapsed', collapsed);
     applyCollapse(collapsed);
   }
+
+  // ── Menu mobile (off-canvas) ─────────────────────────
+  function abrirMenuMobile() {
+    sidebar.classList.add('mobile-open');
+    document.getElementById('sidebarBackdrop').classList.add('show');
+  }
+  function fecharMenuMobile() {
+    sidebar.classList.remove('mobile-open');
+    document.getElementById('sidebarBackdrop').classList.remove('show');
+  }
+  // Navegar por um link do menu fecha o painel
+  sidebar.querySelectorAll('.nav-link').forEach(a => a.addEventListener('click', fecharMenuMobile));
 
   // Restaura estado salvo
   applyCollapse(localStorage.getItem('sidebarCollapsed') === 'true');
