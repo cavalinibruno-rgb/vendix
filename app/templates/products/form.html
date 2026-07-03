@@ -161,12 +161,12 @@
             <div class="card border-warning">
               <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2 py-2">
                 <i class="bi bi-gift text-warning"></i>
-                <span class="fw-semibold">Composição do Combo</span>
+                <span class="fw-semibold" id="comboSectionTitle">Composição do Combo</span>
               </div>
               <div class="card-body p-3">
                 <div class="alert alert-info combo-info small py-2 mb-3">
                   <i class="bi bi-info-circle me-1"></i>
-                  Combos não têm estoque próprio — o estoque é deduzido dos produtos componentes a cada venda.
+                  Este item não tem estoque próprio — o estoque é deduzido dos produtos componentes a cada venda.
                 </div>
                 <div class="input-group mb-2">
                   <input type="text" id="comboSearch" class="form-control form-control-sm"
@@ -180,6 +180,22 @@
                   <p class="text-muted small text-center mb-0" id="comboEmptyMsg">Nenhum componente adicionado ainda.</p>
                 </div>
                 <input type="hidden" name="combo_components" id="comboComponentsInput" value="[]">
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO PROMOÇÃO (datas) — aparece quando categoria "Promoção" -->
+          <div id="promoSection" style="display:none;" class="mb-3">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Início da promoção <span class="text-muted small fw-normal">(opcional)</span></label>
+                <input type="datetime-local" name="promo_inicio" id="promoInicio" class="form-control"
+                       value="{{ product.promo_starts_at.strftime('%Y-%m-%dT%H:%M') if product and product.promo_starts_at else '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fim da promoção <span class="text-muted small fw-normal">(em branco = sem prazo)</span></label>
+                <input type="datetime-local" name="promo_fim" id="promoFim" class="form-control"
+                       value="{{ product.promo_ends_at.strftime('%Y-%m-%dT%H:%M') if product and product.promo_ends_at else '' }}">
               </div>
             </div>
           </div>
@@ -481,16 +497,41 @@ let searchMap = {};
 let searchTimeout;
 
 function isCombo() {
-  const catName = document.getElementById('catInput').value.toLowerCase();
-  return catName.includes('combo');
+  return document.getElementById('catInput').value.toLowerCase().includes('combo');
 }
+function isPromocao() {
+  return document.getElementById('catInput').value.toLowerCase().includes('promo');
+}
+function isComposto() { return isCombo() || isPromocao(); }
 function toggleCombo() {
-  const combo = isCombo();
-  comboSection.style.display = combo ? '' : 'none';
-  stockFields.style.display  = combo ? 'none' : '';
+  const composto = isComposto();
+  const promo    = isPromocao();
+  comboSection.style.display = composto ? '' : 'none';
+  stockFields.style.display  = composto ? 'none' : '';
+  document.getElementById('promoSection').style.display = promo ? '' : 'none';
+  const titulo = document.getElementById('comboSectionTitle');
+  if (titulo) titulo.textContent = promo ? 'Composição da Promoção' : 'Composição do Combo';
+  if (promo) autoNome();
+}
+
+/* ── Nome automático da promoção (gerado dos componentes, mas editável) ── */
+let nomeAuto = '';
+function gerarNomePromo() {
+  return comboComponents.map(c => (c.quantity > 1 ? c.quantity + '× ' : '') + c.name).join(' + ');
+}
+function autoNome() {
+  if (!isPromocao()) return;
+  const nomeInput = document.querySelector('input[name="name"]');
+  const gerado = gerarNomePromo();
+  // só sobrescreve se estiver vazio ou se o usuário ainda não personalizou
+  if (nomeInput.value.trim() === '' || nomeInput.value === nomeAuto) {
+    nomeInput.value = gerado;
+  }
+  nomeAuto = gerado;
 }
 function renderComponents() {
   comboInput.value = JSON.stringify(comboComponents);
+  autoNome();
   if (!comboComponents.length) {
     comboList.innerHTML = '<p class="text-muted small text-center mb-0">Nenhum componente adicionado ainda.</p>';
     return;
@@ -511,7 +552,7 @@ function renderComponents() {
   `).join('');
 }
 function updateCost() {
-  if (!isCombo()) return;
+  if (!isComposto()) return;
   const total = comboComponents.reduce((s, c) => s + (parseFloat(c.cost_price) || 0) * c.quantity, 0);
   document.querySelector('input[name="cost_price"]').value = total.toFixed(2);
 }
@@ -554,6 +595,7 @@ document.addEventListener('click', e => {
   if (!searchBox.contains(e.target) && !searchResults.contains(e.target)) searchResults.style.display = 'none';
 });
 document.getElementById('catInput').addEventListener('change', () => { toggleCombo(); updateCost(); });
+nomeAuto = gerarNomePromo();
 toggleCombo();
 renderComponents();
 updateCost();

@@ -306,6 +306,9 @@ def _run_migrations(db):
            FROM tenants t
            WHERE NOT EXISTS (SELECT 1 FROM product_types pt
                              WHERE pt.tenant_id = t.id AND LOWER(pt.name) IN ('promoção','promocao'))""",
+        # Janela de validade das promoções
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_starts_at TIMESTAMP",
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_ends_at TIMESTAMP",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

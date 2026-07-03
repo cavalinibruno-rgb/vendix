@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 from PIL import Image
 import io
 import json
+from datetime import datetime
 from app import db
 from app import r2
 from app.models.product import Product, ProductType, Brand
@@ -13,6 +14,16 @@ products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 
 def tenant_id():
     return current_user.tenant_id
+
+def _parse_promo_dt(value):
+    """Converte datetime-local (YYYY-MM-DDTHH:MM) em datetime, ou None se vazio/inválido."""
+    value = (value or '').strip()
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
 
 # Magic bytes das imagens permitidas
 _MAGIC_BYTES = {
@@ -154,6 +165,8 @@ def novo():
             stock_quantity=stock,
             min_stock=min_stock,
         )
+        product.promo_starts_at = _parse_promo_dt(request.form.get('promo_inicio'))
+        product.promo_ends_at   = _parse_promo_dt(request.form.get('promo_fim'))
         db.session.add(product)
         db.session.flush()
 
@@ -267,6 +280,8 @@ def editar(product_id):
         product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
         product.min_stock      = int(request.form.get('min_stock', 0) or 0)
         product.description    = request.form.get('description', '').strip()
+        product.promo_starts_at = _parse_promo_dt(request.form.get('promo_inicio'))
+        product.promo_ends_at   = _parse_promo_dt(request.form.get('promo_fim'))
         foto = request.files.get('imagem')
         if foto and foto.filename:
             img_bytes, mime = _comprimir_imagem(foto)

@@ -54,6 +54,10 @@ class Product(db.Model):
     pack_parent_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
     pack_qty       = db.Column(db.Integer, nullable=True)  # unidades contidas neste pack
 
+    # Promoção (categoria nativa) — janela de validade opcional
+    promo_starts_at = db.Column(db.DateTime, nullable=True)
+    promo_ends_at   = db.Column(db.DateTime, nullable=True)
+
     pack_parent = db.relationship('Product', foreign_keys='Product.pack_parent_id',
                                   primaryjoin='Product.pack_parent_id == Product.id',
                                   remote_side='Product.id',
