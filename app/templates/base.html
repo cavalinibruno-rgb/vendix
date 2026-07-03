@@ -227,6 +227,11 @@
       .page-header h1 { font-size: 1.3rem; }
       .page-header .d-flex { flex-wrap: wrap; }
 
+      /* banners (ex: Caixa aberto) — texto e botões quebram linha */
+      .alert.d-flex, .alert .d-flex { flex-wrap: wrap; }
+      .alert .ms-auto { margin-left: 0 !important; width: 100%; }
+      .alert .ms-auto .btn { flex: 1; }
+
       /* nome da loja na topbar não empurra os controles pra fora */
       .topbar-store-name { max-width: 120px; }
       .topbar-logo { height: 30px; max-width: 110px; }
