@@ -29,8 +29,15 @@ def cardapio(slug):
     tenant = _get_tenant(slug)
     caixa_aberto = CashRegister.query.filter_by(tenant_id=tenant.id, status='open').first() is not None
     categorias   = ProductType.query.filter_by(tenant_id=tenant.id).order_by(ProductType.name).all()
-    # "Promoção" é a primeira categoria depois de "Todos" (sort estável mantém o resto alfabético)
-    categorias.sort(key=lambda c: 0 if _is_promo_cat(c.name) else 1)
+    # Ordem das abas: "Promoção" primeiro, "Combos" em seguida, resto alfabético
+    def _ordem_cat(c):
+        nome = (c.name or '').lower()
+        if 'promo' in nome:
+            return 0
+        if 'combo' in nome:
+            return 1
+        return 2
+    categorias.sort(key=_ordem_cat)
     bairros      = Neighborhood.query.filter_by(tenant_id=tenant.id).order_by(Neighborhood.name).all()
     return render_template('loja/cardapio.html',
         tenant=tenant, categorias=categorias, bairros=bairros, caixa_aberto=caixa_aberto)
