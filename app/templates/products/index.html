@@ -99,7 +99,7 @@
           </td>
           <td class="pe-4">
             <div class="d-flex gap-1">
-              <a href="{{ url_for('products.editar', product_id=p.id) }}" class="btn btn-sm btn-outline-primary">
+              <a href="{{ url_for('products.editar', product_id=p.id) }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-pencil"></i>
               </a>
               <button class="btn btn-sm {% if p.online_active %}btn-outline-success{% else %}btn-outline-warning{% endif %}"

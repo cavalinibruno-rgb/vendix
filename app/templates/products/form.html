@@ -12,6 +12,7 @@
       <div class="card-header"><i class="bi bi-box-seam me-2 text-warning"></i>Dados do Produto</div>
       <div class="card-body p-4">
         <form method="post" enctype="multipart/form-data">
+          <input type="hidden" name="return_qs" value="{{ return_qs|default('') }}">
           <!-- Toggles de configuração -->
           <div class="mb-3">
             <!-- Pack -->

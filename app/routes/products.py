@@ -295,7 +295,14 @@ def editar(product_id):
 
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
-        return redirect(url_for('products.index', _anchor='prod-%d' % product.id))
+        # Volta pra lista preservando o filtro (categoria/marca/busca/ordem) e
+        # ancorado no produto editado, em vez de jogar tudo pro topo sem filtro.
+        return_qs = request.form.get('return_qs', '')
+        url = url_for('products.index')
+        if return_qs:
+            url += '?' + return_qs
+        url += '#prod-%d' % product.id
+        return redirect(url)
 
     existing_components = [
         {'product_id': ci.component_id, 'name': ci.component.name,
@@ -303,7 +310,8 @@ def editar(product_id):
         for ci in product.combo_items
     ]
     return render_template('products/form.html', types=types, brands=brands, product=product,
-                           existing_components=existing_components)
+                           existing_components=existing_components,
+                           return_qs=request.query_string.decode())
 
 @products_bp.route('/<int:product_id>/excluir', methods=['POST'])
 @login_required
