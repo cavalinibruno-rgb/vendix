@@ -26,13 +26,13 @@
 <!-- Filtros -->
 <div class="card mb-3">
   <div class="card-body py-2">
-    <form method="get" class="row g-2 align-items-center">
+    <form class="row g-2 align-items-center" onsubmit="return false;">
       <div class="col-auto">
-        <input type="text" name="q" value="{{ q or '' }}" class="form-control form-control-sm"
-               placeholder="Buscar por nome..." style="min-width:200px;">
+        <input type="text" id="fq" value="{{ q or '' }}" class="form-control form-control-sm"
+               placeholder="Buscar por nome..." style="min-width:200px;" oninput="aplicarFiltrosProd()">
       </div>
       <div class="col-auto">
-        <select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
+        <select id="fcat" class="form-select form-select-sm" onchange="filtroCatProd()">
           <option value="">Todas as categorias</option>
           {% for t in types %}
           <option value="{{ t.id }}" {% if tipo_id == t.id %}selected{% endif %}>{{ t.name }}</option>
@@ -40,7 +40,7 @@
         </select>
       </div>
       <div class="col-auto">
-        <select name="marca" class="form-select form-select-sm" onchange="this.form.submit()">
+        <select id="fmarca" class="form-select form-select-sm" onchange="aplicarFiltrosProd()">
           <option value="">Todas as marcas</option>
           {% for b in brands %}
           <option value="{{ b.id }}" {% if marca_id == b.id %}selected{% endif %}>{{ b.name }}</option>
@@ -48,15 +48,10 @@
         </select>
       </div>
       <div class="col-auto">
-        <button type="submit" class="btn btn-sm btn-warning"><i class="bi bi-search"></i></button>
-      </div>
-      {% if q or tipo_id or marca_id %}
-      <div class="col-auto">
-        <a href="{{ url_for('products.index') }}" class="btn btn-sm btn-outline-secondary">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limparFiltrosProd()">
           <i class="bi bi-x"></i> Limpar
-        </a>
+        </button>
       </div>
-      {% endif %}
     </form>
   </div>
 </div>
@@ -79,7 +74,8 @@
       </thead>
       <tbody>
         {% for p in products %}
-        <tr id="prod-{{ p.id }}">
+        <tr id="prod-{{ p.id }}" data-name="{{ p.name|lower }}" data-type="{{ p.type_id or '' }}"
+            data-brand="{{ p.brand_id or '' }}" data-brand-name="{{ p.brand.name if p.brand else '' }}">
           <td class="text-muted small ps-4">{{ p.product_number or p.id }}</td>
           <td class="fw-semibold">{{ p.name }}</td>
           <td><span class="badge bg-secondary-subtle text-secondary">{{ p.type.name if p.type else '—' }}</span></td>
@@ -99,7 +95,8 @@
           </td>
           <td class="pe-4">
             <div class="d-flex gap-1">
-              <a href="{{ url_for('products.editar', product_id=p.id) }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}" class="btn btn-sm btn-outline-primary">
+              <a href="{{ url_for('products.editar', product_id=p.id) }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}"
+                 class="btn btn-sm btn-outline-primary btn-editar" data-base="{{ url_for('products.editar', product_id=p.id) }}">
                 <i class="bi bi-pencil"></i>
               </a>
               <button class="btn btn-sm {% if p.online_active %}btn-outline-success{% else %}btn-outline-warning{% endif %}"
@@ -115,8 +112,13 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-center text-muted py-4">Nenhum produto cadastrado ainda.</td></tr>
+        <tr><td colspan="8" class="text-center text-muted py-4">Nenhum produto cadastrado ainda.</td></tr>
         {% endfor %}
+        {% if products %}
+        <tr id="semResultados" style="display:none;">
+          <td colspan="8" class="text-center text-muted py-4">Nenhum produto encontrado com esses filtros.</td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
@@ -156,6 +158,66 @@
     focar();
   }
 })();
+
+/* ── Filtros instantâneos (mesmo comportamento do Nova Venda) ── */
+const fq = document.getElementById('fq');
+const fcat = document.getElementById('fcat');
+const fmarca = document.getElementById('fmarca');
+
+function _linhasProd() {
+  return document.querySelectorAll('tbody tr[data-name]');
+}
+
+// Marcas do dropdown limitadas à categoria selecionada
+function construirMarcasProd() {
+  const cat = fcat.value;
+  const marcas = new Map();
+  _linhasProd().forEach(tr => {
+    if (cat && tr.dataset.type !== cat) return;
+    if (tr.dataset.brand && tr.dataset.brandName && !marcas.has(tr.dataset.brand)) {
+      marcas.set(tr.dataset.brand, tr.dataset.brandName);
+    }
+  });
+  const atual = fmarca.value;
+  while (fmarca.options.length > 1) fmarca.remove(1);
+  [...marcas].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')).forEach(([id, nome]) => {
+    const o = document.createElement('option'); o.value = id; o.textContent = nome; fmarca.appendChild(o);
+  });
+  fmarca.value = marcas.has(atual) ? atual : '';
+}
+
+function aplicarFiltrosProd() {
+  const q = fq.value.trim().toLowerCase();
+  const cat = fcat.value, marca = fmarca.value;
+  let visiveis = 0;
+  _linhasProd().forEach(tr => {
+    const ok = (!q || tr.dataset.name.includes(q)) &&
+               (!cat || tr.dataset.type === cat) &&
+               (!marca || tr.dataset.brand === marca);
+    tr.style.display = ok ? '' : 'none';
+    if (ok) visiveis++;
+  });
+  const vazio = document.getElementById('semResultados');
+  if (vazio) vazio.style.display = visiveis ? 'none' : '';
+
+  // mantém a URL e os links de editar em sincronia (preserva o filtro no editar->salvar)
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (cat) params.set('tipo', cat);
+  if (marca) params.set('marca', marca);
+  const qs = params.toString();
+  history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+  document.querySelectorAll('a.btn-editar').forEach(a => {
+    a.href = a.dataset.base + (qs ? '?' + qs : '');
+  });
+}
+
+function filtroCatProd() { construirMarcasProd(); aplicarFiltrosProd(); }
+function limparFiltrosProd() { fq.value = ''; fcat.value = ''; construirMarcasProd(); fmarca.value = ''; aplicarFiltrosProd(); }
+
+// Aplica o estado vindo da URL na carga (ex: voltando da edição com filtro)
+construirMarcasProd();
+aplicarFiltrosProd();
 
 async function toggleOnline(btn, productId) {
   btn.disabled = true;

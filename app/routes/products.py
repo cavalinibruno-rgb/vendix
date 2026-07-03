@@ -82,17 +82,12 @@ def _gerar_thumbnail(image_bytes, size=(80, 80), quality=55):
 def index():
     types  = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
     brands = Brand.query.filter_by(tenant_id=tenant_id()).order_by(Brand.name).all()
+    # Filtros são aplicados no navegador (instantâneos, como no Nova Venda).
+    # Os params da URL só pré-preenchem o formulário — o JS aplica na carga.
     q        = request.args.get('q', '').strip()
     tipo_id  = request.args.get('tipo', type=int)
     marca_id = request.args.get('marca', type=int)
-    query = Product.query.filter_by(tenant_id=tenant_id())
-    if q:
-        query = query.filter(Product.name.ilike(f'%{q}%'))
-    if tipo_id:
-        query = query.filter_by(type_id=tipo_id)
-    if marca_id:
-        query = query.filter_by(brand_id=marca_id)
-    products = query.order_by(Product.name).all()
+    products = Product.query.filter_by(tenant_id=tenant_id()).order_by(Product.name).all()
 
     # Mapa estoque dos pais para calcular estoque efetivo dos packs
     parent_ids = {p.pack_parent_id for p in products if p.pack_parent_id}
