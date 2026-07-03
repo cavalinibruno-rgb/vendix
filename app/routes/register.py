@@ -88,6 +88,8 @@ def _criar_conta(pending, preapproval_id=None):
     )
     db.session.add(tenant)
     db.session.flush()
+    from app.seed import seed_categorias_nativas
+    seed_categorias_nativas(tenant.id)
     user = User(
         tenant_id=tenant.id,
         username='admin',

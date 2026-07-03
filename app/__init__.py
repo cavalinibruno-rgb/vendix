@@ -291,6 +291,21 @@ def _run_migrations(db):
         "CREATE INDEX IF NOT EXISTS idx_customer_addresses_customer_id ON customer_addresses(customer_id)",
         "CREATE INDEX IF NOT EXISTS idx_combo_items_combo_id ON combo_items(combo_id)",
         "CREATE INDEX IF NOT EXISTS idx_products_tenant_active ON products(tenant_id, active)",
+        # Categorias nativas (Combos, Promoção) — protegidas, sempre presentes
+        "ALTER TABLE product_types ADD COLUMN IF NOT EXISTS protected BOOLEAN DEFAULT FALSE",
+        "UPDATE product_types SET protected = TRUE WHERE LOWER(name) IN ('combos','combo','promoção','promocao')",
+        """INSERT INTO product_types (tenant_id, name, protected, type_number)
+           SELECT t.id, 'Combos', TRUE,
+                  COALESCE((SELECT MAX(type_number) FROM product_types WHERE tenant_id = t.id), 0) + 1
+           FROM tenants t
+           WHERE NOT EXISTS (SELECT 1 FROM product_types pt
+                             WHERE pt.tenant_id = t.id AND LOWER(pt.name) IN ('combos','combo'))""",
+        """INSERT INTO product_types (tenant_id, name, protected, type_number)
+           SELECT t.id, 'Promoção', TRUE,
+                  COALESCE((SELECT MAX(type_number) FROM product_types WHERE tenant_id = t.id), 0) + 1
+           FROM tenants t
+           WHERE NOT EXISTS (SELECT 1 FROM product_types pt
+                             WHERE pt.tenant_id = t.id AND LOWER(pt.name) IN ('promoção','promocao'))""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

@@ -92,6 +92,8 @@ def tenant_novo():
             )
             db.session.add(tenant)
             db.session.flush()
+            from app.seed import seed_categorias_nativas
+            seed_categorias_nativas(tenant.id)
 
             user = User(
                 tenant_id=tenant.id,

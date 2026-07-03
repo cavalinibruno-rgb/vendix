@@ -361,6 +361,9 @@ def tipo_novo():
 @login_required
 def tipo_excluir(tipo_id):
     t = ProductType.query.filter_by(id=tipo_id, tenant_id=tenant_id()).first_or_404()
+    if t.protected:
+        flash('Esta categoria é nativa do sistema e não pode ser removida.', 'danger')
+        return redirect(url_for('products.tipos'))
     db.session.delete(t)
     db.session.commit()
     flash('Categoria removida.', 'success')

@@ -47,13 +47,20 @@
             {% for t in types %}
             <tr>
               <td class="text-muted small ps-4">{{ t.type_number or t.id }}</td>
-              <td class="fw-semibold">{{ t.name }}</td>
+              <td class="fw-semibold">
+                {{ t.name }}
+                {% if t.protected %}<i class="bi bi-lock-fill text-warning ms-1" title="Categoria nativa do sistema"></i>{% endif %}
+              </td>
               <td><span class="badge bg-secondary">{{ t.products|length }}</span></td>
               <td class="pe-4">
+                {% if not t.protected %}
                 <form method="post" action="{{ url_for('products.tipo_excluir', tipo_id=t.id) }}"
                       data-confirm='Excluir categoria {{ t.name }}?'>
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>
+                {% else %}
+                <span class="text-muted small">—</span>
+                {% endif %}
               </td>
             </tr>
             {% else %}
