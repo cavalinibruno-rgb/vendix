@@ -218,6 +218,21 @@
       .topbar, .topbar.collapsed { margin-left: 0 !important; }
       .menu-mobile-btn { display: inline-flex; }
       .sidebar-backdrop.show { display: block; }
+
+      /* tabelas: rolagem horizontal no dedo, sem estourar a tela */
+      .main-content .table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+
+      /* cabeçalhos de página: título e botões quebram linha em vez de estourar */
+      .page-header { flex-wrap: wrap; gap: 10px; }
+      .page-header h1 { font-size: 1.3rem; }
+      .page-header .d-flex { flex-wrap: wrap; }
+
+      /* nome da loja na topbar não empurra os controles pra fora */
+      .topbar-store-name { max-width: 120px; }
+      .topbar-logo { height: 30px; max-width: 110px; }
+
+      /* cards respiram melhor em tela estreita */
+      .card-body { padding: 14px 12px; }
     }
     .page-header { margin-bottom: 24px; }
     .page-header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text-main); margin: 0; }
