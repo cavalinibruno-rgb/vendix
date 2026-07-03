@@ -135,13 +135,25 @@
 // Ao voltar da edição, rola até o produto editado e destaca por um instante,
 // em vez de jogar a lista de volta pro topo.
 (function() {
-  if (location.hash && location.hash.indexOf('#prod-') === 0) {
-    const row = document.querySelector(location.hash);
-    if (row) {
-      row.scrollIntoView({ block: 'center' });
-      row.classList.add('prod-destaque');
-      setTimeout(() => row.classList.remove('prod-destaque'), 2000);
-    }
+  if (!location.hash || location.hash.indexOf('#prod-') !== 0) return;
+  const row = document.querySelector(location.hash);
+  if (!row) return;
+
+  function focar() {
+    row.scrollIntoView({ block: 'center' });
+    row.classList.add('prod-destaque');
+    setTimeout(() => row.classList.remove('prod-destaque'), 2000);
+  }
+
+  // Se houver o modal de sucesso, o Bootstrap trava a rolagem enquanto ele
+  // está aberto — então esperamos ele fechar pra rolar. Senão, rola na carga.
+  const flash = document.getElementById('modalFlash');
+  if (flash) {
+    flash.addEventListener('hidden.bs.modal', () => setTimeout(focar, 50), { once: true });
+  } else if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', focar);
+  } else {
+    focar();
   }
 })();
 
