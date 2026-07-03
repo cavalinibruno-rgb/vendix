@@ -7,7 +7,7 @@ from app.models.pedido_online import PedidoOnline
 from app.models.sale import Sale
 from app.models.cash import CashRegister
 from app.models.coupon import Coupon
-import json, io, os, requests
+import json, io, os, requests, unicodedata
 from datetime import datetime
 from sqlalchemy import or_
 from PIL import Image
@@ -29,6 +29,11 @@ def _get_tenant(slug):
 
 def _is_promo_cat(nome):
     return 'promo' in (nome or '').lower()
+
+
+def _chave_alfa(s):
+    """Chave de ordenação sem acentos (Água antes de Alumínio, não depois de Z)."""
+    return unicodedata.normalize('NFKD', s or '').encode('ascii', 'ignore').decode().lower()
 
 
 # ── Cardápio público ────────────────────────────────────
@@ -61,8 +66,22 @@ def api_produtos(slug):
         .filter(or_(Product.promo_starts_at == None, Product.promo_starts_at <= agora))\
         .filter(or_(Product.promo_ends_at == None, Product.promo_ends_at >= agora))\
         .order_by(Product.name).all()
-    # Promoções aparecem primeiro na vitrine (sort estável mantém o resto alfabético)
-    produtos.sort(key=lambda p: 0 if (p.type and _is_promo_cat(p.type.name)) else 1)
+    # Vitrine "Todos": Promoções primeiro, Combos em seguida, depois agrupado
+    # por categoria em ordem alfabética (produtos alfabéticos dentro de cada uma);
+    # produtos sem categoria por último.
+    def _ordem_vitrine(p):
+        cat = p.type.name if p.type else ''
+        n = (cat or '').lower()
+        if 'promo' in n:
+            grupo = 0
+        elif 'combo' in n:
+            grupo = 1
+        elif cat:
+            grupo = 2
+        else:
+            grupo = 3
+        return (grupo, _chave_alfa(cat), _chave_alfa(p.name))
+    produtos.sort(key=_ordem_vitrine)
     out = []
     for p in produtos:
         if p.image_url:
