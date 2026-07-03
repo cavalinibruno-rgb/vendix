@@ -79,7 +79,7 @@
       </thead>
       <tbody>
         {% for p in products %}
-        <tr>
+        <tr id="prod-{{ p.id }}">
           <td class="text-muted small ps-4">{{ p.product_number or p.id }}</td>
           <td class="fw-semibold">{{ p.name }}</td>
           <td><span class="badge bg-secondary-subtle text-secondary">{{ p.type.name if p.type else '—' }}</span></td>
@@ -124,7 +124,27 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+  tr.prod-destaque { animation: prodFlash 2s ease; }
+  @keyframes prodFlash {
+    0%, 45% { background-color: rgba(201,168,76,.35); }
+    100%    { background-color: transparent; }
+  }
+</style>
 <script>
+// Ao voltar da edição, rola até o produto editado e destaca por um instante,
+// em vez de jogar a lista de volta pro topo.
+(function() {
+  if (location.hash && location.hash.indexOf('#prod-') === 0) {
+    const row = document.querySelector(location.hash);
+    if (row) {
+      row.scrollIntoView({ block: 'center' });
+      row.classList.add('prod-destaque');
+      setTimeout(() => row.classList.remove('prod-destaque'), 2000);
+    }
+  }
+})();
+
 async function toggleOnline(btn, productId) {
   btn.disabled = true;
   const r = await fetch(`/produtos/${productId}/toggle-online`, {method:'POST', headers:{'X-CSRFToken': '{{ csrf_token() }}'}});

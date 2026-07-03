@@ -295,7 +295,7 @@ def editar(product_id):
 
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
-        return redirect(url_for('products.index'))
+        return redirect(url_for('products.index', _anchor='prod-%d' % product.id))
 
     existing_components = [
         {'product_id': ci.component_id, 'name': ci.component.name,
