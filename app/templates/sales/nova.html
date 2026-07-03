@@ -761,11 +761,23 @@ fetch('/produtos/api/todos').then(r => r.json()).then(lista => {
   aplicarFiltros();
 }).catch(()=>{});
 
+function _ordemCat(nome) {
+  const n = (nome || '').toLowerCase();
+  if (n.includes('promo')) return 0;
+  if (n.includes('combo')) return 1;
+  return 2;
+}
+
 function construirAbas(lista) {
   const cats = new Map();
   lista.forEach(p => { if (p.type_id && !cats.has(p.type_id)) cats.set(p.type_id, p.type_name); });
   const sel = document.getElementById('filtroCategoria');
-  cats.forEach((nome, id) => {
+  // Promoção primeiro, Combos em seguida, resto em ordem alfabética
+  [...cats].sort((a, b) => {
+    const oa = _ordemCat(a[1]), ob = _ordemCat(b[1]);
+    if (oa !== ob) return oa - ob;
+    return (a[1] || '').localeCompare(b[1] || '', 'pt-BR');
+  }).forEach(([id, nome]) => {
     const o = document.createElement('option'); o.value = id; o.textContent = nome; sel.appendChild(o);
   });
 }
@@ -777,7 +789,8 @@ function construirMarcas(lista) {
   const valorAtual = sel.value;
   // limpa opções mantendo "Todas as marcas"
   while (sel.options.length > 1) sel.remove(1);
-  marcas.forEach((nome, id) => {
+  // Marcas em ordem alfabética
+  [...marcas].sort((a, b) => (a[1] || '').localeCompare(b[1] || '', 'pt-BR')).forEach(([id, nome]) => {
     const o = document.createElement('option'); o.value = id; o.textContent = nome; sel.appendChild(o);
   });
   // tenta restaurar seleção anterior; se não existir mais, volta para "todas"
