@@ -498,6 +498,19 @@ def create_app():
             pass
         return badges
 
+    # Preparação do banco (tabelas + migrações + seed).
+    # Em produção isso roda UMA vez por deploy via migrate.py, antes do gunicorn
+    # subir — os workers recebem VENDIX_SKIP_BOOT_MIGRATIONS=1 e pulam a etapa.
+    # Em qualquer outro uso (dev local, scripts), roda no boot como sempre.
+    if os.environ.get('VENDIX_SKIP_BOOT_MIGRATIONS') != '1':
+        preparar_banco(app)
+
+    app.wsgi_app = LojaSubdomainMiddleware(app.wsgi_app)
+    return app
+
+
+def preparar_banco(app):
+    """Cria tabelas, roda as migrações e o seed do master. Idempotente."""
     with app.app_context():
         app.logger.warning(f"[DB] vars: VENDIX={bool(os.environ.get('VENDIX_DB_URL'))} PUB={bool(os.environ.get('DATABASE_PUBLIC_URL'))} DB={bool(os.environ.get('DATABASE_URL'))}")
         try:
@@ -519,6 +532,3 @@ def create_app():
         _run_migrations(db)
         from app.seed import seed_master
         seed_master()
-
-    app.wsgi_app = LojaSubdomainMiddleware(app.wsgi_app)
-    return app
