@@ -113,7 +113,7 @@
           <td class="text-muted small text-nowrap">{{ s.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
           <td class="pe-4">
             <div class="d-flex gap-1">
-              <a href="{{ url_for('sales.detalhe', sale_id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+              <a href="{{ url_for('sales.detalhe', sale_id=s.id) }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-eye"></i>
               </a>
               <button class="btn btn-sm btn-outline-secondary" onclick="imprimirVenda({{ s.id }})">

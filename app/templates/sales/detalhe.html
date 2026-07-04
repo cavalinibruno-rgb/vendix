@@ -14,7 +14,7 @@
     <a href="{{ url_for('sales.nova') }}" class="btn btn-warning fw-semibold">
       <i class="bi bi-plus-lg me-1"></i> Nova Venda
     </a>
-    <a href="{{ url_for('sales.index') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('sales.index') }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}" class="btn btn-outline-secondary">
       <i class="bi bi-arrow-left me-1"></i> Voltar
     </a>
   </div>
