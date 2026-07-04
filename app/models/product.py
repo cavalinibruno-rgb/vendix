@@ -9,6 +9,7 @@ class ProductType(db.Model):
     type_number = db.Column(db.Integer, nullable=True)
     name        = db.Column(db.String(64), nullable=False)
     protected   = db.Column(db.Boolean, default=False)  # categoria nativa (não apagável)
+    sort_order  = db.Column(db.Integer, nullable=True)  # ordem manual do lojista (null = alfabética)
     created_at  = db.Column(db.DateTime, default=datetime.now)
 
     products = db.relationship('Product', backref='type', lazy=True)

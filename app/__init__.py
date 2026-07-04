@@ -309,6 +309,8 @@ def _run_migrations(db):
         # Janela de validade das promoções
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_starts_at TIMESTAMP",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_ends_at TIMESTAMP",
+        # Ordem manual das categorias (null = ordem alfabética padrão)
+        "ALTER TABLE product_types ADD COLUMN IF NOT EXISTS sort_order INTEGER",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

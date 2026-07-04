@@ -32,7 +32,22 @@
 
   <div class="col-md-7">
     <div class="card">
-      <div class="card-header"><i class="bi bi-list-ul me-2 text-warning"></i>Categorias Cadastradas</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-ul me-2 text-warning"></i>Categorias Cadastradas</span>
+        <div class="d-flex align-items-center gap-2">
+          <span id="ordemSalva" class="badge bg-success" style="display:none;">Ordem salva ✓</span>
+          <form method="post" action="{{ url_for('products.tipos_ordem_padrao') }}"
+                data-confirm="Voltar à ordem padrão (alfabética)?">
+            <button class="btn btn-sm btn-outline-secondary" title="Promoção e Combos no topo, resto em ordem alfabética">
+              <i class="bi bi-sort-alpha-down me-1"></i>Ordem alfabética
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="px-3 pt-2 text-muted small">
+        <i class="bi bi-arrows-move me-1"></i>Arraste as categorias para definir a ordem — ela vale também para o link da loja.
+        Promoção e Combos ficam sempre no topo.
+      </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead class="table-light">
@@ -43,11 +58,12 @@
               <th class="pe-4">Ações</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="catBody">
             {% for t in types %}
-            <tr>
+            <tr {% if not t.protected %}class="cat-drag" draggable="true" data-tid="{{ t.id }}"{% endif %}>
               <td class="text-muted small ps-4">{{ t.type_number or t.id }}</td>
               <td class="fw-semibold">
+                {% if not t.protected %}<i class="bi bi-grip-vertical text-muted me-2" style="cursor:grab;"></i>{% endif %}
                 {{ t.name }}
                 {% if t.protected %}<i class="bi bi-lock-fill text-warning ms-1" title="Categoria nativa do sistema"></i>{% endif %}
               </td>
@@ -72,4 +88,51 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  tr.cat-drag { cursor: grab; }
+  tr.cat-drag.dragging { opacity: .45; }
+</style>
+<script>
+(function() {
+  const tbody = document.getElementById('catBody');
+  if (!tbody) return;
+  let dragRow = null;
+
+  tbody.querySelectorAll('tr.cat-drag').forEach(tr => {
+    tr.addEventListener('dragstart', e => {
+      dragRow = tr; tr.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    tr.addEventListener('dragend', () => {
+      if (dragRow) { dragRow.classList.remove('dragging'); salvarOrdem(); }
+      dragRow = null;
+    });
+  });
+
+  tbody.addEventListener('dragover', e => {
+    e.preventDefault();
+    const alvo = e.target.closest('tr.cat-drag');
+    if (!alvo || alvo === dragRow || !dragRow) return;
+    const r = alvo.getBoundingClientRect();
+    const antes = (e.clientY - r.top) < r.height / 2;
+    alvo.parentNode.insertBefore(dragRow, antes ? alvo : alvo.nextSibling);
+  });
+
+  function salvarOrdem() {
+    const ordem = [...tbody.querySelectorAll('tr.cat-drag')].map(tr => parseInt(tr.dataset.tid));
+    fetch('{{ url_for("products.tipos_reordenar") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+      body: JSON.stringify({ ordem })
+    }).then(r => {
+      if (!r.ok) throw new Error();
+      const b = document.getElementById('ordemSalva');
+      b.style.display = ''; setTimeout(() => b.style.display = 'none', 1800);
+    }).catch(() => alert('Não foi possível salvar a ordem. Tente novamente.'));
+  }
+})();
+</script>
 {% endblock %}

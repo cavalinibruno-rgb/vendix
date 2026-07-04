@@ -42,15 +42,10 @@ def cardapio(slug):
     tenant = _get_tenant(slug)
     caixa_aberto = CashRegister.query.filter_by(tenant_id=tenant.id, status='open').first() is not None
     categorias   = ProductType.query.filter_by(tenant_id=tenant.id).order_by(ProductType.name).all()
-    # Ordem das abas: "Promoção" primeiro, "Combos" em seguida, resto alfabético
-    def _ordem_cat(c):
-        nome = (c.name or '').lower()
-        if 'promo' in nome:
-            return 0
-        if 'combo' in nome:
-            return 1
-        return 2
-    categorias.sort(key=_ordem_cat)
+    # Ordem das abas: Promoção 1º, Combos 2º; depois a ordem manual do lojista
+    # (definida na tela Categorias) e, sem ordem definida, alfabética.
+    from app.routes.products import ordem_categorias_key
+    categorias.sort(key=ordem_categorias_key)
     bairros      = Neighborhood.query.filter_by(tenant_id=tenant.id).order_by(Neighborhood.name).all()
     return render_template('loja/cardapio.html',
         tenant=tenant, categorias=categorias, bairros=bairros, caixa_aberto=caixa_aberto)
@@ -66,21 +61,15 @@ def api_produtos(slug):
         .filter(or_(Product.promo_starts_at == None, Product.promo_starts_at <= agora))\
         .filter(or_(Product.promo_ends_at == None, Product.promo_ends_at >= agora))\
         .order_by(Product.name).all()
-    # Vitrine "Todos": Promoções primeiro, Combos em seguida, depois agrupado
-    # por categoria em ordem alfabética (produtos alfabéticos dentro de cada uma);
-    # produtos sem categoria por último.
+    # Vitrine "Todos": agrupada por categoria na MESMA ordem das abas
+    # (Promoção 1º, Combos 2º, depois a ordem manual do lojista ou alfabética),
+    # produtos alfabéticos dentro de cada categoria; sem categoria por último.
+    from app.routes.products import ordem_categorias_key
+    cats = {p.type.id: p.type for p in produtos if p.type}
+    cats_ordenadas = sorted(cats.values(), key=ordem_categorias_key)
+    pos = {c.id: i for i, c in enumerate(cats_ordenadas)}
     def _ordem_vitrine(p):
-        cat = p.type.name if p.type else ''
-        n = (cat or '').lower()
-        if 'promo' in n:
-            grupo = 0
-        elif 'combo' in n:
-            grupo = 1
-        elif cat:
-            grupo = 2
-        else:
-            grupo = 3
-        return (grupo, _chave_alfa(cat), _chave_alfa(p.name))
+        return (pos.get(p.type_id, 10**9), _chave_alfa(p.name))
     produtos.sort(key=_ordem_vitrine)
     out = []
     for p in produtos:

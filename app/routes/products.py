@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 from PIL import Image
 import io
 import json
+import unicodedata
 from datetime import datetime
 from app import db
 from app import r2
@@ -14,6 +15,19 @@ products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 
 def tenant_id():
     return current_user.tenant_id
+
+def _sem_acentos(s):
+    return unicodedata.normalize('NFKD', s or '').encode('ascii', 'ignore').decode().lower()
+
+def ordem_categorias_key(t):
+    """Ordem das categorias: Promoção fixa em 1º, Combos em 2º; depois a ordem
+    manual do lojista (sort_order) e, sem ordem definida, alfabética."""
+    n = (t.name or '').lower()
+    if 'promo' in n:
+        return (0, 0, '')
+    if 'combo' in n:
+        return (1, 0, '')
+    return (2, t.sort_order if t.sort_order is not None else 10**9, _sem_acentos(t.name))
 
 def _parse_promo_dt(value):
     """Converte datetime-local (YYYY-MM-DDTHH:MM) em datetime, ou None se vazio/inválido."""
@@ -348,8 +362,35 @@ def excluir(product_id):
 @products_bp.route('/tipos')
 @login_required
 def tipos():
-    types = ProductType.query.filter_by(tenant_id=tenant_id()).order_by(ProductType.name).all()
+    types = ProductType.query.filter_by(tenant_id=tenant_id()).all()
+    types.sort(key=ordem_categorias_key)
     return render_template('products/tipos.html', types=types)
+
+
+@products_bp.route('/tipos/reordenar', methods=['POST'])
+@login_required
+def tipos_reordenar():
+    """Salva a ordem manual (lista de ids na ordem desejada, só não-protegidas)."""
+    ids = (request.get_json(silent=True) or {}).get('ordem', [])
+    tipos_map = {t.id: t for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+    pos = 0
+    for tid_ in ids:
+        t = tipos_map.get(int(tid_))
+        if t and not t.protected:
+            t.sort_order = pos
+            pos += 1
+    db.session.commit()
+    return jsonify(ok=True)
+
+
+@products_bp.route('/tipos/ordem-padrao', methods=['POST'])
+@login_required
+def tipos_ordem_padrao():
+    """Volta ao padrão: Promoção/Combos no topo e o resto em ordem alfabética."""
+    ProductType.query.filter_by(tenant_id=tenant_id()).update({'sort_order': None})
+    db.session.commit()
+    flash('Ordem das categorias restaurada para o padrão (alfabética).', 'success')
+    return redirect(url_for('products.tipos'))
 
 @products_bp.route('/tipos/novo', methods=['POST'])
 @login_required
