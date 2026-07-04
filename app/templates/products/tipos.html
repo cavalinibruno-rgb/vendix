@@ -121,6 +121,19 @@
     alvo.parentNode.insertBefore(dragRow, antes ? alvo : alvo.nextSibling);
   });
 
+  // Auto-scroll: arrastando perto da borda da tela, a página rola sozinha
+  // (o drag nativo não faz isso), permitindo levar um item do fim ao topo
+  // num movimento só.
+  document.addEventListener('dragover', e => {
+    if (!dragRow) return;
+    const margem = 100;
+    if (e.clientY < margem) {
+      window.scrollBy(0, -Math.ceil((margem - e.clientY) / 4));
+    } else if (e.clientY > window.innerHeight - margem) {
+      window.scrollBy(0, Math.ceil((e.clientY - (window.innerHeight - margem)) / 4));
+    }
+  });
+
   function salvarOrdem() {
     const ordem = [...tbody.querySelectorAll('tr.cat-drag')].map(tr => parseInt(tr.dataset.tid));
     fetch('{{ url_for("products.tipos_reordenar") }}', {
