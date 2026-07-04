@@ -66,11 +66,16 @@
     {% set ns = namespace(total_custo=0, total_venda=0, total_itens=0) %}
     {% for p in produtos %}
     {% set es = eff_stock(p) %}
+    {% set eh_pack = p.pack_parent_id and p.pack_qty %}
     {% set custo_total = (p.cost_price or 0) * es %}
     {% set venda_total = (p.sale_price or 0) * es %}
+    {# Packs não somam nos totais: o estoque deles é o MESMO físico do item
+       unitário (compartilhado) — somar os dois contaria o valor em dobro. #}
+    {% if not eh_pack %}
     {% set ns.total_custo = ns.total_custo + custo_total %}
     {% set ns.total_venda = ns.total_venda + venda_total %}
     {% set ns.total_itens = ns.total_itens + es %}
+    {% endif %}
     <tr>
       <td class="right" style="color:#888;">{{ loop.index }}</td>
       <td><strong>{{ p.name }}</strong></td>
@@ -87,7 +92,7 @@
       <td class="right" style="color:#888;">{{ p.min_stock or 0 }}</td>
       <td class="right">R$ {{ '%.2f'|format(p.cost_price or 0) }}</td>
       <td class="right">R$ {{ '%.2f'|format(p.sale_price or 0) }}</td>
-      <td class="right"><strong>R$ {{ '%.2f'|format(custo_total) }}</strong></td>
+      <td class="right">{% if eh_pack %}<span style="color:#999;">—</span>{% else %}<strong>R$ {{ '%.2f'|format(custo_total) }}</strong>{% endif %}</td>
     </tr>
     {% endfor %}
   </tbody>
@@ -107,6 +112,12 @@
     <div class="value" id="tot-venda">R$ {{ '%.2f'|format(ns.total_venda) }}</div>
   </div>
 </div>
+
+<p style="margin-top:10px;font-size:10px;color:#888;">
+  * Packs não somam nos totais — o estoque deles é o mesmo dos itens unitários (estoque compartilhado);
+  somar os dois contaria o valor em dobro. Combos e promoções não aparecem neste relatório pelo mesmo motivo
+  (o estoque é dos produtos componentes).
+</p>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
