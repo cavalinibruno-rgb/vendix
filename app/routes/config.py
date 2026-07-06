@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response, abort
 from flask_login import login_required, current_user
 from app import db
 from app import r2
@@ -28,6 +28,19 @@ def index():
         return redirect(url_for('config.index'))
 
     return render_template('config/index.html', cfg=cfg, coupons=coupons, tenant=tenant)
+
+@config_bp.route('/lanchonete', methods=['POST'])
+@login_required
+def lanchonete_settings():
+    tenant = current_user.tenant
+    if not tenant.is_lanchonete:
+        abort(403)
+    cfg = tenant.get_settings()
+    cfg['delivery_time'] = request.form.get('delivery_time', '').strip()[:40]
+    tenant.save_settings(cfg)
+    db.session.commit()
+    flash('Configurações da lanchonete salvas.', 'success')
+    return redirect(url_for('config.index'))
 
 @config_bp.route('/regime-tributario', methods=['POST'])
 @login_required

@@ -47,8 +47,10 @@ def cardapio(slug):
     from app.routes.products import ordem_categorias_key
     categorias.sort(key=ordem_categorias_key)
     bairros      = Neighborhood.query.filter_by(tenant_id=tenant.id).order_by(Neighborhood.name).all()
+    delivery_time = tenant.get_settings().get('delivery_time', '') if tenant.is_lanchonete else ''
     return render_template('loja/cardapio.html',
-        tenant=tenant, categorias=categorias, bairros=bairros, caixa_aberto=caixa_aberto)
+        tenant=tenant, categorias=categorias, bairros=bairros, caixa_aberto=caixa_aberto,
+        delivery_time=delivery_time)
 
 
 # ── API pública: lista de produtos ─────────────────────
