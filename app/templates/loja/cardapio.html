@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#1a1a2e">
+<meta name="theme-color" content="{{ '#ff7a00' if tenant.is_lanchonete else '#1a1a2e' }}">
 <title>{{ tenant.store_name }}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -176,9 +176,37 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 
 /* Padding bottom quando cart bar aparece */
 .has-cart{padding-bottom:74px;}
+
+/* ══════════ TEMA LANCHONETE (só quando body.lanchonete) ══════════ */
+body.lanchonete{background:#f6f6f6;}
+/* Header claro */
+body.lanchonete .lh{background:#fff;border-bottom:1px solid #eee;}
+body.lanchonete .lh-nome{color:#1a1a1a;}
+body.lanchonete .lh-cart{background:#ff7a00;color:#fff;}
+body.lanchonete .lh-cart-n{background:#1a1a1a;color:#fff;}
+/* Abas com destaque laranja */
+body.lanchonete .cat.active{color:#ff7a00;border-bottom-color:#ff7a00;}
+/* Produtos em LISTA (foto à esquerda, nome + descrição + preço à direita) */
+body.lanchonete .grid{display:block;padding:0;background:#fff;}
+body.lanchonete .pc{flex-direction:row;align-items:center;gap:12px;border-radius:0;
+     box-shadow:none;border-bottom:1px solid #f0f0f0;padding:14px;cursor:pointer;background:#fff;}
+body.lanchonete .pc:active{background:#fafafa;}
+body.lanchonete .pc-img{width:92px;height:92px;min-width:92px;border-radius:10px;
+     object-fit:cover;padding:0;background:#f5f5f5;}
+body.lanchonete .pc-ph{width:92px;height:92px;min-width:92px;border-radius:10px;}
+body.lanchonete .pc-info{padding:0;justify-content:center;}
+body.lanchonete .pc-cat{display:none;}
+body.lanchonete .pc-name{font-size:.95rem;font-weight:700;color:#1a1a1a;margin-bottom:4px;flex:none;}
+body.lanchonete .pc-desc{font-size:.8rem;color:#8a8a8a;line-height:1.35;margin-bottom:6px;
+     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+body.lanchonete .pc-price{font-size:.98rem;font-weight:800;color:#1a1a1a;margin-bottom:0;}
+/* Título da seção de categoria */
+body.lanchonete .sec-cat{font-size:1.05rem;font-weight:800;color:#1a1a1a;padding:18px 14px 6px;background:#fff;}
+/* Selo de promoção laranja */
+body.lanchonete .pc-promo{position:static;background:#ff7a00;margin-bottom:4px;display:inline-block;}
 </style>
 </head>
-<body>
+<body{% if tenant.is_lanchonete %} class="lanchonete"{% endif %}>
 
 {% if not caixa_aberto %}
 <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -408,6 +436,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 
 <script>
 const SLUG = {{ tenant.slug | tojson }};
+const IS_LANCHONETE = {{ 'true' if tenant.is_lanchonete else 'false' }};
 let todos = [];
 let carrinho = [];
 let pgto = 'entrega_dinheiro';
@@ -481,12 +510,17 @@ function aplicarFiltros() {
   renderGrid(lista);
 }
 
+function _escapeHtml(s) {
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
 function renderGrid(lista) {
   const grid = document.getElementById('prodGrid');
   if (!lista.length) {
     grid.innerHTML = '<div class="empty" style="grid-column:1/-1;"><span class="empty-icon">🍽️</span>Nenhum produto nesta categoria.</div>';
     return;
   }
+  if (IS_LANCHONETE) { renderLista(lista); return; }
   grid.innerHTML = lista.map(p => `
     <div class="pc">
       ${p.is_promo ? '<span class="pc-promo">🔥 PROMOÇÃO</span>' : ''}
@@ -498,6 +532,23 @@ function renderGrid(lista) {
         <div class="pc-name">${p.name}</div>
         <div class="pc-price">R$ ${fmt(p.price)}</div>
         <button class="pc-btn" onclick="addItem(${p.id})">+ Adicionar</button>
+      </div>
+    </div>`).join('');
+}
+
+// Layout de lanchonete: lista foto-esquerda com descrição; a linha toda abre o produto
+function renderLista(lista) {
+  const grid = document.getElementById('prodGrid');
+  grid.innerHTML = lista.map(p => `
+    <div class="pc" onclick="addItem(${p.id})">
+      ${p.thumb
+        ? `<img class="pc-img" src="${p.thumb}" alt="${_escapeHtml(p.name)}" loading="lazy">`
+        : `<div class="pc-ph">🍔</div>`}
+      <div class="pc-info">
+        ${p.is_promo ? '<span class="pc-promo">🔥 PROMOÇÃO</span>' : ''}
+        <div class="pc-name">${_escapeHtml(p.name)}</div>
+        ${p.description ? `<div class="pc-desc">${_escapeHtml(p.description)}</div>` : ''}
+        <div class="pc-price">R$ ${fmt(p.price)}</div>
       </div>
     </div>`).join('');
 }

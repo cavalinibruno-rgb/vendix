@@ -90,6 +90,7 @@ def api_produtos(slug):
             'brand_name': p.brand.name if p.brand else None,
             'thumb':      thumb,
             'is_promo':   bool(p.type and _is_promo_cat(p.type.name)),
+            'description': p.description or '',
         })
     return jsonify(out)
 
