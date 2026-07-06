@@ -180,11 +180,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 /* ══════════ TEMA LANCHONETE (só quando body.lanchonete) ══════════ */
 body.lanchonete{background:#f6f6f6;}
 /* Header claro */
-body.lanchonete .lh{background:#fff;border-bottom:1px solid #eee;}
-body.lanchonete .lh-nome{color:#1a1a1a;}
-body.lanchonete .lh-cart{background:#ff7a00;color:#fff;}
-body.lanchonete .lh-cart-n{background:#1a1a1a;color:#fff;}
-/* Abas com destaque laranja */
+/* Header escondido: logo/nome vêm do card da loja; carrinho pela barra inferior */
+body.lanchonete .lh{display:none;}
+/* Abas fixas no topo + destaque laranja */
+body.lanchonete .cats{position:sticky;top:0;z-index:150;box-shadow:0 2px 5px rgba(0,0,0,.05);}
 body.lanchonete .cat.active{color:#ff7a00;border-bottom-color:#ff7a00;}
 /* Produtos em LISTA (foto à esquerda, nome + descrição + preço à direita) */
 body.lanchonete .grid{display:block;padding:0;background:#fff;}
@@ -507,12 +506,17 @@ function filtrarCat(catId, btn) {
   btn.classList.add('active');
   if (IS_LANCHONETE) {
     // Na lanchonete a aba ROLA até a seção da categoria (não filtra).
+    _suppressSpy = true;                       // evita o spy brigar com a rolagem do clique
     if (catId) {
       const sec = document.getElementById('sec-' + catId);
-      if (sec) window.scrollTo({ top: sec.getBoundingClientRect().top + window.scrollY - 96, behavior: 'smooth' });
+      if (sec) {
+        const tabsH = (document.getElementById('catTabs').offsetHeight || 44) + 6;
+        window.scrollTo({ top: sec.getBoundingClientRect().top + window.scrollY - tabsH, behavior: 'smooth' });
+      }
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    setTimeout(() => { _suppressSpy = false; }, 700);
     return;
   }
   _catAtiva = catId;
@@ -613,15 +617,27 @@ function renderLista(lista) {
   grid.innerHTML = html;
 }
 
-// Destaca a aba da seção visível ao rolar (só lanchonete)
+// Destaca a aba da seção visível ao rolar (só lanchonete).
+// NÃO usa scrollIntoView (mexeria no scroll da página) — centraliza a aba
+// apenas na barra horizontal, e só reage quando a seção muda.
+let _suppressSpy = false;
+let _spyAtual = '__init__';
 function _scrollSpyLanchonete() {
-  const secs = document.querySelectorAll('.sec-cat');
+  if (_suppressSpy) return;
+  const tabs = document.getElementById('catTabs');
+  const tabsH = (tabs.offsetHeight || 44) + 10;
   let ativa = null;
-  secs.forEach(s => { if (s.getBoundingClientRect().top - 130 <= 0) ativa = s.id.replace('sec-', ''); });
-  document.querySelectorAll('#catTabs .cat').forEach(c => c.classList.remove('active'));
-  const alvo = ativa ? document.querySelector(`#catTabs .cat[data-cat="${ativa}"]`)
-                     : document.querySelector('#catTabs .cat');
-  if (alvo) { alvo.classList.add('active'); alvo.scrollIntoView({ inline: 'center', block: 'nearest' }); }
+  document.querySelectorAll('.sec-cat').forEach(s => {
+    if (s.getBoundingClientRect().top - tabsH <= 0) ativa = s.id.replace('sec-', '');
+  });
+  if (ativa === _spyAtual) return;
+  _spyAtual = ativa;
+  tabs.querySelectorAll('.cat').forEach(c => c.classList.remove('active'));
+  const alvo = ativa ? tabs.querySelector(`.cat[data-cat="${ativa}"]`) : tabs.querySelector('.cat');
+  if (alvo) {
+    alvo.classList.add('active');
+    tabs.scrollTo({ left: alvo.offsetLeft - tabs.clientWidth / 2 + alvo.clientWidth / 2, behavior: 'smooth' });
+  }
 }
 if (IS_LANCHONETE) {
   window.addEventListener('scroll', _scrollSpyLanchonete, { passive: true });
