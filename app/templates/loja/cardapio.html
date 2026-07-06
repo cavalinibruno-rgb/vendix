@@ -472,6 +472,16 @@ let _marcaAtiva = null;
 function filtrarCat(catId, btn) {
   document.querySelectorAll('#catTabs .cat').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
+  if (IS_LANCHONETE) {
+    // Na lanchonete a aba ROLA até a seção da categoria (não filtra).
+    if (catId) {
+      const sec = document.getElementById('sec-' + catId);
+      if (sec) window.scrollTo({ top: sec.getBoundingClientRect().top + window.scrollY - 96, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return;
+  }
   _catAtiva = catId;
   _marcaAtiva = null;
   construirMarcas(catId);
@@ -504,6 +514,13 @@ function filtrarBusca(txt) {
 }
 
 function aplicarFiltros() {
+  if (IS_LANCHONETE) {
+    // Lanchonete: mostra tudo agrupado por categoria (abas rolam, não filtram);
+    // só a busca reduz a lista.
+    const lista = _busca ? todos.filter(p => p.name.toLowerCase().includes(_busca)) : todos;
+    renderGrid(lista);
+    return;
+  }
   let lista = _catAtiva ? todos.filter(p => p.type_id == _catAtiva) : todos;
   if (_marcaAtiva) lista = lista.filter(p => p.brand_id == _marcaAtiva);
   if (_busca) lista = lista.filter(p => p.name.toLowerCase().includes(_busca));
@@ -536,21 +553,45 @@ function renderGrid(lista) {
     </div>`).join('');
 }
 
-// Layout de lanchonete: lista foto-esquerda com descrição; a linha toda abre o produto
+// Layout de lanchonete: seções por categoria (a lista já vem ordenada por
+// categoria da API), cada produto foto-esquerda com descrição; linha abre o produto.
 function renderLista(lista) {
   const grid = document.getElementById('prodGrid');
-  grid.innerHTML = lista.map(p => `
-    <div class="pc" onclick="addItem(${p.id})">
-      ${p.thumb
-        ? `<img class="pc-img" src="${p.thumb}" alt="${_escapeHtml(p.name)}" loading="lazy">`
-        : `<div class="pc-ph">🍔</div>`}
-      <div class="pc-info">
-        ${p.is_promo ? '<span class="pc-promo">🔥 PROMOÇÃO</span>' : ''}
-        <div class="pc-name">${_escapeHtml(p.name)}</div>
-        ${p.description ? `<div class="pc-desc">${_escapeHtml(p.description)}</div>` : ''}
-        <div class="pc-price">R$ ${fmt(p.price)}</div>
-      </div>
-    </div>`).join('');
+  let html = '';
+  let catId = '__nenhuma__';
+  lista.forEach(p => {
+    if (p.type_id !== catId) {
+      catId = p.type_id;
+      html += `<div class="sec-cat" id="sec-${catId}">${_escapeHtml(p.type_name || 'Outros')}</div>`;
+    }
+    html += `
+      <div class="pc" onclick="addItem(${p.id})">
+        ${p.thumb
+          ? `<img class="pc-img" src="${p.thumb}" alt="${_escapeHtml(p.name)}" loading="lazy">`
+          : `<div class="pc-ph">🍔</div>`}
+        <div class="pc-info">
+          ${p.is_promo ? '<span class="pc-promo">🔥 PROMOÇÃO</span>' : ''}
+          <div class="pc-name">${_escapeHtml(p.name)}</div>
+          ${p.description ? `<div class="pc-desc">${_escapeHtml(p.description)}</div>` : ''}
+          <div class="pc-price">R$ ${fmt(p.price)}</div>
+        </div>
+      </div>`;
+  });
+  grid.innerHTML = html;
+}
+
+// Destaca a aba da seção visível ao rolar (só lanchonete)
+function _scrollSpyLanchonete() {
+  const secs = document.querySelectorAll('.sec-cat');
+  let ativa = null;
+  secs.forEach(s => { if (s.getBoundingClientRect().top - 130 <= 0) ativa = s.id.replace('sec-', ''); });
+  document.querySelectorAll('#catTabs .cat').forEach(c => c.classList.remove('active'));
+  const alvo = ativa ? document.querySelector(`#catTabs .cat[data-cat="${ativa}"]`)
+                     : document.querySelector('#catTabs .cat');
+  if (alvo) { alvo.classList.add('active'); alvo.scrollIntoView({ inline: 'center', block: 'nearest' }); }
+}
+if (IS_LANCHONETE) {
+  window.addEventListener('scroll', _scrollSpyLanchonete, { passive: true });
 }
 
 let _prodSheet = null;
