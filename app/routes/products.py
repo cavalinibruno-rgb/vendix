@@ -39,6 +39,27 @@ def _parse_promo_dt(value):
     except ValueError:
         return None
 
+def _parse_addons(raw):
+    """Valida os adicionais vindos do form (JSON) -> string JSON limpa, ou None.
+    Formato: [{"name": str, "price": float>=0}]. So aplica se a loja for lanchonete."""
+    if not (current_user.tenant and current_user.tenant.is_lanchonete):
+        return None
+    try:
+        itens = json.loads(raw or '[]')
+    except Exception:
+        return None
+    limpo = []
+    for a in itens[:50]:
+        nome = str(a.get('name', '')).strip()[:60]
+        if not nome:
+            continue
+        try:
+            preco = round(max(0.0, float(a.get('price', 0) or 0)), 2)
+        except (TypeError, ValueError):
+            preco = 0.0
+        limpo.append({'name': nome, 'price': preco})
+    return json.dumps(limpo, ensure_ascii=False) if limpo else None
+
 # Magic bytes das imagens permitidas
 _MAGIC_BYTES = {
     b'\xff\xd8\xff': 'image/jpeg',
@@ -176,6 +197,7 @@ def novo():
         )
         product.promo_starts_at = _parse_promo_dt(request.form.get('promo_inicio'))
         product.promo_ends_at   = _parse_promo_dt(request.form.get('promo_fim'))
+        product.addons          = _parse_addons(request.form.get('addons_json', '[]'))
         db.session.add(product)
         db.session.flush()
 
@@ -291,6 +313,7 @@ def editar(product_id):
         product.description    = request.form.get('description', '').strip()
         product.promo_starts_at = _parse_promo_dt(request.form.get('promo_inicio'))
         product.promo_ends_at   = _parse_promo_dt(request.form.get('promo_fim'))
+        product.addons          = _parse_addons(request.form.get('addons_json', '[]'))
         foto = request.files.get('imagem')
         if foto and foto.filename:
             img_bytes, mime = _comprimir_imagem(foto)

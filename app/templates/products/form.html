@@ -236,6 +236,32 @@
             <textarea name="description" class="form-control" rows="2"
                       placeholder="Descrição opcional...">{{ product.description if product else '' }}</textarea>
           </div>
+
+          {% if current_user.tenant and current_user.tenant.is_lanchonete %}
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Adicionais <span class="text-muted small fw-normal">(opcional)</span></label>
+            <div class="card border-warning">
+              <div class="card-body p-3">
+                <div class="alert alert-info small py-2 mb-3">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Itens que o cliente pode acrescentar a este produto no link (ex: + Bacon, + Cheddar). Cada um soma no preço.
+                </div>
+                <div id="adicionaisList"></div>
+                <div class="input-group mb-1">
+                  <input type="text" id="addonNome" class="form-control form-control-sm" placeholder="Nome (ex: Bacon)" maxlength="60"
+                         onkeydown="if(event.key==='Enter'){event.preventDefault();addAdicional();}">
+                  <input type="number" id="addonPreco" class="form-control form-control-sm" placeholder="Preço" step="0.01" min="0" style="max-width:110px;"
+                         onkeydown="if(event.key==='Enter'){event.preventDefault();addAdicional();}">
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addAdicional()">
+                    <i class="bi bi-plus-lg"></i> Adicionar
+                  </button>
+                </div>
+                <input type="hidden" name="addons_json" id="addonsInput" value="[]">
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
           <div class="d-flex gap-2">
             <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left me-1"></i>Voltar
@@ -599,6 +625,35 @@ nomeAuto = gerarNomePromo();
 toggleCombo();
 renderComponents();
 updateCost();
+
+/* ── Adicionais (lanchonete) ── */
+{% if current_user.tenant and current_user.tenant.is_lanchonete %}
+let adicionais = {{ (product.addons | safe) if (product and product.addons) else '[]' }};
+function _escAd(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function renderAdicionais() {
+  document.getElementById('addonsInput').value = JSON.stringify(adicionais);
+  const list = document.getElementById('adicionaisList');
+  if (!adicionais.length) { list.innerHTML = '<p class="text-muted small mb-2">Nenhum adicional cadastrado.</p>'; return; }
+  list.innerHTML = adicionais.map((a, i) => `
+    <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:#f8f9fa;">
+      <span class="flex-grow-1 fw-semibold small">${_escAd(a.name)}</span>
+      <span class="small text-muted">R$ ${(parseFloat(a.price)||0).toFixed(2)}</span>
+      <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAdicional(${i})"><i class="bi bi-trash"></i></button>
+    </div>`).join('');
+}
+function addAdicional() {
+  const nome = document.getElementById('addonNome').value.trim();
+  const preco = parseFloat(document.getElementById('addonPreco').value) || 0;
+  if (!nome) { document.getElementById('addonNome').focus(); return; }
+  adicionais.push({ name: nome, price: Math.max(0, preco) });
+  document.getElementById('addonNome').value = '';
+  document.getElementById('addonPreco').value = '';
+  document.getElementById('addonNome').focus();
+  renderAdicionais();
+}
+function removeAdicional(i) { adicionais.splice(i, 1); renderAdicionais(); }
+renderAdicionais();
+{% endif %}
 
 function resolverEstoque(el) {
   const hidden = document.getElementById('stockValue');

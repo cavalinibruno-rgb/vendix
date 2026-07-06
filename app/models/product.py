@@ -59,6 +59,9 @@ class Product(db.Model):
     promo_starts_at = db.Column(db.DateTime, nullable=True)
     promo_ends_at   = db.Column(db.DateTime, nullable=True)
 
+    # Adicionais (lanchonete) — JSON: [{"name": "Bacon", "price": 3.0}, ...]
+    addons          = db.Column(db.Text, nullable=True)
+
     pack_parent = db.relationship('Product', foreign_keys='Product.pack_parent_id',
                                   primaryjoin='Product.pack_parent_id == Product.id',
                                   remote_side='Product.id',
