@@ -311,6 +311,8 @@ def _run_migrations(db):
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_ends_at TIMESTAMP",
         # Ordem manual das categorias (null = ordem alfabética padrão)
         "ALTER TABLE product_types ADD COLUMN IF NOT EXISTS sort_order INTEGER",
+        # Tipo de negócio da loja (habilita recursos específicos: lanchonete)
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS business_type VARCHAR(16) DEFAULT 'varejo'",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

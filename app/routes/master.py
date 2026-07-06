@@ -53,6 +53,9 @@ def tenant_novo():
         password     = request.form.get('password', '').strip()
         plan         = request.form.get('plan', 'mensal')
         dias         = int(request.form.get('dias', 30))
+        business_type = request.form.get('business_type', 'varejo')
+        if business_type not in ('varejo', 'lanchonete'):
+            business_type = 'varejo'
         cep          = request.form.get('cep', '').strip()
         street       = request.form.get('street', '').strip()
         number       = request.form.get('number', '').strip()
@@ -86,6 +89,7 @@ def tenant_novo():
                 phone=phone,
                 plan=plan,
                 status='active',
+                business_type=business_type,
                 expires_at=datetime.now() + timedelta(days=dias),
                 profile_complete=True,
                 cep=cep or None,

@@ -27,9 +27,14 @@ class Tenant(db.Model):
     state            = db.Column(db.String(2), nullable=True)
     cep              = db.Column(db.String(9), nullable=True)
     event_mode       = db.Column(db.Boolean, default=False, nullable=False)
+    business_type    = db.Column(db.String(16), default='varejo', nullable=False)  # varejo | lanchonete
     created_at    = db.Column(db.DateTime, default=datetime.now)
 
     users = db.relationship('User', backref='tenant', lazy=True)
+
+    @property
+    def is_lanchonete(self):
+        return self.business_type == 'lanchonete'
 
     @property
     def is_active(self):
