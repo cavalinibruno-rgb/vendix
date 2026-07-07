@@ -38,7 +38,11 @@ class LojaSubdomainMiddleware:
             slug   = host[:-len(LOJA_DOMAIN_SUFFIX)]
             path   = environ.get('PATH_INFO', '/')
             prefix = f'/loja/{slug}'
-            if not path.startswith(prefix):
+            # Não reescreve o que já é rota de loja (ex.: /loja/<slug-real>/produtos).
+            # O slug do host pode vir sem hífens (mirageburger) enquanto a página
+            # usa o slug real com hífens (mirage-burger); prefixar de novo geraria
+            # /loja/mirageburger/loja/mirage-burger/... e quebraria a busca.
+            if not path.startswith('/loja/'):
                 environ['PATH_INFO'] = (prefix + path).rstrip('/') or prefix
         return self.app(environ, start_response)
 
