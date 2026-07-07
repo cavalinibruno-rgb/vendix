@@ -333,6 +333,15 @@ body.lanchonete .pc-promo{position:static;background:#ff7a00;margin-bottom:4px;d
              display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .2s;"></div>
       </button>
     </div>
+    <!-- Adicionais (lanchonete) -->
+    <div id="addonsRow" style="display:none;margin:0 18px 6px;">
+      <div style="font-weight:700;font-size:.9rem;color:#1a1a2e;margin-bottom:8px;">Adicionais</div>
+      <div id="addonsList"></div>
+    </div>
+    <!-- Observação por item -->
+    <div id="obsItemRow" style="display:none;margin:0 18px 12px;">
+      <input class="inp" id="obsItemInput" type="text" placeholder="Alguma observação? (ex: sem cebola)">
+    </div>
     <div class="prod-qty-row">
       <button class="prod-qty-btn" onclick="prodQty(-1)">−</button>
       <input class="prod-qty-num" id="prodSheetQty" type="number" min="1" inputmode="numeric" value="1" oninput="prodQtyInput(this)">
@@ -646,10 +655,45 @@ if (IS_LANCHONETE) {
 let _prodSheet = null;
 let _prodSheetQty = 1;
 let _prodSheetGelado = false;
+let _prodSheetAddons = new Set(); // índices dos adicionais selecionados
 
 function _precoAtualSheet() {
-  if (_prodSheetGelado && _prodSheet.price_cold > 0) return _prodSheet.price_cold;
-  return _prodSheet.price;
+  let base = (_prodSheetGelado && _prodSheet.price_cold > 0) ? _prodSheet.price_cold : _prodSheet.price;
+  const addons = _prodSheet.addons || [];
+  _prodSheetAddons.forEach(idx => { if (addons[idx]) base += addons[idx].price || 0; });
+  return base;
+}
+
+function _renderAddonsSheet(prod) {
+  const row  = document.getElementById('addonsRow');
+  const list = document.getElementById('addonsList');
+  const addons = prod.addons || [];
+  if (!addons.length) { row.style.display = 'none'; list.innerHTML = ''; return; }
+  list.innerHTML = addons.map((a, idx) => `
+    <button type="button" data-idx="${idx}" onclick="toggleAddon(${idx})"
+      style="width:100%;border:2px solid #eee;border-radius:12px;background:#fafafa;
+             padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;">
+      <div id="addonChk${idx}" style="width:22px;height:22px;border-radius:6px;border:2px solid #ccc;
+           display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;color:#fff;"></div>
+      <span style="flex:1;text-align:left;font-weight:600;font-size:.88rem;color:#1a1a2e;">${_escapeHtml(a.name)}</span>
+      ${a.price > 0 ? `<span style="font-weight:700;font-size:.85rem;color:#ff7a00;">+ R$ ${fmt(a.price)}</span>` : ''}
+    </button>`).join('');
+  row.style.display = '';
+}
+
+function toggleAddon(idx) {
+  const btn = document.querySelector(`#addonsList button[data-idx="${idx}"]`);
+  const chk = document.getElementById('addonChk' + idx);
+  if (_prodSheetAddons.has(idx)) {
+    _prodSheetAddons.delete(idx);
+    btn.style.borderColor = '#eee'; btn.style.background = '#fafafa';
+    chk.style.background = 'transparent'; chk.style.borderColor = '#ccc'; chk.textContent = '';
+  } else {
+    _prodSheetAddons.add(idx);
+    btn.style.borderColor = '#ff7a00'; btn.style.background = '#fff7ef';
+    chk.style.background = '#ff7a00'; chk.style.borderColor = '#ff7a00'; chk.textContent = '✓';
+  }
+  _atualizarSheetQty();
 }
 
 function toggleGeladoSheet() {
@@ -679,9 +723,8 @@ function addItem(id) {
   if (!prod) return;
   _prodSheet = prod;
   _prodSheetGelado = false;
-  // qty inicial: já no carrinho? mostra qty atual, senão 1
-  const ex = carrinho.find(i => i.id === id);
-  _prodSheetQty = ex ? ex.qty : 1;
+  _prodSheetAddons = new Set();
+  _prodSheetQty = 1;
 
   // Imagem
   const imgEl = document.getElementById('prodSheetImg');
@@ -712,6 +755,13 @@ function addItem(id) {
     geladoRow.style.display = 'none';
   }
 
+  // Adicionais + observação por item (lanchonete)
+  _renderAddonsSheet(prod);
+  const obsRow = document.getElementById('obsItemRow');
+  const obsInp = document.getElementById('obsItemInput');
+  if (obsInp) obsInp.value = '';
+  obsRow.style.display = IS_LANCHONETE ? '' : 'none';
+
   _atualizarSheetQty();
   document.getElementById('prodOverlay').classList.add('show');
   document.body.style.overflow = 'hidden';
@@ -738,12 +788,20 @@ function confirmarAddItem() {
   if (!_prodSheet) return;
   const preco = _precoAtualSheet();
   const nome  = _prodSheetGelado ? _prodSheet.name + ' Gelado' : _prodSheet.name;
-  const idx   = carrinho.findIndex(i => i.id === _prodSheet.id && i.gelado === _prodSheetGelado);
+  const addonsProd = _prodSheet.addons || [];
+  const selAddons  = [..._prodSheetAddons].sort((a, b) => a - b)
+    .map(idx => ({ name: addonsProd[idx].name, price: addonsProd[idx].price || 0 }));
+  const obsInp = document.getElementById('obsItemInput');
+  const obs    = obsInp ? obsInp.value.trim() : '';
+  // Assinatura: mesmo produto com adicionais/obs diferentes = linha separada
+  const sig = [_prodSheet.id, _prodSheetGelado, selAddons.map(a => a.name).join(','), obs].join('|');
+  const idx = carrinho.findIndex(i => i.sig === sig);
   if (idx >= 0) {
     carrinho[idx].qty = _prodSheetQty;
   } else {
     carrinho.push({ id: _prodSheet.id, name: nome, price: preco, qty: _prodSheetQty,
-                    thumb: _prodSheet.thumb || null, gelado: _prodSheetGelado });
+                    thumb: _prodSheet.thumb || null, gelado: _prodSheetGelado,
+                    addons: selAddons, obs: obs, sig: sig });
   }
   atualizarCartUI();
   fecharProdSheetDireto();
@@ -759,9 +817,8 @@ function fecharProdSheet(e) {
   if (e.target === document.getElementById('prodOverlay')) fecharProdSheetDireto();
 }
 
-function changeQty(id, delta) {
-  const idx = carrinho.findIndex(i => i.id === id);
-  if (idx < 0) return;
+function changeQty(idx, delta) {
+  if (idx < 0 || idx >= carrinho.length) return;
   carrinho[idx].qty += delta;
   if (carrinho[idx].qty <= 0) carrinho.splice(idx, 1);
   atualizarCartUI();
@@ -875,19 +932,26 @@ function renderCartItens() {
     el.innerHTML = '<div class="empty"><span class="empty-icon">🛒</span>Carrinho vazio.</div>';
     return;
   }
-  el.innerHTML = carrinho.map(i => `
+  el.innerHTML = carrinho.map((i, idx) => {
+    const extras = (i.addons && i.addons.length)
+      ? `<div style="font-size:.72rem;color:#ff7a00;font-weight:600;margin-top:2px;">+ ${i.addons.map(a => _escapeHtml(a.name)).join(', ')}</div>`
+      : '';
+    const obs = i.obs
+      ? `<div style="font-size:.72rem;color:#999;font-style:italic;margin-top:2px;">“${_escapeHtml(i.obs)}”</div>`
+      : '';
+    return `
     <div class="ci">
       ${i.thumb
-        ? `<img class="ci-thumb" src="${i.thumb}" alt="${i.name}">`
+        ? `<img class="ci-thumb" src="${i.thumb}" alt="${_escapeHtml(i.name)}">`
         : `<div class="ci-thumb-ph">🍽️</div>`}
-      <span class="ci-name">${i.name}</span>
+      <div class="ci-name">${_escapeHtml(i.name)}${extras}${obs}</div>
       <span class="ci-price">R$ ${fmt(i.price * i.qty)}</span>
       <div class="ci-ctrl">
-        <button class="ci-btn" onclick="changeQty(${i.id}, -1)">−</button>
+        <button class="ci-btn" onclick="changeQty(${idx}, -1)">−</button>
         <span class="ci-qty">${i.qty}</span>
-        <button class="ci-btn" onclick="changeQty(${i.id}, +1)">+</button>
+        <button class="ci-btn" onclick="changeQty(${idx}, +1)">+</button>
       </div>
-    </div>`).join('');
+    </div>`; }).join('');
 }
 
 function renderCartTotais() {
@@ -1018,6 +1082,8 @@ function fazerPedido() {
         name:       i.name,
         unit_price: i.price,
         quantity:   i.qty,
+        addons:     i.addons || [],
+        notes:      i.obs || '',
       })),
     }),
   })

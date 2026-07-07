@@ -79,10 +79,19 @@ def aceitar(pedido_id):
             qty  = float(i['quantity'])
             pid  = i.get('product_id')
             prod = Product.query.filter_by(id=pid, tenant_id=tid()).first() if pid else None
+            # Preserva adicionais e observação do item no nome (SaleItem não tem
+            # campo próprio) para aparecerem no recibo/cozinha.
+            nome_item = i['name']
+            addons_item = i.get('addons') or []
+            if addons_item:
+                nome_item += ' (+ ' + ', '.join(a['name'] for a in addons_item if a.get('name')) + ')'
+            if i.get('notes'):
+                nome_item += ' — ' + i['notes']
+            nome_item = nome_item[:128]
             db.session.add(SaleItem(
                 sale_id      = sale.id,
                 product_id   = pid,
-                product_name = i['name'],
+                product_name = nome_item,
                 unit_price   = float(i['unit_price']),
                 cost_price   = (prod.cost_price or 0) if prod else 0,
                 quantity     = qty,

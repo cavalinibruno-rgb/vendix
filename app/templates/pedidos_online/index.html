@@ -43,7 +43,15 @@
       <tbody>
         {% for item in p.items %}
         <tr>
-          <td>{{ item.name }}</td>
+          <td>
+            {{ item.name }}
+            {% if item.addons %}
+            <div class="small text-warning fw-semibold">+ {{ item.addons | map(attribute='name') | join(', ') }}</div>
+            {% endif %}
+            {% if item.notes %}
+            <div class="small text-muted fst-italic">“{{ item.notes }}”</div>
+            {% endif %}
+          </td>
           <td class="text-center text-muted">×{{ item.quantity|int }}</td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(item.total) }}</td>
         </tr>

@@ -123,7 +123,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
   <div class="sec-label">Resumo do pedido</div>
   {% for item in pedido.items %}
   <div class="resumo-item">
-    <span>{{ item.name }} ×{{ item.quantity|int }}</span>
+    <span>
+      {{ item.name }} ×{{ item.quantity|int }}
+      {% if item.addons %}<br><small style="color:#ff7a00;">+ {{ item.addons | map(attribute='name') | join(', ') }}</small>{% endif %}
+      {% if item.notes %}<br><small style="color:#999;font-style:italic;">“{{ item.notes }}”</small>{% endif %}
+    </span>
     <span>R$ {{ '%.2f'|format(item.total) }}</span>
   </div>
   {% endfor %}

@@ -81,6 +81,12 @@ def api_produtos(slug):
             thumb = f'/loja/{slug}/produto/{p.id}/foto'
         else:
             thumb = None
+        addons = []
+        if p.addons:
+            try:
+                addons = json.loads(p.addons)
+            except Exception:
+                addons = []
         out.append({
             'id':         p.id,
             'name':       p.name,
@@ -93,6 +99,7 @@ def api_produtos(slug):
             'thumb':      thumb,
             'is_promo':   bool(p.type and _is_promo_cat(p.type.name)),
             'description': p.description or '',
+            'addons':     addons,
         })
     return jsonify(out)
 
@@ -290,15 +297,39 @@ def fazer_pedido(slug):
         prod = Product.query.filter_by(id=pid, tenant_id=tenant.id, active=True).first()
         if not prod or qty <= 0:
             continue
-        line = round(prod.sale_price * qty, 2)
+        # Adicionais: valida contra os cadastrados no produto — nunca confia no
+        # preço vindo do cliente; usa sempre o preço do banco.
+        prod_addons = []
+        if prod.addons:
+            try:
+                prod_addons = json.loads(prod.addons)
+            except Exception:
+                prod_addons = []
+        preco_por_nome = {a['name']: a['price'] for a in prod_addons if a.get('name')}
+        sel_addons  = []
+        addons_extra = 0.0
+        for a in (i.get('addons') or []):
+            nome = (a.get('name') if isinstance(a, dict) else str(a)).strip()
+            if nome in preco_por_nome:
+                preco = round(float(preco_por_nome[nome] or 0), 2)
+                sel_addons.append({'name': nome, 'price': preco})
+                addons_extra += preco
+        unit = round(prod.sale_price + addons_extra, 2)
+        line = round(unit * qty, 2)
         subtotal += line
-        items_ok.append({
+        entry = {
             'product_id': prod.id,
             'name':       prod.name,
-            'unit_price': prod.sale_price,
+            'unit_price': unit,
             'quantity':   qty,
             'total':      line,
-        })
+        }
+        if sel_addons:
+            entry['addons'] = sel_addons
+        item_notes = (i.get('notes') or '').strip()[:200]
+        if item_notes:
+            entry['notes'] = item_notes
+        items_ok.append(entry)
 
     if not items_ok:
         return jsonify({'error': 'Nenhum produto válido.'}), 400
