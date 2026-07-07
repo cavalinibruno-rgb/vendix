@@ -439,12 +439,14 @@
           <div class="pgto-card" data-pgto="pix" data-label="Pix" onclick="handlePgtoClick(this)">
             <i class="bi bi-qr-code"></i>Pix
           </div>
+          {% if not current_user.tenant.is_lanchonete %}
           <div class="pgto-card" data-pgto="conta" data-label="Conta" onclick="handlePgtoClick(this)">
             <i class="bi bi-person-lines-fill"></i>Conta
           </div>
           <div class="pgto-card" data-pgto="funcionario" data-label="Funcionário" onclick="handlePgtoClick(this)">
             <i class="bi bi-person-badge"></i>Funcionário
           </div>
+          {% endif %}
         </div>
         <!-- Sub-seleção funcionário (loja) -->
         <div id="subFuncionario" class="d-none mt-2">

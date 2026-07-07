@@ -311,9 +311,11 @@
       <a href="{{ url_for('stock.index') }}" class="nav-link {% if 'stock' in ep %}active{% endif %}">
         <i class="bi bi-boxes"></i><span class="nav-label"> Estoque</span>
       </a>
+      {% if not current_user.tenant.is_lanchonete %}
       <a href="{{ url_for('account.index') }}" class="nav-link {% if 'account' in ep %}active{% endif %}">
         <i class="bi bi-person-lines-fill"></i><span class="nav-label"> Fiado</span>
       </a>
+      {% endif %}
       <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in ep %}active{% endif %}">
         <i class="bi bi-phone"></i><span class="nav-label"> Apps</span>
       </a>
