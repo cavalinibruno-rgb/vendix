@@ -84,7 +84,9 @@ def aceitar(pedido_id):
             nome_item = i['name']
             addons_item = i.get('addons') or []
             if addons_item:
-                nome_item += ' (+ ' + ', '.join(a['name'] for a in addons_item if a.get('name')) + ')'
+                nome_item += ' (+ ' + ', '.join(
+                    a['name'] + (' x%d' % a['qty'] if a.get('qty', 1) > 1 else '')
+                    for a in addons_item if a.get('name')) + ')'
             if i.get('notes'):
                 nome_item += ' — ' + i['notes']
             nome_item = nome_item[:128]

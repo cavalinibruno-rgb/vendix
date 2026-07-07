@@ -46,7 +46,7 @@
           <td>
             {{ item.name }}
             {% if item.addons %}
-            <div class="small text-warning fw-semibold">+ {{ item.addons | map(attribute='name') | join(', ') }}</div>
+            <div class="small text-warning fw-semibold">+ {% for a in item.addons %}{{ a.name }}{% if a.qty and a.qty > 1 %} ×{{ a.qty }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</div>
             {% endif %}
             {% if item.notes %}
             <div class="small text-muted fst-italic">“{{ item.notes }}”</div>

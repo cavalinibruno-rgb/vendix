@@ -311,9 +311,14 @@ def fazer_pedido(slug):
         for a in (i.get('addons') or []):
             nome = (a.get('name') if isinstance(a, dict) else str(a)).strip()
             if nome in preco_por_nome:
+                try:
+                    a_qty = int(a.get('qty', 1)) if isinstance(a, dict) else 1
+                except (TypeError, ValueError):
+                    a_qty = 1
+                a_qty = max(1, min(a_qty, 99))
                 preco = round(float(preco_por_nome[nome] or 0), 2)
-                sel_addons.append({'name': nome, 'price': preco})
-                addons_extra += preco
+                sel_addons.append({'name': nome, 'price': preco, 'qty': a_qty})
+                addons_extra += preco * a_qty
         unit = round(prod.sale_price + addons_extra, 2)
         line = round(unit * qty, 2)
         subtotal += line

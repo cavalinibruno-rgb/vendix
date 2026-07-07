@@ -86,14 +86,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 .compl-title{font-size:1.08rem;font-weight:800;color:#1a1a1a;}
 .compl-sub{font-size:.8rem;color:#999;margin-top:1px;}
 .addon-item{display:flex;align-items:center;gap:12px;padding:14px 18px;
-            border-top:1px solid #f0f0f0;cursor:pointer;}
+            border-top:1px solid #f0f0f0;}
 .addon-item-name{flex:1;font-size:.95rem;color:#333;}
 .addon-item-price{font-size:.9rem;color:#999;font-weight:600;}
-.addon-add{width:34px;height:34px;border-radius:50%;border:none;background:#1a1a2e;color:#fff;
-           font-size:1.2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-           transition:background .15s;}
-.addon-item.sel .addon-add{background:#c9a84c;}
-body.lanchonete .addon-item.sel .addon-add{background:#ff7a00;}
+.addon-ctrl{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.addon-ctrl.has{border:1.5px solid #e5e5e5;border-radius:22px;padding:4px 6px;}
+.addon-add,.addon-qbtn{width:34px;height:34px;border-radius:50%;border:none;background:#1a1a2e;
+           color:#fff;font-size:1.2rem;cursor:pointer;flex-shrink:0;
+           display:flex;align-items:center;justify-content:center;font-weight:700;
+           touch-action:manipulation;}
+.addon-add:active,.addon-qbtn:active{opacity:.85;}
+.addon-qnum{font-size:1rem;font-weight:800;color:#1a1a1a;min-width:16px;text-align:center;}
 /* Rodapé fixo */
 .prod-foot{border-top:1px solid #eee;background:#fff;
            padding:12px 16px calc(12px + env(safe-area-inset-bottom));}
@@ -678,12 +681,14 @@ if (IS_LANCHONETE) {
 let _prodSheet = null;
 let _prodSheetQty = 1;
 let _prodSheetGelado = false;
-let _prodSheetAddons = new Set(); // índices dos adicionais selecionados
+let _prodSheetAddons = {}; // idx -> quantidade escolhida
 
 function _precoAtualSheet() {
   let base = (_prodSheetGelado && _prodSheet.price_cold > 0) ? _prodSheet.price_cold : _prodSheet.price;
   const addons = _prodSheet.addons || [];
-  _prodSheetAddons.forEach(idx => { if (addons[idx]) base += addons[idx].price || 0; });
+  for (const idx in _prodSheetAddons) {
+    if (addons[idx]) base += (addons[idx].price || 0) * _prodSheetAddons[idx];
+  }
   return base;
 }
 
@@ -693,24 +698,35 @@ function _renderAddonsSheet(prod) {
   const addons = prod.addons || [];
   if (!addons.length) { row.style.display = 'none'; list.innerHTML = ''; return; }
   list.innerHTML = addons.map((a, idx) => `
-    <div class="addon-item" data-idx="${idx}" onclick="toggleAddon(${idx})">
+    <div class="addon-item" data-idx="${idx}">
       <span class="addon-item-name">${_escapeHtml(a.name)}</span>
       ${a.price > 0 ? `<span class="addon-item-price">+ R$ ${fmt(a.price)}</span>` : ''}
-      <button class="addon-add" id="addonBtn${idx}" type="button">+</button>
+      <div class="addon-ctrl" id="addonCtrl${idx}"></div>
     </div>`).join('');
+  addons.forEach((a, idx) => _renderAddonCtrl(idx));
   row.style.display = '';
 }
 
-function toggleAddon(idx) {
-  const item = document.querySelector(`#addonsList .addon-item[data-idx="${idx}"]`);
-  const btn  = document.getElementById('addonBtn' + idx);
-  if (_prodSheetAddons.has(idx)) {
-    _prodSheetAddons.delete(idx);
-    item.classList.remove('sel'); btn.textContent = '+';
+function _renderAddonCtrl(idx) {
+  const el = document.getElementById('addonCtrl' + idx);
+  const q  = _prodSheetAddons[idx] || 0;
+  if (q > 0) {
+    el.classList.add('has');
+    el.innerHTML =
+      `<button class="addon-qbtn" type="button" onclick="addonQty(${idx},-1)">−</button>` +
+      `<span class="addon-qnum">${q}</span>` +
+      `<button class="addon-qbtn" type="button" onclick="addonQty(${idx},1)">+</button>`;
   } else {
-    _prodSheetAddons.add(idx);
-    item.classList.add('sel'); btn.textContent = '✓';
+    el.classList.remove('has');
+    el.innerHTML = `<button class="addon-add" type="button" onclick="addonQty(${idx},1)">+</button>`;
   }
+}
+
+function addonQty(idx, delta) {
+  const q = (_prodSheetAddons[idx] || 0) + delta;
+  if (q <= 0) delete _prodSheetAddons[idx];
+  else _prodSheetAddons[idx] = Math.min(q, 99);
+  _renderAddonCtrl(idx);
   _atualizarSheetQty();
 }
 
@@ -741,7 +757,7 @@ function addItem(id) {
   if (!prod) return;
   _prodSheet = prod;
   _prodSheetGelado = false;
-  _prodSheetAddons = new Set();
+  _prodSheetAddons = {};
   _prodSheetQty = 1;
 
   // Imagem
@@ -811,12 +827,14 @@ function confirmarAddItem() {
   const preco = _precoAtualSheet();
   const nome  = _prodSheetGelado ? _prodSheet.name + ' Gelado' : _prodSheet.name;
   const addonsProd = _prodSheet.addons || [];
-  const selAddons  = [..._prodSheetAddons].sort((a, b) => a - b)
-    .map(idx => ({ name: addonsProd[idx].name, price: addonsProd[idx].price || 0 }));
+  const selAddons  = Object.keys(_prodSheetAddons).sort((a, b) => a - b)
+    .map(idx => ({ name: addonsProd[idx].name, price: addonsProd[idx].price || 0,
+                   qty: _prodSheetAddons[idx] }));
   const obsInp = document.getElementById('obsItemInput');
   const obs    = obsInp ? obsInp.value.trim() : '';
   // Assinatura: mesmo produto com adicionais/obs diferentes = linha separada
-  const sig = [_prodSheet.id, _prodSheetGelado, selAddons.map(a => a.name).join(','), obs].join('|');
+  const sig = [_prodSheet.id, _prodSheetGelado,
+               selAddons.map(a => a.name + 'x' + a.qty).join(','), obs].join('|');
   const idx = carrinho.findIndex(i => i.sig === sig);
   if (idx >= 0) {
     carrinho[idx].qty = _prodSheetQty;
@@ -956,7 +974,7 @@ function renderCartItens() {
   }
   el.innerHTML = carrinho.map((i, idx) => {
     const extras = (i.addons && i.addons.length)
-      ? `<div style="font-size:.72rem;color:#ff7a00;font-weight:600;margin-top:2px;">+ ${i.addons.map(a => _escapeHtml(a.name)).join(', ')}</div>`
+      ? `<div style="font-size:.72rem;color:#ff7a00;font-weight:600;margin-top:2px;">+ ${i.addons.map(a => _escapeHtml(a.name) + (a.qty > 1 ? ' ×' + a.qty : '')).join(', ')}</div>`
       : '';
     const obs = i.obs
       ? `<div style="font-size:.72rem;color:#999;font-style:italic;margin-top:2px;">“${_escapeHtml(i.obs)}”</div>`
