@@ -63,42 +63,54 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
               padding:14px 18px;font-weight:700;font-size:.95rem;
               display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
 
-/* Bottom sheet produto */
-.prod-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:400;
-              opacity:0;pointer-events:none;
-              display:-webkit-flex;display:flex;
-              -webkit-align-items:flex-end;align-items:flex-end;
-              -webkit-transition:opacity .2s;transition:opacity .2s;}
+/* Tela de produto (full screen) */
+.prod-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:400;
+              opacity:0;pointer-events:none;-webkit-transition:opacity .2s;transition:opacity .2s;}
 .prod-overlay.show{opacity:1;pointer-events:auto;}
-.prod-sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;
-            padding-bottom:calc(16px + env(safe-area-inset-bottom));
-            animation:slideUp .25s ease-out;}
-.prod-sheet-img{width:100%;height:200px;object-fit:contain;background:#fff;
-                display:block;border-radius:20px 20px 0 0;padding:16px;
-                border-bottom:1px solid #ebebeb;}
-.prod-sheet-ph{width:100%;height:200px;background:#fff;border-radius:20px 20px 0 0;
-               display:flex;align-items:center;justify-content:center;font-size:3rem;color:#ddd;
-               border-bottom:1px solid #ebebeb;}
-.prod-sheet-info{padding:14px 18px 8px;}
-.prod-sheet-name{font-size:1.05rem;font-weight:700;color:#1a1a2e;margin-bottom:4px;}
-.prod-sheet-price{font-size:1.15rem;font-weight:800;color:#c9a84c;}
-.prod-sheet-close{position:absolute;top:12px;right:14px;background:rgba(0,0,0,.35);
-                  border:none;border-radius:50%;width:32px;height:32px;color:#fff;
-                  font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.prod-qty-row{display:flex;align-items:center;justify-content:center;gap:20px;
-              padding:14px 18px;}
-.prod-qty-btn{width:44px;height:44px;border-radius:50%;border:2px solid #e0e0e0;
-              background:#fff;font-size:1.4rem;cursor:pointer;
-              display:flex;align-items:center;justify-content:center;font-weight:700;color:#1a1a2e;
-              touch-action:manipulation;}
-.prod-qty-btn:active{background:#f0f0f0;}
-.prod-qty-num{font-size:1.3rem;font-weight:800;color:#1a1a2e;width:54px;text-align:center;
-              border:2px solid #e0e0e0;border-radius:10px;padding:6px 4px;
-              background:#fff;-webkit-appearance:none;}
-.prod-add-btn{margin:0 18px;width:calc(100% - 36px);background:#c9a84c;color:#1a1a2e;
-              border:none;border-radius:14px;padding:15px 18px;font-weight:800;font-size:.95rem;
-              display:flex;justify-content:space-between;cursor:pointer;}
-.prod-add-btn:active{background:#b8943d;}
+.prod-sheet{position:absolute;top:0;left:0;right:0;bottom:0;background:#fff;width:100%;
+            display:-webkit-flex;display:flex;-webkit-flex-direction:column;flex-direction:column;
+            overflow:hidden;animation:slideUp .25s ease-out;}
+.prod-scroll{-webkit-flex:1;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.prod-sheet-img{width:100%;height:44vh;object-fit:cover;background:#f5f5f5;display:block;}
+.prod-sheet-ph{width:100%;height:44vh;background:#f5f5f5;display:flex;align-items:center;
+               justify-content:center;font-size:3.5rem;color:#ddd;}
+.prod-sheet-info{padding:18px 18px 6px;}
+.prod-sheet-name{font-size:1.35rem;font-weight:800;color:#1a1a1a;margin-bottom:8px;}
+.prod-sheet-desc{font-size:.92rem;color:#777;line-height:1.5;}
+.prod-sheet-close{position:absolute;top:14px;left:14px;background:#eb5757;
+                  border:none;border-radius:50%;width:40px;height:40px;color:#fff;
+                  font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+                  box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:2;}
+/* Complementos */
+.compl-head{padding:16px 18px 4px;}
+.compl-title{font-size:1.08rem;font-weight:800;color:#1a1a1a;}
+.compl-sub{font-size:.8rem;color:#999;margin-top:1px;}
+.addon-item{display:flex;align-items:center;gap:12px;padding:14px 18px;
+            border-top:1px solid #f0f0f0;cursor:pointer;}
+.addon-item-name{flex:1;font-size:.95rem;color:#333;}
+.addon-item-price{font-size:.9rem;color:#999;font-weight:600;}
+.addon-add{width:34px;height:34px;border-radius:50%;border:none;background:#1a1a2e;color:#fff;
+           font-size:1.2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+           transition:background .15s;}
+.addon-item.sel .addon-add{background:#c9a84c;}
+body.lanchonete .addon-item.sel .addon-add{background:#ff7a00;}
+/* Rodapé fixo */
+.prod-foot{border-top:1px solid #eee;background:#fff;
+           padding:12px 16px calc(12px + env(safe-area-inset-bottom));}
+.prod-foot-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.prod-foot-price{font-size:1.3rem;font-weight:800;color:#1a1a1a;}
+.prod-qty-row{display:flex;align-items:center;gap:12px;}
+.prod-qty-btn{width:38px;height:38px;border-radius:50%;border:none;background:#1a1a2e;color:#fff;
+              font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+              font-weight:700;touch-action:manipulation;}
+.prod-qty-btn:active{opacity:.85;}
+.prod-qty-num{font-size:1.2rem;font-weight:800;color:#1a1a1a;width:40px;text-align:center;
+              border:none;background:transparent;-webkit-appearance:none;}
+.prod-add-btn{width:100%;background:#c9a84c;color:#1a1a2e;border:none;border-radius:14px;
+              padding:16px 18px;font-weight:800;font-size:1rem;letter-spacing:.03em;
+              display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+body.lanchonete .prod-add-btn{background:#ff7a00;color:#fff;}
+.prod-add-btn:active{opacity:.9;}
 
 /* Overlay carrinho */
 .overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:300;
@@ -311,16 +323,17 @@ body.lanchonete .pc-promo{position:static;background:#ff7a00;margin-bottom:4px;d
 
 <!-- Bottom sheet: detalhe do produto -->
 <div class="prod-overlay" id="prodOverlay" onclick="fecharProdSheet(event)">
-  <div class="prod-sheet" style="position:relative;">
+  <div class="prod-sheet">
+    <button class="prod-sheet-close" onclick="fecharProdSheetDireto()">←</button>
+    <div class="prod-scroll">
     <div id="prodSheetImg"></div>
-    <button class="prod-sheet-close" onclick="fecharProdSheetDireto()">✕</button>
     <div class="prod-sheet-info">
-      <div class="pc-cat" id="prodSheetCat" style="margin-bottom:3px;"></div>
+      <div class="pc-cat" id="prodSheetCat" style="margin-bottom:4px;"></div>
       <div class="prod-sheet-name" id="prodSheetName"></div>
-      <div class="prod-sheet-price" id="prodSheetPrice"></div>
+      <div class="prod-sheet-desc" id="prodSheetDesc"></div>
     </div>
     <!-- Opção Gelado -->
-    <div id="geladoRow" style="display:none;margin:0 18px 10px;">
+    <div id="geladoRow" style="display:none;margin:14px 18px 10px;">
       <button id="geladoToggle" onclick="toggleGeladoSheet()"
         style="width:100%;border:2px solid #d1e8f5;border-radius:12px;background:#f0f8ff;
                padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .2s;">
@@ -333,24 +346,34 @@ body.lanchonete .pc-promo{position:static;background:#ff7a00;margin-bottom:4px;d
              display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .2s;"></div>
       </button>
     </div>
-    <!-- Adicionais (lanchonete) -->
-    <div id="addonsRow" style="display:none;margin:0 18px 6px;">
-      <div style="font-weight:700;font-size:.9rem;color:#1a1a2e;margin-bottom:8px;">Adicionais</div>
+    <!-- Adicionais / Complementos (lanchonete) -->
+    <div id="addonsRow" style="display:none;">
+      <div class="compl-head">
+        <div class="compl-title">Complementos</div>
+        <div class="compl-sub">Opcional</div>
+      </div>
       <div id="addonsList"></div>
     </div>
     <!-- Observação por item -->
-    <div id="obsItemRow" style="display:none;margin:0 18px 12px;">
+    <div id="obsItemRow" style="display:none;padding:16px 18px;">
       <input class="inp" id="obsItemInput" type="text" placeholder="Alguma observação? (ex: sem cebola)">
     </div>
-    <div class="prod-qty-row">
-      <button class="prod-qty-btn" onclick="prodQty(-1)">−</button>
-      <input class="prod-qty-num" id="prodSheetQty" type="number" min="1" inputmode="numeric" value="1" oninput="prodQtyInput(this)">
-      <button class="prod-qty-btn" onclick="prodQty(1)">+</button>
+    </div><!-- /prod-scroll -->
+    <!-- Rodapé fixo -->
+    <div class="prod-foot">
+      <div class="prod-foot-top">
+        <div class="prod-foot-price" id="prodSheetPrice">R$ 0,00</div>
+        <div class="prod-qty-row">
+          <button class="prod-qty-btn" onclick="prodQty(-1)">−</button>
+          <input class="prod-qty-num" id="prodSheetQty" type="number" min="1" inputmode="numeric" value="1" oninput="prodQtyInput(this)">
+          <button class="prod-qty-btn" onclick="prodQty(1)">+</button>
+        </div>
+      </div>
+      <button class="prod-add-btn" id="prodAddBtn" onclick="confirmarAddItem()">
+        <span id="prodAddLabel">ADICIONAR</span>
+        <span id="prodAddTotal">R$ 0,00</span>
+      </button>
     </div>
-    <button class="prod-add-btn" id="prodAddBtn" onclick="confirmarAddItem()">
-      <span id="prodAddLabel">Adicionar (1)</span>
-      <span id="prodAddTotal">R$ 0,00</span>
-    </button>
   </div>
 </div>
 
@@ -670,28 +693,23 @@ function _renderAddonsSheet(prod) {
   const addons = prod.addons || [];
   if (!addons.length) { row.style.display = 'none'; list.innerHTML = ''; return; }
   list.innerHTML = addons.map((a, idx) => `
-    <button type="button" data-idx="${idx}" onclick="toggleAddon(${idx})"
-      style="width:100%;border:2px solid #eee;border-radius:12px;background:#fafafa;
-             padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;">
-      <div id="addonChk${idx}" style="width:22px;height:22px;border-radius:6px;border:2px solid #ccc;
-           display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;color:#fff;"></div>
-      <span style="flex:1;text-align:left;font-weight:600;font-size:.88rem;color:#1a1a2e;">${_escapeHtml(a.name)}</span>
-      ${a.price > 0 ? `<span style="font-weight:700;font-size:.85rem;color:#ff7a00;">+ R$ ${fmt(a.price)}</span>` : ''}
-    </button>`).join('');
+    <div class="addon-item" data-idx="${idx}" onclick="toggleAddon(${idx})">
+      <span class="addon-item-name">${_escapeHtml(a.name)}</span>
+      ${a.price > 0 ? `<span class="addon-item-price">+ R$ ${fmt(a.price)}</span>` : ''}
+      <button class="addon-add" id="addonBtn${idx}" type="button">+</button>
+    </div>`).join('');
   row.style.display = '';
 }
 
 function toggleAddon(idx) {
-  const btn = document.querySelector(`#addonsList button[data-idx="${idx}"]`);
-  const chk = document.getElementById('addonChk' + idx);
+  const item = document.querySelector(`#addonsList .addon-item[data-idx="${idx}"]`);
+  const btn  = document.getElementById('addonBtn' + idx);
   if (_prodSheetAddons.has(idx)) {
     _prodSheetAddons.delete(idx);
-    btn.style.borderColor = '#eee'; btn.style.background = '#fafafa';
-    chk.style.background = 'transparent'; chk.style.borderColor = '#ccc'; chk.textContent = '';
+    item.classList.remove('sel'); btn.textContent = '+';
   } else {
     _prodSheetAddons.add(idx);
-    btn.style.borderColor = '#ff7a00'; btn.style.background = '#fff7ef';
-    chk.style.background = '#ff7a00'; chk.style.borderColor = '#ff7a00'; chk.textContent = '✓';
+    item.classList.add('sel'); btn.textContent = '✓';
   }
   _atualizarSheetQty();
 }
@@ -735,8 +753,12 @@ function addItem(id) {
   const catEl = document.getElementById('prodSheetCat');
   catEl.textContent = prod.type_name || '';
   catEl.style.display = prod.type_name ? '' : 'none';
-  document.getElementById('prodSheetName').textContent  = prod.name;
-  document.getElementById('prodSheetPrice').textContent = 'R$ ' + fmt(prod.price);
+  document.getElementById('prodSheetName').textContent = prod.name;
+  const descEl = document.getElementById('prodSheetDesc');
+  descEl.textContent = prod.description || '';
+  descEl.style.display = prod.description ? '' : 'none';
+  // Volta a rolagem do produto ao topo ao abrir
+  document.querySelector('.prod-scroll').scrollTop = 0;
 
   // Mostrar opção gelado se o produto tiver preço gelado
   const geladoRow = document.getElementById('geladoRow');
@@ -770,7 +792,7 @@ function addItem(id) {
 function _atualizarSheetQty() {
   const preco = _precoAtualSheet();
   document.getElementById('prodSheetQty').value       = _prodSheetQty;
-  document.getElementById('prodAddLabel').textContent = `Adicionar (${_prodSheetQty})`;
+  document.getElementById('prodSheetPrice').textContent = 'R$ ' + fmt(preco);
   document.getElementById('prodAddTotal').textContent = 'R$ ' + fmt(preco * _prodSheetQty);
 }
 
