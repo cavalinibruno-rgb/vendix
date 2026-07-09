@@ -49,14 +49,38 @@ def funcionario_novo():
     role = request.form.get('role', 'caixa')
     if role not in ('caixa', 'motoboy'):
         role = 'caixa'
-    if name:
-        e = Employee(tenant_id=tid(), name=name, role=role)
-        db.session.add(e)
-        db.session.flush()
-        # Sincroniza com tabela motoboys para aparecer no despacho
-        if role == 'motoboy':
-            db.session.add(Motoboy(tenant_id=tid(), name=name))
-        db.session.commit()
+    if not name:
+        return redirect(url_for('vale.index'))
+
+    username = request.form.get('username', '').strip()
+    senha    = request.form.get('senha', '').strip()
+
+    # Op. de Caixa: já cria o acesso (usuário e senha) no mesmo cadastro
+    if role == 'caixa' and (username or senha):
+        if not username or not senha:
+            flash('Para criar o acesso do operador, informe usuário e senha.', 'danger')
+            return redirect(url_for('vale.index'))
+        if len(senha) < 4:
+            flash('A senha do operador deve ter pelo menos 4 caracteres.', 'danger')
+            return redirect(url_for('vale.index'))
+        if Employee.query.filter_by(tenant_id=tid(), username=username).first():
+            flash(f'O usuário "{username}" já está em uso por outro funcionário.', 'danger')
+            return redirect(url_for('vale.index'))
+
+    e = Employee(tenant_id=tid(), name=name, role=role)
+    if role == 'caixa' and username and senha:
+        e.username = username
+        e.set_password(senha)
+    db.session.add(e)
+    db.session.flush()
+    # Sincroniza com tabela motoboys para aparecer no despacho
+    if role == 'motoboy':
+        db.session.add(Motoboy(tenant_id=tid(), name=name))
+    db.session.commit()
+
+    if role == 'caixa' and e.username:
+        flash(f'Funcionário "{name}" cadastrado com acesso ao caixa (usuário: {e.username}).', 'success')
+    else:
         flash(f'Funcionário "{name}" cadastrado!', 'success')
     return redirect(url_for('vale.index'))
 
