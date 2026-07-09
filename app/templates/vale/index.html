@@ -8,6 +8,9 @@
     <p>Controle de vales e cadastro de motoboys</p>
   </div>
   <div class="d-flex gap-2">
+    <button class="btn btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#modalLancarVale">
+      <i class="bi bi-cash-coin me-1"></i>Lançar Vale
+    </button>
     <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalMotoboy">
       <i class="bi bi-bicycle me-1"></i>Novo Motoboy
     </button>
@@ -219,6 +222,49 @@
   </div>
 </div>
 
+<!-- Modal Lançar Vale -->
+<div class="modal fade" id="modalLancarVale" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="formLancarVale" onsubmit="return prepararLancarVale();">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Lançar Vale</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Funcionário *</label>
+            <select id="valeFuncionario" class="form-select" required>
+              <option value="" disabled selected>Selecione o funcionário…</option>
+              {% for e in employees %}
+              <option value="{{ e.id }}">{{ e.name }}{% if e.role == 'motoboy' %} (Motoboy){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Valor (R$) *</label>
+            <input type="text" name="amount" id="valeAmount" class="form-control form-control-lg"
+                   inputmode="decimal" placeholder="0,00" required autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Data *</label>
+            <input type="date" name="date" class="form-control"
+                   value="{{ '%04d-%02d-%02d' % (ano, mes, 1) }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observação (opcional)</label>
+            <input type="text" name="notes" class="form-control" placeholder="Ex: adiantamento semanal">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success fw-semibold">Lançar Vale</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Novo Motoboy -->
 <div class="modal fade" id="modalMotoboy" tabindex="-1">
   <div class="modal-dialog modal-sm">
@@ -251,6 +297,17 @@
 document.getElementById('modalFuncionario').addEventListener('shown.bs.modal', function() {
   this.querySelector('input[name=name]').focus();
 });
+
+document.getElementById('modalLancarVale').addEventListener('shown.bs.modal', function() {
+  document.getElementById('valeFuncionario').focus();
+});
+
+function prepararLancarVale() {
+  const empId = document.getElementById('valeFuncionario').value;
+  if (!empId) return false;
+  document.getElementById('formLancarVale').action = `/vale/funcionario/${empId}/novo`;
+  return true;
+}
 
 function toggleAcessoFunc() {
   const isCaixa = document.getElementById('funcRole').value === 'caixa';
