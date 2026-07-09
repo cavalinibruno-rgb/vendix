@@ -32,7 +32,7 @@
     <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
     <div class="mb-3">
       <label class="form-label fw-semibold">E-mail ou usuário</label>
-      <input type="text" name="email" id="inputEmail" class="form-control" placeholder="seu@email.com ou nome_usuario" required autocomplete="username">
+      <input type="text" name="email" id="inputEmail" class="form-control" placeholder="seu@email.com ou nome_usuario" required autocomplete="username" autofocus>
     </div>
     <div class="mb-4">
       <label class="form-label fw-semibold">Senha</label>
@@ -49,34 +49,9 @@
     </button>
   </form>
   <script>
-    const emailEl = document.getElementById('inputEmail');
-    const passEl  = document.getElementById('inputPassword');
-    const remEl   = document.getElementById('remember');
-
-    // Carregar credenciais salvas
-    const saved = JSON.parse(localStorage.getItem('vendix_creds') || 'null');
-    if (saved) {
-      emailEl.value = saved.email;
-      passEl.value  = saved.pass;
-      remEl.checked = true;
-      emailEl.removeAttribute('autofocus');
-    } else {
-      emailEl.setAttribute('autofocus', '');
-    }
-
-    // Salvar ou limpar ao submeter
-    document.getElementById('loginForm').addEventListener('submit', () => {
-      if (remEl.checked) {
-        localStorage.setItem('vendix_creds', JSON.stringify({ email: emailEl.value, pass: passEl.value }));
-      } else {
-        localStorage.removeItem('vendix_creds');
-      }
-    });
-
-    // Desmarcar checkbox limpa credenciais salvas imediatamente
-    remEl.addEventListener('change', () => {
-      if (!remEl.checked) localStorage.removeItem('vendix_creds');
-    });
+    // Limpa credenciais antigas salvas em texto puro por versões anteriores.
+    // O "Salvar login" agora usa o cookie seguro de sessão do servidor (remember-me).
+    try { localStorage.removeItem('vendix_creds'); } catch (e) {}
   </script>
 
   <div class="text-center mt-3">
