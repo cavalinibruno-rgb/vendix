@@ -336,16 +336,19 @@ def index():
 
     limite = 15 if modo_restrito else 1000
 
-    # Busca por número do pedido — ignora o filtro de data
+    # Busca por número do pedido — ignora o filtro de data (vale também no modo operador).
+    # Casa com o que a tela mostra (#sale_number, ou #id quando a venda não tem número).
     busca_pedido = request.args.get('pedido', '').strip()
-    if busca_pedido and not modo_restrito:
+    if busca_pedido:
+        from sqlalchemy import or_, and_
+        num = int(busca_pedido) if busca_pedido.isdigit() else None
         sales = Sale.query.filter(
             Sale.tenant_id == tid(),
             Sale.status == 'confirmed',
-            Sale.sale_number == int(busca_pedido),
-        ).all() if busca_pedido.isdigit() else []
+            or_(Sale.sale_number == num,
+                and_(Sale.sale_number == None, Sale.id == num)),
+        ).all() if num is not None else []
     else:
-        busca_pedido = ''
         sales = Sale.query.filter(
             Sale.tenant_id == tid(),
             Sale.status == 'confirmed',
