@@ -187,7 +187,7 @@ def entrada():
         type         = 'entrada',
         quantity     = quantidade,
         motive       = motivo,
-        user_id      = current_user.id,
+        user_id      = None if current_user.is_employee else current_user.id,
         user_name    = nome_resp,
     ))
     db.session.commit()
@@ -236,7 +236,7 @@ def ajustar(product_id):
             type         = tipo,
             quantity     = valor,
             motive       = motivo,
-            user_id      = current_user.id,
+            user_id      = None if current_user.is_employee else current_user.id,
             user_name    = nome_resp,
         ))
     db.session.commit()
