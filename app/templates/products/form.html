@@ -211,6 +211,11 @@
           <div class="row g-3 mb-3" id="stockFields">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Estoque Atual</label>
+              {% if current_user.is_employee %}
+              <input type="text" class="form-control" value="{{ product.stock_quantity if product else '0' }}"
+                     readonly disabled title="Apenas o administrador pode alterar o estoque.">
+              <div class="form-text text-muted"><i class="bi bi-lock me-1"></i>Somente o administrador pode alterar o estoque.</div>
+              {% else %}
               <input type="text" id="stockInput" class="form-control"
                      value="{{ product.stock_quantity if product else '0' }}"
                      placeholder="ex: 20*40"
@@ -218,6 +223,7 @@
               <input type="hidden" name="stock_quantity" id="stockValue"
                      value="{{ product.stock_quantity if product else '0' }}">
               <div id="stockPreview" class="form-text text-warning" style="display:none;"></div>
+              {% endif %}
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Estoque Mínimo</label>

@@ -164,6 +164,9 @@ def novo():
         sale_price_cold_card = float(request.form.get('sale_price_cold_card', 0) or 0)
         cost_price           = float(request.form.get('cost_price', 0) or 0)
         stock           = int(request.form.get('stock_quantity', 0) or 0)
+        # Operador de caixa não define estoque no cadastro
+        if current_user.is_employee:
+            stock = 0
         min_stock       = int(request.form.get('min_stock', 0) or 0)
         description     = request.form.get('description', '').strip()
 
@@ -308,7 +311,9 @@ def editar(product_id):
         product.sale_price_cold      = float(request.form.get('sale_price_cold', 0) or 0)
         product.sale_price_cold_card = float(request.form.get('sale_price_cold_card', 0) or 0)
         product.cost_price           = float(request.form.get('cost_price', 0) or 0)
-        product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
+        # Operador de caixa não pode alterar o Estoque Atual (mantém o valor existente)
+        if not current_user.is_employee:
+            product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
         product.min_stock      = int(request.form.get('min_stock', 0) or 0)
         product.description    = request.form.get('description', '').strip()
         product.promo_starts_at = _parse_promo_dt(request.form.get('promo_inicio'))
