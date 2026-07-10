@@ -49,6 +49,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f0f0f5;min-heigh
 .pc-info{padding:8px 10px 10px;flex:1;display:flex;flex-direction:column;}
 .pc-cat{font-size:.65rem;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
 .pc-name{font-size:.8rem;font-weight:600;color:#1a1a2e;line-height:1.3;flex:1;margin-bottom:6px;}
+.pc-comps{font-size:.72rem;color:#777;line-height:1.4;margin:-2px 0 6px;}
+.pc-comps b{color:#555;font-weight:700;}
 .pc-price{font-size:.95rem;font-weight:700;color:#c9a84c;margin-bottom:8px;}
 .pc-btn{width:100%;background:#1a1a2e;color:#c9a84c;border:none;border-radius:8px;
         padding:8px;font-weight:700;font-size:.82rem;cursor:pointer;transition:background .15s;}
@@ -603,6 +605,14 @@ function _escapeHtml(s) {
   return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
+// Lista de itens do combo (ex.: "1x Jack Daniel's / 5x Red Bull") abaixo do nome
+function _compsHtml(p) {
+  if (!p.components || !p.components.length) return '';
+  return `<div class="pc-comps">` +
+    p.components.map(c => `<b>${c.quantity}x</b> ${_escapeHtml(c.name)}`).join('<br>') +
+    `</div>`;
+}
+
 function renderGrid(lista) {
   const grid = document.getElementById('prodGrid');
   if (!lista.length) {
@@ -619,6 +629,7 @@ function renderGrid(lista) {
       <div class="pc-info">
         ${p.type_name ? `<div class="pc-cat">${p.type_name}</div>` : ''}
         <div class="pc-name">${p.name}</div>
+        ${_compsHtml(p)}
         <div class="pc-price">R$ ${fmt(p.price)}</div>
         <button class="pc-btn" onclick="addItem(${p.id})">+ Adicionar</button>
       </div>
@@ -644,6 +655,7 @@ function renderLista(lista) {
         <div class="pc-info">
           ${p.is_promo ? '<span class="pc-promo">🔥 PROMOÇÃO</span>' : ''}
           <div class="pc-name">${_escapeHtml(p.name)}</div>
+          ${_compsHtml(p)}
           ${p.description ? `<div class="pc-desc">${_escapeHtml(p.description)}</div>` : ''}
           <div class="pc-price">R$ ${fmt(p.price)}</div>
         </div>

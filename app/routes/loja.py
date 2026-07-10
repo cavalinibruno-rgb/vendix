@@ -73,6 +73,24 @@ def api_produtos(slug):
     def _ordem_vitrine(p):
         return (pos.get(p.type_id, 10**9), _chave_alfa(p.name))
     produtos.sort(key=_ordem_vitrine)
+
+    # Componentes dos combos (em lote, evita N+1): { combo_id: [{quantity, name}] }
+    from app.models.combo import ComboItem
+    from sqlalchemy.orm import aliased
+    Comp = aliased(Product)
+    comp_map = {}
+    prod_ids = [p.id for p in produtos]
+    if prod_ids:
+        rows = (db.session.query(ComboItem.combo_id, ComboItem.quantity, Comp.name)
+                .join(Comp, Comp.id == ComboItem.component_id)
+                .filter(ComboItem.combo_id.in_(prod_ids))
+                .all())
+        for combo_id, qty, nome in rows:
+            comp_map.setdefault(combo_id, []).append({
+                'quantity': int(qty) if qty == int(qty) else qty,
+                'name': nome,
+            })
+
     out = []
     for p in produtos:
         if p.image_url:
@@ -100,6 +118,7 @@ def api_produtos(slug):
             'is_promo':   bool(p.type and _is_promo_cat(p.type.name)),
             'description': p.description or '',
             'addons':     addons,
+            'components': comp_map.get(p.id, []),
         })
     return jsonify(out)
 
