@@ -322,6 +322,8 @@ def _run_migrations(db):
         # Pagamento de fiado por funcionário: nome do responsável + created_by nulável
         "ALTER TABLE account_payments ADD COLUMN IF NOT EXISTS created_by_name VARCHAR(128)",
         "ALTER TABLE account_payments ALTER COLUMN created_by DROP NOT NULL",
+        # Abertura de caixa por funcionário: opened_by pode ser nulo (autoria em operator_name)
+        "ALTER TABLE cash_registers ALTER COLUMN opened_by DROP NOT NULL",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

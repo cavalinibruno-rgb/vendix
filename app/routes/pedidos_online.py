@@ -17,9 +17,11 @@ def tid():
     return current_user.tenant_id
 
 def _user_id():
+    # Funcionários (EmployeeLoginProxy, id "e_<n>") não estão na tabela users;
+    # colunas FK->users recebem None. A autoria fica nos campos *_name.
     uid = current_user.id
     if isinstance(uid, str) and uid.startswith('e_'):
-        return int(uid[2:])
+        return None
     return uid
 
 

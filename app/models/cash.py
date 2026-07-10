@@ -6,7 +6,7 @@ class CashRegister(db.Model):
 
     id             = db.Column(db.Integer, primary_key=True)
     tenant_id      = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=False)
-    opened_by      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    opened_by      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     closed_by      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     opening_amount = db.Column(db.Float, default=0)   # troco inicial
     closing_amount = db.Column(db.Float, nullable=True)  # valor contado no fechamento
