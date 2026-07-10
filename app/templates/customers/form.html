@@ -140,11 +140,15 @@ function calcularTaxaDistancia(cep) {
       } else if (d.reason === 'fora_area') {
         taxaMsg.innerHTML = `<span class="text-warning">Endereço a ${d.dist_km} km — fora das zonas de entrega. Defina a taxa manualmente.</span>`;
       } else if (d.reason === 'sem_config') {
-        taxaMsg.innerHTML = 'Calculada pela distância do CEP ou pelo bairro — você pode ajustar.';
+        taxaMsg.innerHTML = '<span class="text-muted">A loja ainda não tem zonas de entrega por distância configuradas (Configurações → Localização e Zonas).</span>';
       } else if (d.reason === 'sem_coords') {
-        taxaMsg.innerHTML = '<span class="text-muted">Não foi possível localizar o endereço para calcular a distância. Use o bairro ou defina manualmente.</span>';
+        taxaMsg.innerHTML = '<span class="text-warning">Não foi possível localizar as coordenadas deste endereço. Use o bairro ou defina a taxa manualmente.</span>';
+      } else if (d.reason === 'cep_nao_encontrado' || d.reason === 'cep_invalido') {
+        taxaMsg.innerHTML = '<span class="text-warning">CEP não encontrado para cálculo de distância.</span>';
+      } else if (d.reason === 'erro') {
+        taxaMsg.innerHTML = '<span class="text-danger">Erro ao calcular a taxa por distância (serviço de mapas). Tente novamente ou defina manualmente.</span>';
       } else {
-        taxaMsg.innerHTML = 'Calculada pela distância do CEP ou pelo bairro — você pode ajustar.';
+        taxaMsg.innerHTML = '<span class="text-muted">Não foi possível calcular a taxa (' + (d.reason || '?') + '). Defina manualmente.</span>';
       }
     })
     .catch(() => {
