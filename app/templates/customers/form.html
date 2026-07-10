@@ -43,6 +43,13 @@
         <div class="form-text" id="bairroMsg"></div>
       </div>
       <div class="mb-3">
+        <label class="form-label fw-semibold">Taxa de entrega (R$)</label>
+        <input type="text" name="delivery_fee" id="taxaInput" class="form-control"
+               inputmode="decimal" placeholder="0,00"
+               value="{{ '%.2f'|format(customer.delivery_fee) if customer and customer.delivery_fee else '' }}">
+        <div class="form-text" id="taxaMsg">Calculada pela distância do CEP ou pelo bairro — você pode ajustar.</div>
+      </div>
+      <div class="mb-3">
         <label class="form-label fw-semibold">Rua / Logradouro</label>
         <input type="text" name="address" id="addressInput" class="form-control" value="{{ customer.address if customer else '' }}" placeholder="Ex: Rua das Flores">
       </div>
@@ -102,9 +109,17 @@
 
 {% block scripts %}
 <script>
+const taxaInput  = document.getElementById('taxaInput');
+const taxaMsg    = document.getElementById('taxaMsg');
+
+// Ao escolher um bairro, preenche a taxa com a taxa do bairro
 function applyFee(sel) {
   const opt = sel.options[sel.selectedIndex];
-  // only informativo — backend salva a taxa
+  const fee = opt && opt.getAttribute('data-fee');
+  if (fee !== null && fee !== undefined && fee !== '') {
+    taxaInput.value = parseFloat(fee).toFixed(2);
+    taxaMsg.innerHTML = `<span class="text-success">Taxa do bairro aplicada.</span>`;
+  }
 }
 
 const cepInput   = document.getElementById('cepInput');
@@ -112,6 +127,30 @@ const cepMsg     = document.getElementById('cepMsg');
 const bairroMsg  = document.getElementById('bairroMsg');
 const addressInp = document.getElementById('addressInput');
 const bairroSel  = document.getElementById('neighborhoodSel');
+
+// Calcula a taxa por distância a partir do CEP (mesma lógica do link)
+function calcularTaxaDistancia(cep) {
+  taxaMsg.innerHTML = '<span class="text-muted">Calculando taxa por distância…</span>';
+  fetch(`{{ url_for('customers.taxa_por_cep') }}?cep=${cep}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        taxaInput.value = parseFloat(d.fee).toFixed(2);
+        taxaMsg.innerHTML = `<span class="text-success">Taxa por distância: R$ ${parseFloat(d.fee).toFixed(2)} (${d.dist_km} km da loja). Você pode ajustar.</span>`;
+      } else if (d.reason === 'fora_area') {
+        taxaMsg.innerHTML = `<span class="text-warning">Endereço a ${d.dist_km} km — fora das zonas de entrega. Defina a taxa manualmente.</span>`;
+      } else if (d.reason === 'sem_config') {
+        taxaMsg.innerHTML = 'Calculada pela distância do CEP ou pelo bairro — você pode ajustar.';
+      } else if (d.reason === 'sem_coords') {
+        taxaMsg.innerHTML = '<span class="text-muted">Não foi possível localizar o endereço para calcular a distância. Use o bairro ou defina manualmente.</span>';
+      } else {
+        taxaMsg.innerHTML = 'Calculada pela distância do CEP ou pelo bairro — você pode ajustar.';
+      }
+    })
+    .catch(() => {
+      taxaMsg.innerHTML = '<span class="text-muted">Não foi possível calcular a taxa por distância.</span>';
+    });
+}
 
 // Máscara simples 00000-000
 cepInput.addEventListener('input', function() {
@@ -142,6 +181,9 @@ function buscarCep() {
       }
       cepMsg.innerHTML = `<span class="text-success">${d.localidade} - ${d.uf}</span>`;
 
+      // Calcula a taxa por distância (se a loja tiver zonas configuradas)
+      calcularTaxaDistancia(cep);
+
       // Preenche o endereço (rua), preservando número se já houver
       if (d.logradouro) {
         addressInp.value = d.logradouro;
@@ -159,6 +201,7 @@ function buscarCep() {
         }
         if (achou) {
           bairroMsg.innerHTML = `<span class="text-success">Bairro "${d.bairro}" selecionado.</span>`;
+          applyFee(bairroSel);
         } else {
           bairroMsg.innerHTML = `<span class="text-warning">Bairro "${d.bairro}" ainda não cadastrado. `
             + `<a href="#" id="linkCadBairro">Cadastrar bairro</a> para definir a taxa.</span>`;

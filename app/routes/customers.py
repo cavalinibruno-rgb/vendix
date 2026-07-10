@@ -3,11 +3,82 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.customer import Customer, Neighborhood
 from app.models.customer_address import CustomerAddress
+import math, requests
 
 customers_bp = Blueprint('customers', __name__, url_prefix='/clientes')
 
+_NOMINATIM_HEADERS = {'User-Agent': 'VendixApp/1.0 (contato@vendixapp.com.br)'}
+
 def tid():
     return current_user.tenant_id
+
+
+def _fee_from_form(neighborhood_id):
+    """Prioriza a taxa digitada/auto-preenchida no formulário; se vazia, cai
+    para a taxa do bairro selecionado."""
+    fee_raw = request.form.get('delivery_fee', '').replace(',', '.').strip()
+    if fee_raw != '':
+        try:
+            return max(0.0, float(fee_raw))
+        except ValueError:
+            pass
+    if neighborhood_id:
+        n = Neighborhood.query.get(neighborhood_id)
+        if n:
+            return n.delivery_fee
+    return 0.0
+
+
+@customers_bp.route('/taxa-por-cep')
+@login_required
+def taxa_por_cep():
+    """Calcula a taxa de entrega por distância a partir do CEP, usando as
+    coordenadas da loja e as zonas de entrega (mesma lógica do link público)."""
+    cep = request.args.get('cep', '').replace('-', '').strip()
+    if len(cep) != 8:
+        return jsonify({'ok': False, 'reason': 'cep_invalido'})
+
+    cfg = current_user.tenant.get_settings()
+    try:
+        lat1 = float(cfg.get('loja_lat', 0) or 0)
+        lng1 = float(cfg.get('loja_lng', 0) or 0)
+    except (ValueError, TypeError):
+        lat1 = lng1 = 0
+    zonas = cfg.get('zonas_entrega', []) or []
+    if not (lat1 and lng1) or not zonas:
+        return jsonify({'ok': False, 'reason': 'sem_config'})
+
+    try:
+        via = requests.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=5).json()
+        if via.get('erro'):
+            return jsonify({'ok': False, 'reason': 'cep_nao_encontrado'})
+        logradouro = via.get('logradouro', '')
+        localidade = via.get('localidade', '')
+        uf         = via.get('uf', '')
+        query = f"{logradouro}, {localidade}, {uf}, Brasil" if logradouro else f"{localidade}, {uf}, Brasil"
+
+        r = requests.get(
+            'https://nominatim.openstreetmap.org/search',
+            params={'q': query, 'format': 'json', 'limit': 1, 'countrycodes': 'br'},
+            headers=_NOMINATIM_HEADERS, timeout=5,
+        )
+        results = r.json()
+        if not results:
+            return jsonify({'ok': False, 'reason': 'sem_coords'})
+        lat2 = float(results[0]['lat'])
+        lng2 = float(results[0]['lon'])
+
+        dlat = math.radians(lat2 - lat1)
+        dlng = math.radians(lng2 - lng1)
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+        dist_km = 6371 * 2 * math.asin(math.sqrt(a))
+
+        for z in sorted(zonas, key=lambda z: z['max_km']):
+            if dist_km <= z['max_km']:
+                return jsonify({'ok': True, 'fee': z['fee'], 'dist_km': round(dist_km, 1)})
+        return jsonify({'ok': False, 'reason': 'fora_area', 'dist_km': round(dist_km, 1)})
+    except Exception:
+        return jsonify({'ok': False, 'reason': 'erro'})
 
 # ── Clientes ──────────────────────────────────────────
 
@@ -39,12 +110,8 @@ def novo():
             flash('Nome é obrigatório.', 'danger')
             return render_template('customers/form.html', neighborhoods=neighborhoods, customer=None)
 
-        # Pega taxa do bairro
-        fee = 0
-        if neighborhood_id:
-            n = Neighborhood.query.get(neighborhood_id)
-            if n:
-                fee = n.delivery_fee
+        # Taxa: usa a do formulário (por distância ou manual); senão, a do bairro
+        fee = _fee_from_form(neighborhood_id)
 
         customer = Customer(
             tenant_id=tid(),
@@ -74,10 +141,7 @@ def editar(customer_id):
         customer.address_ref     = request.form.get('address_ref', '').strip()
         customer.neighborhood_id = request.form.get('neighborhood_id') or None
         customer.notes           = request.form.get('notes', '').strip()
-        if customer.neighborhood_id:
-            n = Neighborhood.query.get(customer.neighborhood_id)
-            if n:
-                customer.delivery_fee = n.delivery_fee
+        customer.delivery_fee    = _fee_from_form(customer.neighborhood_id)
         db.session.commit()
         flash('Cliente atualizado!', 'success')
         return redirect(url_for('customers.index'))
