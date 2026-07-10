@@ -101,6 +101,7 @@
             <tr>
               <td>
                 <div class="small text-nowrap">{{ p.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                {% if p.created_by_name %}<div class="text-muted" style="font-size:.75rem"><i class="bi bi-person me-1"></i>{{ p.created_by_name }}</div>{% endif %}
                 {% if p.notes %}<div class="text-muted" style="font-size:.75rem">{{ p.notes }}</div>{% endif %}
               </td>
               <td class="text-end text-success fw-semibold">R$ {{ '%.2f'|format(p.amount) }}</td>

@@ -76,7 +76,9 @@ def pagar(customer_id):
         customer_id=customer_id,
         amount=valor,
         notes=notes,
-        created_by=current_user.id,
+        # Funcionário (EmployeeLoginProxy) não está na tabela users; grava só o nome.
+        created_by=None if current_user.is_employee else current_user.id,
+        created_by_name=current_user.display_name or current_user.username,
     )
     db.session.add(pagamento)
     db.session.commit()

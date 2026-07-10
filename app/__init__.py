@@ -319,6 +319,9 @@ def _run_migrations(db):
         "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS business_type VARCHAR(16) DEFAULT 'varejo'",
         # Adicionais de produto (lanchonete) — JSON
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS addons TEXT",
+        # Pagamento de fiado por funcionário: nome do responsável + created_by nulável
+        "ALTER TABLE account_payments ADD COLUMN IF NOT EXISTS created_by_name VARCHAR(128)",
+        "ALTER TABLE account_payments ALTER COLUMN created_by DROP NOT NULL",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

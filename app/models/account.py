@@ -10,6 +10,7 @@ class AccountPayment(db.Model):
     amount      = db.Column(db.Float, nullable=False)
     notes       = db.Column(db.Text)
     created_at  = db.Column(db.DateTime, default=datetime.now)
-    created_by  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_by  = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_by_name = db.Column(db.String(128))
 
     customer = db.relationship('Customer', backref='payments', lazy=True)
