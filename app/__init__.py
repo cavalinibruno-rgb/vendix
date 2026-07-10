@@ -324,6 +324,8 @@ def _run_migrations(db):
         "ALTER TABLE account_payments ALTER COLUMN created_by DROP NOT NULL",
         # Abertura de caixa por funcionário: opened_by pode ser nulo (autoria em operator_name)
         "ALTER TABLE cash_registers ALTER COLUMN opened_by DROP NOT NULL",
+        # Bairro do cliente em texto livre (preenchido pelo CEP)
+        "ALTER TABLE customers ADD COLUMN IF NOT EXISTS bairro VARCHAR(64)",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

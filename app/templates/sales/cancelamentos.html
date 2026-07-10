@@ -74,8 +74,8 @@
           </td>
           <td>{{ v.customer.name if v.customer else 'Consumidor' }}</td>
           <td>
-            {% if v.customer and v.customer.neighborhood %}
-              {{ v.customer.neighborhood.name }}
+            {% if v.customer and (v.customer.bairro or v.customer.neighborhood) %}
+              {{ v.customer.bairro or v.customer.neighborhood.name }}
             {% else %}—{% endif %}
           </td>
           <td>

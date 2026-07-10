@@ -13,9 +13,20 @@ def tid():
     return current_user.tenant_id
 
 
+def _match_bairro(bairro_text):
+    """Casa o nome do bairro (texto do CEP) com um bairro cadastrado, se houver
+    (case-insensitive). Mantém a compatibilidade com taxa por bairro."""
+    if not bairro_text:
+        return None
+    return Neighborhood.query.filter(
+        Neighborhood.tenant_id == tid(),
+        db.func.lower(Neighborhood.name) == bairro_text.strip().lower(),
+    ).first()
+
+
 def _fee_from_form(neighborhood_id):
     """Prioriza a taxa digitada/auto-preenchida no formulário; se vazia, cai
-    para a taxa do bairro selecionado."""
+    para a taxa do bairro correspondente."""
     fee_raw = request.form.get('delivery_fee', '').replace(',', '.').strip()
     if fee_raw != '':
         try:
@@ -103,13 +114,16 @@ def novo():
         address         = request.form.get('address', '').strip()
         address_number  = request.form.get('address_number', '').strip()
         address_ref     = request.form.get('address_ref', '').strip()
-        neighborhood_id = request.form.get('neighborhood_id') or None
+        bairro          = request.form.get('bairro', '').strip()
         notes           = request.form.get('notes', '').strip()
 
         if not name:
             flash('Nome é obrigatório.', 'danger')
             return render_template('customers/form.html', neighborhoods=neighborhoods, customer=None)
 
+        # Bairro em texto → tenta casar com um bairro cadastrado (p/ taxa/relatório)
+        n = _match_bairro(bairro)
+        neighborhood_id = n.id if n else None
         # Taxa: usa a do formulário (por distância ou manual); senão, a do bairro
         fee = _fee_from_form(neighborhood_id)
 
@@ -117,7 +131,7 @@ def novo():
             tenant_id=tid(),
             name=name, phone=phone, cep=cep, address=address,
             address_number=address_number, address_ref=address_ref,
-            neighborhood_id=neighborhood_id,
+            bairro=bairro, neighborhood_id=neighborhood_id,
             delivery_fee=fee, notes=notes
         )
         db.session.add(customer)
@@ -139,8 +153,10 @@ def editar(customer_id):
         customer.address         = request.form.get('address', '').strip()
         customer.address_number  = request.form.get('address_number', '').strip()
         customer.address_ref     = request.form.get('address_ref', '').strip()
-        customer.neighborhood_id = request.form.get('neighborhood_id') or None
+        customer.bairro          = request.form.get('bairro', '').strip()
         customer.notes           = request.form.get('notes', '').strip()
+        n = _match_bairro(customer.bairro)
+        customer.neighborhood_id = n.id if n else None
         customer.delivery_fee    = _fee_from_form(customer.neighborhood_id)
         db.session.commit()
         flash('Cliente atualizado!', 'success')
@@ -257,7 +273,7 @@ def api_criar():
         'phone': c.phone or '',
         'address': c.address or '',
         'neighborhood_id': c.neighborhood_id,
-        'neighborhood_name': c.neighborhood.name if c.neighborhood else '',
+        'neighborhood_name': c.bairro or (c.neighborhood.name if c.neighborhood else ''),
         'delivery_fee': c.delivery_fee or 0,
     })
 
@@ -277,7 +293,7 @@ def api_buscar():
         'address_number': c.address_number or '',
         'address_ref': c.address_ref or '',
         'neighborhood_id': c.neighborhood_id,
-        'neighborhood_name': c.neighborhood.name if c.neighborhood else '',
+        'neighborhood_name': c.bairro or (c.neighborhood.name if c.neighborhood else ''),
         'delivery_fee': c.delivery_fee or 0,
     } for c in customers])
 
@@ -296,8 +312,8 @@ def api_enderecos(customer_id):
             'address_number': c.address_number or '',
             'address_ref': c.address_ref or '',
             'neighborhood_id': c.neighborhood_id,
-            'neighborhood_name': c.neighborhood.name if c.neighborhood else '',
-            'delivery_fee': c.neighborhood.delivery_fee if c.neighborhood else (c.delivery_fee or 0),
+            'neighborhood_name': c.bairro or (c.neighborhood.name if c.neighborhood else ''),
+            'delivery_fee': c.delivery_fee or 0,
         })
     extras = CustomerAddress.query.filter_by(customer_id=customer_id, tenant_id=tid()).order_by(CustomerAddress.created_at).all()
     for e in extras:

@@ -39,7 +39,7 @@
         <tr>
           <td class="fw-semibold ps-4">{{ c.name }}</td>
           <td>{{ c.phone or '—' }}</td>
-          <td>{{ c.neighborhood.name if c.neighborhood else '—' }}</td>
+          <td>{{ c.bairro or (c.neighborhood.name if c.neighborhood else '—') }}</td>
           <td>R$ {{ '%.2f'|format(c.delivery_fee or 0) }}</td>
           <td class="text-muted small">{{ c.address or '—' }}</td>
           <td class="text-end pe-4">

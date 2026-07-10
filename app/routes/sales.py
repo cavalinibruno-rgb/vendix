@@ -546,7 +546,7 @@ def escpos(sale_id):
                 rua    = c.address or ''
                 num    = getattr(c, 'address_number', None) or ''
                 ref    = getattr(c, 'address_ref', None) or ''
-                bairro = c.neighborhood.name if c.neighborhood else ''
+                bairro = c.bairro or (c.neighborhood.name if c.neighborhood else '')
                 if rua or num:
                     d += lft(f'End: {rua}{"  n° " + num if num else ""}')
                 if bairro:
