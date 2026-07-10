@@ -244,8 +244,12 @@ def novo():
                     break
                 qty = int(qty_str or 0)
                 if qty > 1:
+                    termo = request.form.get(f'packs[{i}][termo]', 'Pack').strip() or 'Pack'
+                    if termo not in ('Pack', 'Caixa', 'Maço'):
+                        termo = 'Pack'
                     packs_data.append({
                         'qty':        qty,
+                        'termo':      termo,
                         'preco':      float(request.form.get(f'packs[{i}][preco]', 0) or 0),
                         'preco_card': float(request.form.get(f'packs[{i}][preco_card]', 0) or 0),
                         'preco_event':float(request.form.get(f'packs[{i}][preco_event]', 0) or 0),
@@ -263,14 +267,22 @@ def novo():
                            quantity=float(comp['quantity']))
             db.session.add(ci)
 
+        # Nome do conjunto conforme o termo escolhido:
+        #   Maço → "Maço de {nome}" (sem quantidade)
+        #   Pack/Caixa → "{termo} c/ {N} {nome}"
+        def _nome_pack(termo, qty):
+            if termo == 'Maço':
+                return f'Maço de {name}'
+            return f'{termo} c/ {qty} {name}'
+
         # Cria um produto pack para cada entrada
         for pd in packs_data:
             pack = Product(
                 tenant_id        = tenant_id(),
                 type_id          = type_id,
                 brand_id         = brand_id,
-                name             = f'Pack c/ {pd["qty"]} {name}',
-                description      = f'Pack com {pd["qty"]} unidades de {name}.',
+                name             = _nome_pack(pd['termo'], pd['qty']),
+                description      = f'{pd["termo"]} com {pd["qty"]} unidades de {name}.',
                 sale_price       = pd['preco'],
                 sale_price_card  = pd['preco_card'],
                 sale_price_event = pd['preco_event'],
@@ -292,8 +304,8 @@ def novo():
 
         db.session.commit()
         if packs_data:
-            nomes = ', '.join(f'Pack c/ {p["qty"]}' for p in packs_data)
-            flash(f'Produto "{name}" e packs ({nomes}) cadastrados com sucesso!', 'success')
+            nomes = ', '.join(_nome_pack(p['termo'], p['qty']) for p in packs_data)
+            flash(f'Produto "{name}" e {nomes} cadastrados com sucesso!', 'success')
         else:
             flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))

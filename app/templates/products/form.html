@@ -22,9 +22,9 @@
               <input class="form-check-input" type="checkbox" id="temPackCheck"
                      name="tem_pack" value="1" onchange="togglePackFields()">
               <label class="form-check-label fw-semibold" for="temPackCheck">
-                Este produto também é vendido em Pack
+                Este produto também é vendido em Pack/Caixa/Maço
                 <span class="text-muted fw-normal" style="font-size:.82rem;">
-                  (Para unificar o estoque unitário com o pack, cadastre o pack por aqui)
+                  (Para unificar o estoque unitário com o conjunto, cadastre-o por aqui)
                 </span>
               </label>
             </div>
@@ -417,6 +417,15 @@ function togglePackFields() {
   }
 }
 
+function atualizarHintPack(i) {
+  const hint = document.getElementById(`packHint_${i}`);
+  if (!hint) return;
+  const termo = document.getElementById(`packTermo_${i}`).value;
+  const qty   = document.getElementById(`packQty_${i}`).value || 'N';
+  const nome  = document.querySelector('input[name="name"]').value.trim() || '{nome do produto}';
+  hint.textContent = termo === 'Maço' ? `Maço de ${nome}` : `${termo} c/ ${qty} ${nome}`;
+}
+
 function adicionarPack() {
   const i = packCount++;
   const div = document.createElement('div');
@@ -427,13 +436,24 @@ function adicionarPack() {
             onclick="removerPack(${i})" title="Remover"></button>
     <div class="row g-2 align-items-center mb-2">
       <div class="col-auto">
+        <label class="form-label fw-semibold mb-0">Tipo</label>
+      </div>
+      <div class="col-auto">
+        <select name="packs[${i}][termo]" id="packTermo_${i}" class="form-select form-select-sm"
+                style="width:110px;" onchange="atualizarHintPack(${i})">
+          <option value="Pack">Pack</option>
+          <option value="Caixa">Caixa</option>
+          <option value="Maço">Maço</option>
+        </select>
+      </div>
+      <div class="col-auto">
         <label class="form-label fw-semibold mb-0">Unidades</label>
       </div>
       <div class="col-auto">
-        <input type="number" name="packs[${i}][qty]" class="form-control form-control-sm"
-               style="width:90px;" min="2" placeholder="Ex: 6" required>
+        <input type="number" name="packs[${i}][qty]" id="packQty_${i}" class="form-control form-control-sm"
+               style="width:90px;" min="2" placeholder="Ex: 6" required oninput="atualizarHintPack(${i})">
       </div>
-      <div class="col text-muted small">unidades → nome: <em>Pack c/ N Nome</em></div>
+      <div class="col text-muted small">nome: <em id="packHint_${i}">Pack c/ N Nome</em></div>
     </div>
     <div class="row g-2">
       <div class="col-md-4">
@@ -473,7 +493,15 @@ function adicionarPack() {
     </div>
   `;
   document.getElementById('packsLista').appendChild(div);
+  atualizarHintPack(i);
 }
+
+// Atualiza o preview do nome dos packs quando o nome do produto muda
+document.querySelector('input[name="name"]').addEventListener('input', () => {
+  document.querySelectorAll('[id^="packHint_"]').forEach(el => {
+    atualizarHintPack(el.id.replace('packHint_', ''));
+  });
+});
 
 function removerPack(i) {
   const el = document.getElementById(`pack_${i}`);
