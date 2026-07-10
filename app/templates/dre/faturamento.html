@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Faturamento — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-cash-coin me-2 text-warning"></i>Faturamento</h1>
+  <p class="text-muted mb-0">Total faturado por período (todas as vendas confirmadas)</p>
+</div>
+
+<!-- Atalhos de período -->
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% set atalhos = [('hoje','Hoje'), ('7dias','Últimos 7 dias'), ('mes','Este mês'), ('mes_passado','Mês passado')] %}
+      {% for val, label in atalhos %}
+      <a href="{{ url_for('dre.faturamento', preset=val) }}"
+         class="btn btn-sm {{ 'btn-warning fw-semibold' if preset == val else 'btn-outline-secondary' }}">
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-auto">
+        <label class="form-label fw-semibold small mb-1">De</label>
+        <input type="date" name="inicio" class="form-control form-control-sm" value="{{ inicio }}">
+      </div>
+      <div class="col-auto">
+        <label class="form-label fw-semibold small mb-1">Até</label>
+        <input type="date" name="fim" class="form-control form-control-sm" value="{{ fim }}">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-search me-1"></i>Aplicar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Cards: Custo | Faturamento | Líquido -->
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body text-center py-4">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Preço de Custo</div>
+        <div class="fw-bold fs-3 text-danger">R$ {{ '%.2f'|format(custo) }}</div>
+        <div class="text-muted small mt-1">Custo dos produtos vendidos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 border border-warning">
+      <div class="card-body text-center py-4">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Faturamento</div>
+        <div class="fw-bold fs-2 text-warning">R$ {{ '%.2f'|format(faturamento) }}</div>
+        <div class="text-muted small mt-1">{{ qtd }} venda(s) no período</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body text-center py-4">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Líquido</div>
+        <div class="fw-bold fs-3 {{ 'text-success' if liquido >= 0 else 'text-danger' }}">R$ {{ '%.2f'|format(liquido) }}</div>
+        <div class="text-muted small mt-1">Faturamento − Custo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Resumo -->
+<div class="card">
+  <div class="card-body">
+    <div class="row text-center">
+      <div class="col-6 border-end">
+        <div class="text-muted small">Nº de vendas</div>
+        <div class="fw-bold fs-5">{{ qtd }}</div>
+      </div>
+      <div class="col-6">
+        <div class="text-muted small">Ticket médio</div>
+        <div class="fw-bold fs-5">R$ {{ '%.2f'|format(ticket) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

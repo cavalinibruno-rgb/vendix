@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from app import db
 from app.models.sale import Sale, SaleItem
@@ -6,7 +6,7 @@ from app.models.sale_archive import SaleArchive
 from app.models.product import Product
 from app.models.expense import Expense, CATEGORIAS
 from app.models.tenant import Tenant
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 dre_bp = Blueprint('dre', __name__, url_prefix='/dre')
 
@@ -166,6 +166,89 @@ def index():
     fim_str    = request.args.get('fim',    hoje.strftime('%Y-%m-%d'))
     ctx = _calcular_dre(inicio_str, fim_str)
     return render_template('dre/index.html', **ctx)
+
+def _periodo_faturamento():
+    """Resolve o período a partir dos atalhos (preset) ou datas custom."""
+    hoje = date.today()
+    preset = request.args.get('preset', 'mes')
+    if request.args.get('inicio') or request.args.get('fim'):
+        preset = 'custom'
+    if preset == 'hoje':
+        ini = fim = hoje
+    elif preset == '7dias':
+        ini, fim = hoje - timedelta(days=6), hoje
+    elif preset == 'mes_passado':
+        primeiro_este = hoje.replace(day=1)
+        fim = primeiro_este - timedelta(days=1)
+        ini = fim.replace(day=1)
+    elif preset == 'custom':
+        try:
+            ini = datetime.strptime(request.args.get('inicio', ''), '%Y-%m-%d').date()
+        except ValueError:
+            ini = hoje.replace(day=1)
+        try:
+            fim = datetime.strptime(request.args.get('fim', ''), '%Y-%m-%d').date()
+        except ValueError:
+            fim = hoje
+        if fim < ini:
+            ini, fim = fim, ini
+    else:
+        preset = 'mes'
+        ini, fim = hoje.replace(day=1), hoje
+    return preset, ini, fim
+
+
+@dre_bp.route('/faturamento')
+@login_required
+def faturamento():
+    if current_user.is_employee:
+        abort(403)
+    preset, ini, fim = _periodo_faturamento()
+    inicio_dt = datetime.combine(ini, datetime.min.time())
+    fim_dt    = datetime.combine(fim, datetime.max.time())
+
+    vendas = Sale.query.filter(
+        Sale.tenant_id == tid(), Sale.status == 'confirmed',
+        Sale.created_at >= inicio_dt, Sale.created_at <= fim_dt,
+    ).all()
+    vendas_arq = SaleArchive.query.filter(
+        SaleArchive.tenant_id == tid(), SaleArchive.status == 'confirmed',
+        SaleArchive.created_at >= inicio_dt, SaleArchive.created_at <= fim_dt,
+    ).all()
+
+    faturamento = sum(v.total for v in vendas) + sum(v.total for v in vendas_arq)
+    qtd = len(vendas) + len(vendas_arq)
+
+    # Custo (CMV): usa o custo gravado no item; senão, o custo atual do produto
+    _cache = {}
+    def _custo_item(item):
+        if item.cost_price:
+            return item.cost_price
+        if item.product_id:
+            if item.product_id not in _cache:
+                _cache[item.product_id] = Product.query.get(item.product_id)
+            p = _cache[item.product_id]
+            return (p.cost_price or 0) if p else 0
+        return 0
+
+    custo = sum(_custo_item(i) * i.quantity for v in vendas for i in v.items)
+    import json as _json
+    for v in vendas_arq:
+        try:
+            for i in _json.loads(v.items_json or '[]'):
+                custo += (i.get('cost_price') or 0) * i.get('quantity', 1)
+        except Exception:
+            pass
+
+    liquido = faturamento - custo
+    ticket  = (faturamento / qtd) if qtd else 0
+
+    return render_template('dre/faturamento.html',
+        preset=preset,
+        inicio=ini.strftime('%Y-%m-%d'), fim=fim.strftime('%Y-%m-%d'),
+        faturamento=faturamento, custo=custo, liquido=liquido,
+        qtd=qtd, ticket=ticket)
+
 
 def _money(v):
     """Formata em padrão brasileiro: R$ 1.234,56"""

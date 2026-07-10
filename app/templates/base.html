@@ -342,7 +342,10 @@
 
       <div class="nav-section">Sistema</div>
       {% if not current_user.is_employee %}
-      <a href="{{ url_for('dre.index') }}" class="nav-link {% if 'dre' in ep %}active{% endif %}">
+      <a href="{{ url_for('dre.faturamento') }}" class="nav-link {% if ep == 'dre.faturamento' %}active{% endif %}">
+        <i class="bi bi-cash-coin"></i><span class="nav-label"> Faturamento</span>
+      </a>
+      <a href="{{ url_for('dre.index') }}" class="nav-link {% if ep == 'dre.index' %}active{% endif %}">
         <i class="bi bi-graph-up-arrow"></i><span class="nav-label"> DRE</span>
       </a>
       {% endif %}
