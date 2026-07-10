@@ -68,6 +68,8 @@
               <td>
                 {% if e.role == 'caixa' %}
                   <span class="badge bg-primary-subtle text-primary">Op. de Caixa</span>
+                {% elif e.role == 'repositor' %}
+                  <span class="badge bg-success-subtle text-success">Repositor</span>
                 {% else %}
                   <span class="badge bg-warning-subtle text-warning-emphasis">Motoboy</span>
                 {% endif %}
@@ -170,6 +172,7 @@
             <select name="role" id="funcRole" class="form-select" required onchange="toggleAcessoFunc()">
               <option value="caixa">Op. de Caixa</option>
               <option value="motoboy">Motoboy</option>
+              <option value="repositor">Repositor</option>
             </select>
           </div>
           <!-- Acesso ao caixa: só para Op. de Caixa -->

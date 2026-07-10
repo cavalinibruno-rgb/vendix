@@ -47,7 +47,7 @@ def api_funcionarios():
 def funcionario_novo():
     name = request.form.get('name', '').strip()
     role = request.form.get('role', 'caixa')
-    if role not in ('caixa', 'motoboy'):
+    if role not in ('caixa', 'motoboy', 'repositor'):
         role = 'caixa'
     if not name:
         return redirect(url_for('vale.index'))
