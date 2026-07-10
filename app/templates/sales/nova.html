@@ -817,12 +817,17 @@ function limparFiltros() {
   aplicarFiltros();
 }
 
+const _RE_ACENTO = new RegExp('[\\u0300-\\u036f]', 'g');
+function _semAcento(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(_RE_ACENTO, '');
+}
+
 function aplicarFiltros() {
-  const q = document.getElementById('produtoSearch').value.trim().toLowerCase();
+  const q = _semAcento(document.getElementById('produtoSearch').value.trim());
   let lista = todosProds;
   if (catAtual !== 'todas')   lista = lista.filter(p => p.type_id == catAtual);
   if (marcaAtual !== 'todas') lista = lista.filter(p => p.brand_id == marcaAtual);
-  if (q) lista = lista.filter(p => p.name.toLowerCase().includes(q));
+  if (q) lista = lista.filter(p => _semAcento(p.name).includes(q));
   renderCards(lista);
 }
 

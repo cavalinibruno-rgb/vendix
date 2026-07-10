@@ -186,12 +186,17 @@ function construirMarcasProd() {
   fmarca.value = marcas.has(atual) ? atual : '';
 }
 
+const _RE_ACENTO = new RegExp('[\\u0300-\\u036f]', 'g');
+function _semAcento(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(_RE_ACENTO, '');
+}
+
 function aplicarFiltrosProd() {
-  const q = fq.value.trim().toLowerCase();
+  const q = _semAcento(fq.value.trim());
   const cat = fcat.value, marca = fmarca.value;
   let visiveis = 0;
   _linhasProd().forEach(tr => {
-    const ok = (!q || tr.dataset.name.includes(q)) &&
+    const ok = (!q || _semAcento(tr.dataset.name).includes(q)) &&
                (!cat || tr.dataset.type === cat) &&
                (!marca || tr.dataset.brand === marca);
     tr.style.display = ok ? '' : 'none';
