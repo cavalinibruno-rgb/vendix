@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
 from flask_login import login_required, current_user
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, defer
 from PIL import Image
 import io
 import json
@@ -122,7 +122,12 @@ def index():
     q        = request.args.get('q', '').strip()
     tipo_id  = request.args.get('tipo', type=int)
     marca_id = request.args.get('marca', type=int)
-    products = Product.query.filter_by(tenant_id=tenant_id()).order_by(Product.name).all()
+    # Não carrega os blobs de imagem (a lista não exibe imagem) e traz
+    # categoria/marca de uma vez para evitar N+1 de queries.
+    products = (Product.query.filter_by(tenant_id=tenant_id())
+                .options(defer(Product.image_data), defer(Product.thumbnail_data),
+                         joinedload(Product.type), joinedload(Product.brand))
+                .order_by(Product.name).all())
 
     # Mapa estoque dos pais para calcular estoque efetivo dos packs
     parent_ids = {p.pack_parent_id for p in products if p.pack_parent_id}
