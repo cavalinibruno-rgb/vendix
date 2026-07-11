@@ -7,6 +7,9 @@
     <i class="bi bi-arrow-left"></i>
   </a>
   <h1 class="mb-0"><i class="bi bi-receipt me-2"></i>Resumo do Caixa #{{ caixa.id }}</h1>
+  <button class="btn btn-warning fw-semibold ms-auto" onclick="imprimirFechamento()">
+    <i class="bi bi-printer me-1"></i>Imprimir fechamento
+  </button>
 </div>
 
 <div class="row g-4 mb-4">
@@ -159,4 +162,33 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function imprimirFechamento() {
+  if (!(window.electronAPI && window.electronAPI.printRaw)) {
+    alert('A impressão térmica está disponível apenas no aplicativo Vendix instalado.');
+    return;
+  }
+  let printer = localStorage.getItem('vendix_printer');
+  if (!printer && window.electronAPI.getPrinters) {
+    try {
+      const ps = await window.electronAPI.getPrinters();
+      if (ps && ps.length) printer = ps[0];
+    } catch (e) {}
+  }
+  if (!printer) {
+    alert('Nenhuma impressora encontrada. Selecione a impressora fazendo uma venda primeiro.');
+    return;
+  }
+  const url = `${window.location.origin}/caixa/{{ caixa.id }}/escpos`;
+  try {
+    const result = await window.electronAPI.printRaw(url, printer);
+    if (result && !result.ok) alert('Erro na impressão:\n' + result.error);
+  } catch (e) {
+    alert('Erro ao imprimir: ' + e.message);
+  }
+}
+</script>
 {% endblock %}

@@ -262,11 +262,9 @@ def fechar(caixa_id):
         em_rota=em_rota,
     )
 
-@cash_bp.route('/<int:caixa_id>/resumo')
-@login_required
-def resumo(caixa_id):
-    caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid()).first_or_404()
-
+def _calcular_resumo(caixa):
+    """Calcula conferência (sistema vs operador), retiradas e vendas do caixa.
+    Reaproveitado pela tela de resumo e pela impressão ESC/POS."""
     todas_vendas = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
@@ -281,12 +279,12 @@ def resumo(caixa_id):
 
     todas = vendas_loja + vendas_app
     desp  = Expense.query.filter_by(cash_register_id=caixa.id).all()
-    ret_r = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
     desp_din = sum(d.amount for d in desp if d.payment_method == 'dinheiro')
     desp_pix = sum(d.amount for d in desp if d.payment_method == 'pix')
-    ret_tot  = sum(r.amount for r in ret_r)
+    retiradas       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
+    total_retiradas = sum(r.amount for r in retiradas)
     sis = {
-        'dinheiro':    caixa.opening_amount + tot(todas, ('dinheiro', 'entrega_dinheiro')) - ret_tot - desp_din,
+        'dinheiro':    caixa.opening_amount + tot(todas, ('dinheiro', 'entrega_dinheiro')) - total_retiradas - desp_din,
         'credito':     tot(todas, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
         'debito':      tot(todas, ('cartao_debito', 'entrega_cartao_debito')),
         'pix':         tot(todas, ('pix', 'entrega_pix')) - desp_pix,
@@ -295,11 +293,6 @@ def resumo(caixa_id):
     }
 
     op = json.loads(caixa.closing_data) if caixa.closing_data else {k: 0 for k in sis}
-
-    retiradas       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
-    total_retiradas = sum(r.amount for r in retiradas)
-
-    # Desconta retiradas do dinheiro esperado pelo sistema (saem do caixa físico)
 
     conferencia = []
     for key, label, icon, color in [
@@ -312,22 +305,103 @@ def resumo(caixa_id):
     ]:
         s = sis.get(key, 0)
         o = op.get(key, 0)
-        diff = o - s
         conferencia.append({'label': label, 'icon': icon, 'color': color,
-                            'sistema': s, 'operador': o, 'diff': diff})
+                            'sistema': s, 'operador': o, 'diff': o - s})
 
     total_sistema  = sum(sis.values())
     total_operador = sum(op.values())
-    diff_total      = total_operador - total_sistema
 
-    vendas = vendas_loja + vendas_app
-
-    return render_template('cash/resumo.html',
-        caixa=caixa, vendas=vendas,
+    return dict(
+        vendas=vendas_loja + vendas_app,
         conferencia=conferencia,
         total_sistema=total_sistema,
         total_operador=total_operador,
-        diff_total=diff_total,
+        diff_total=total_operador - total_sistema,
         retiradas=retiradas,
         total_retiradas=total_retiradas,
     )
+
+
+@cash_bp.route('/<int:caixa_id>/resumo')
+@login_required
+def resumo(caixa_id):
+    caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid()).first_or_404()
+    ctx = _calcular_resumo(caixa)
+    return render_template('cash/resumo.html', caixa=caixa, **ctx)
+
+
+@cash_bp.route('/<int:caixa_id>/escpos')
+@login_required
+def escpos(caixa_id):
+    from flask import Response
+    caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid()).first_or_404()
+    ctx = _calcular_resumo(caixa)
+    store_name = current_user.tenant.store_name or 'Vendix'
+
+    W = 42
+    INIT   = b'\x1b@'
+    CP850  = b'\x1bt\x02'
+    CENTER = b'\x1ba\x01'
+    LEFT   = b'\x1ba\x00'
+    BON    = b'\x1bE\x01'
+    BOFF   = b'\x1bE\x00'
+    CUT    = b'\x1dV\x01'
+    NL     = b'\n'
+
+    def enc(s):  return s.encode('cp850', errors='replace')
+    def ctr(s):  return CENTER + enc(s[:W].center(W)) + NL
+    def lft(s):  return LEFT + enc(s[:W]) + NL
+    def cols(l, r):
+        r = str(r); l = str(l)[:W - len(r) - 1]
+        return LEFT + enc(l.ljust(W - len(r)) + r) + NL
+    def sep(c='-'): return LEFT + enc(c * W) + NL
+    def brl(v): return f'R${v:.2f}'
+
+    d  = INIT + CP850
+    d += CENTER + BON + enc(store_name.upper()[:W].center(W)) + BOFF + NL
+    d += sep('=')
+    d += ctr(f'FECHAMENTO DE CAIXA #{caixa.id}')
+    if caixa.operator_name:
+        d += ctr(f'Operador: {caixa.operator_name}')
+    d += sep('=')
+    d += lft(f'Aberto:  {caixa.opened_at.strftime("%d/%m/%Y %H:%M")}')
+    if caixa.closed_at:
+        d += lft(f'Fechado: {caixa.closed_at.strftime("%d/%m/%Y %H:%M")}')
+    d += cols('Troco inicial', brl(caixa.opening_amount))
+    d += sep()
+
+    # Conferência: Sistema vs Operador
+    d += lft('CONFERENCIA (sistema x operador)')
+    d += sep()
+    for c in ctx['conferencia']:
+        d += lft(c['label'])
+        d += cols('  Sistema', brl(c['sistema']))
+        d += cols('  Operador', brl(c['operador']))
+        sinal = '+' if c['diff'] > 0 else ''
+        d += cols('  Diferenca', f'{sinal}{brl(c["diff"])}')
+        d += sep('.')
+    d += sep('=')
+    d += cols('TOTAL SISTEMA', brl(ctx['total_sistema']))
+    d += cols('TOTAL OPERADOR', brl(ctx['total_operador']))
+    dt = ctx['diff_total']
+    if dt == 0:
+        d += BON + ctr('*** VALORES CONFEREM ***') + BOFF
+    elif dt > 0:
+        d += BON + cols('SOBRA', f'+{brl(dt)}') + BOFF
+    else:
+        d += BON + cols('FALTA', brl(dt)) + BOFF
+    d += sep('=')
+
+    if ctx['retiradas']:
+        d += lft('RETIRADAS')
+        for r in ctx['retiradas']:
+            d += cols(f'{r.created_at.strftime("%H:%M")} {r.motivo}'[:W-12], f'-{brl(r.amount)}')
+        d += cols('Total retiradas', f'-{brl(ctx["total_retiradas"])}')
+        d += sep()
+
+    d += cols('Qtd. vendas', str(len(ctx['vendas'])))
+    d += NL
+    d += ctr(datetime.now().strftime('Impresso %d/%m/%Y %H:%M'))
+    d += NL * 4 + CUT
+
+    return Response(d, mimetype='application/octet-stream')
