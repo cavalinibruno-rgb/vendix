@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 import json
 from flask_login import login_required, current_user
 from app import db
@@ -144,16 +144,13 @@ def retirada():
     op_password = request.form.get('op_password', '').strip()
 
     if valor <= 0:
-        flash('Informe um valor válido.', 'danger')
-        return redirect(url_for('cash.index'))
+        return jsonify({'ok': False, 'error': 'Informe um valor válido.'}), 400
     if not motivo:
-        flash('Informe o motivo da retirada.', 'danger')
-        return redirect(url_for('cash.index'))
+        return jsonify({'ok': False, 'error': 'Informe o motivo da retirada.'}), 400
 
     nome_resp, ok = autenticar_operador(tid(), op_username, op_password)
     if not ok:
-        flash('Usuário ou senha incorretos.', 'danger')
-        return redirect(url_for('cash.index'))
+        return jsonify({'ok': False, 'error': 'Usuário ou senha incorretos.'}), 400
 
     w = CashWithdrawal(
         tenant_id        = tid(),
@@ -165,7 +162,45 @@ def retirada():
     db.session.add(w)
     db.session.commit()
     flash(f'Retirada de R$ {valor:.2f} registrada por {nome_resp}.', 'success')
-    return redirect(url_for('cash.index'))
+    return jsonify({'ok': True, 'id': w.id})
+
+
+@cash_bp.route('/retirada/<int:wid>/escpos')
+@login_required
+def retirada_escpos(wid):
+    from flask import Response
+    w = CashWithdrawal.query.filter_by(id=wid, tenant_id=tid()).first_or_404()
+    store_name = current_user.tenant.store_name or 'Vendix'
+
+    W = 42
+    INIT, CP850 = b'\x1b@', b'\x1bt\x02'
+    CENTER, LEFT = b'\x1ba\x01', b'\x1ba\x00'
+    BON, BOFF = b'\x1bE\x01', b'\x1bE\x00'
+    BIG, NORM = b'\x1d!\x11', b'\x1d!\x00'
+    CUT, NL = b'\x1dV\x01', b'\n'
+
+    def enc(s):  return s.encode('cp850', errors='replace')
+    def ctr(s):  return CENTER + enc(s[:W].center(W)) + NL
+    def lft(s):  return LEFT + enc(s[:W]) + NL
+    def cols(l, r):
+        r = str(r); l = str(l)[:W - len(r) - 1]
+        return LEFT + enc(l.ljust(W - len(r)) + r) + NL
+    def sep(c='-'): return LEFT + enc(c * W) + NL
+
+    d  = INIT + CP850
+    d += CENTER + BON + enc(store_name.upper()[:W].center(W)) + BOFF + NL
+    d += sep('=')
+    d += ctr('RETIRADA DE CAIXA')
+    d += sep('=')
+    d += cols('Data',  w.created_at.strftime('%d/%m/%Y'))
+    d += cols('Hora',  w.created_at.strftime('%H:%M'))
+    d += cols('Operador', (w.operator_name or '-')[:28])
+    d += lft(f'Motivo: {w.motivo}')
+    d += sep()
+    d += CENTER + BIG + BON + enc(f'- R$ {w.amount:.2f}'.center(W // 2)) + NORM + BOFF + NL
+    d += sep('=')
+    d += NL * 4 + CUT
+    return Response(d, mimetype='application/octet-stream')
 
 @cash_bp.route('/despesa', methods=['POST'])
 @login_required
