@@ -158,10 +158,10 @@ async function imprimirVenda(saleId) {
     const printer = localStorage.getItem('vendix_printer');
     if (!printer) { alert('Nenhuma impressora selecionada. Finalize uma venda primeiro para configurar a impressora.'); return; }
     const escposUrl = `${window.location.origin}/vendas/${saleId}/escpos`;
-    try {
-      const result = await window.electronAPI.printRaw(escposUrl, printer);
-      if (result && !result.ok) console.error('[imprimir]', result.error);
-    } catch(e) { console.error('[imprimir]', e); }
+    // Não bloqueia a UI: imprime em segundo plano
+    window.electronAPI.printRaw(escposUrl, printer)
+      .then(r => { if (r && !r.ok) console.error('[imprimir]', r.error); })
+      .catch(e => console.error('[imprimir]', e));
   } else {
     window.open(`/vendas/${saleId}/comprovante?autoprint=1`, '_blank');
   }

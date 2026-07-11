@@ -163,10 +163,10 @@ async function reimprimir() {
     const printer = salva || null;
     if (!printer) { alert('Nenhuma impressora selecionada. Finalize uma venda primeiro para configurar a impressora.'); return; }
     const escposUrl = `${window.location.origin}/vendas/{{ sale.id }}/escpos`;
-    try {
-      const result = await window.electronAPI.printRaw(escposUrl, printer);
-      if (result && !result.ok) console.error('[reimprimir]', result.error);
-    } catch(e) { console.error('[reimprimir]', e); }
+    // Não bloqueia a UI: imprime em segundo plano
+    window.electronAPI.printRaw(escposUrl, printer)
+      .then(r => { if (r && !r.ok) console.error('[reimprimir]', r.error); })
+      .catch(e => console.error('[reimprimir]', e));
   } else {
     window.open("{{ url_for('sales.comprovante', sale_id=sale.id) }}?autoprint=1", '_blank');
   }

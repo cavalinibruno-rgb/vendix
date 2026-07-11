@@ -215,12 +215,10 @@ async function imprimirFechamento() {
     return;
   }
   const url = `${window.location.origin}/caixa/{{ caixa.id }}/escpos`;
-  try {
-    const result = await window.electronAPI.printRaw(url, printer);
-    if (result && !result.ok) alert('Erro na impressão:\n' + result.error);
-  } catch (e) {
-    alert('Erro ao imprimir: ' + e.message);
-  }
+  // Não bloqueia a UI: imprime em segundo plano
+  window.electronAPI.printRaw(url, printer)
+    .then(r => { if (r && !r.ok) alert('Erro na impressão:\n' + r.error); })
+    .catch(e => console.error('[imprimir fechamento]', e));
 }
 </script>
 {% endblock %}
