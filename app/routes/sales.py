@@ -625,15 +625,31 @@ def escpos(sale_id):
     data += NL * 4
     data += CUT
 
-    # ── VIA 2: CLIENTE (somente itens) ───────────────────────────────────────
+    # ── VIA 2: CLIENTE/MOTOBOY (itens + totais para cobrança na entrega) ──────
     data += cabecalho()
     if bloco:
         data += bloco
         data += sep()
     data += itens_com_combo()
+    data += cols('Subtotal', f'R${sale.subtotal:.2f}')
+    if sale.delivery_fee and sale.delivery_fee > 0:
+        data += cols('Taxa Entrega', f'R${sale.delivery_fee:.2f}')
+    if sale.discount and sale.discount > 0:
+        data += cols('Desconto', f'-R${sale.discount:.2f}')
+    data += sep('=')
+    data += LEFT + enc('TOTAL'.ljust(W-12) + f'R${sale.total:.2f}'.rjust(12)) + NL
+    data += sep('=')
+    if sale.payment_method == 'combinado':
+        data += cols('Pagamento', sale.payment_label)
+        for e in sale.payment_entries_list:
+            lbl = pgto_map.get(e.get('method'), e.get('method') or '')
+            data += cols(f'  {lbl}', f'R${float(e.get("amount", 0)):.2f}')
+    else:
+        data += cols('Pagamento', pgto_map.get(sale.payment_method, sale.payment_method))
     if sale.notes:
-        data += lft(f'Obs: {sale.notes}')
         data += sep()
+        data += lft(f'Obs: {sale.notes}')
+    data += sep()
     data += ctr('Obrigado pela preferencia!')
     data += NL * 4
     data += CUT
