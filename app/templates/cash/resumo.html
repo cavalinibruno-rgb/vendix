@@ -97,6 +97,35 @@
   </div>
 </div>
 
+<!-- Memória de cálculo do dinheiro esperado -->
+<div class="card mb-4 border-success">
+  <div class="card-header fw-semibold"><i class="bi bi-calculator me-2 text-success"></i>Como o sistema calculou o dinheiro esperado na gaveta</div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap align-items-center gap-2 fs-6">
+      <span class="text-muted">Troco inicial</span>
+      <strong>R$ {{ '%.2f'|format(opening_amount) }}</strong>
+      <span class="text-success">+</span>
+      <span class="text-muted">Vendas em dinheiro</span>
+      <strong class="text-success">R$ {{ '%.2f'|format(vendas_dinheiro) }}</strong>
+      <span class="text-danger">−</span>
+      <span class="text-muted">Sangrias</span>
+      <strong class="text-danger">R$ {{ '%.2f'|format(total_retiradas) }}</strong>
+      <span class="text-danger">−</span>
+      <span class="text-muted">Despesas em dinheiro</span>
+      <strong class="text-danger">R$ {{ '%.2f'|format(desp_dinheiro) }}</strong>
+      <span class="fw-bold">=</span>
+      <strong class="{{ 'text-danger' if dinheiro_esperado < 0 else '' }}">R$ {{ '%.2f'|format(dinheiro_esperado) }}</strong>
+    </div>
+    {% if dinheiro_esperado < 0 %}
+    <div class="alert alert-danger mt-3 mb-0 py-2 small">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      O esperado ficou <strong>negativo</strong> — saiu mais dinheiro (sangrias + despesas) do que entrou (troco + vendas em dinheiro).
+      Isso normalmente indica <strong>vendas em dinheiro não registradas</strong> ou registradas em outra forma de pagamento.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
 <!-- Retiradas -->
 {% if retiradas %}
 <div class="card mb-4">

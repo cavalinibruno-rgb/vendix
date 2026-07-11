@@ -49,6 +49,7 @@
                      onblur="if(this.value==='')this.value='0,00'"
                      oninput="calcTotal()">
             </div>
+            <div class="form-text" id="dif_{{ name }}"></div>
           </div>
           {% endfor %}
         </div>
@@ -137,25 +138,41 @@
 function parseBR(v) { return parseFloat((v||'0').replace(',','.')) || 0; }
 function fmtBR(v)   { return 'R$ ' + v.toFixed(2).replace('.',','); }
 
-const ESPERADO = {{ esperado_caixa }};
+// Valor esperado por forma de pagamento (o de dinheiro já desconta sangrias e despesas)
+const ESPERADOS = {
+  dinheiro:    {{ esperado_caixa }},
+  credito:     {{ total_credito }},
+  debito:      {{ total_debito }},
+  pix:         {{ total_pix }},
+  conta:       {{ total_conta }},
+  funcionario: {{ total_funcionario }},
+};
 
 function calcTotal() {
-  const campos = document.querySelectorAll('.campo-valor');
   let total = 0;
-  campos.forEach(c => total += parseBR(c.value));
+  document.querySelectorAll('.campo-valor').forEach(c => {
+    total += parseBR(c.value);
+    const el = document.getElementById('dif_' + c.id);
+    if (!el || ESPERADOS[c.id] === undefined) return;
+    const esperado = ESPERADOS[c.id];
+    // Enquanto não digitou, mostra só o esperado
+    if (c.value === '' || c.value === '0,00') {
+      el.innerHTML = `<span class="text-muted">Esperado: ${fmtBR(esperado)}</span>`;
+      return;
+    }
+    const dif = parseBR(c.value) - esperado;
+    if (Math.abs(dif) < 0.01) {
+      el.innerHTML = `<span class="text-success"><i class="bi bi-check-circle me-1"></i>Confere (esperado ${fmtBR(esperado)})</span>`;
+    } else if (dif > 0) {
+      el.innerHTML = `<span class="text-warning">Esperado ${fmtBR(esperado)} · sobra ${fmtBR(dif)}</span>`;
+    } else {
+      el.innerHTML = `<span class="text-danger">Esperado ${fmtBR(esperado)} · falta ${fmtBR(Math.abs(dif))}</span>`;
+    }
+  });
   document.getElementById('totalInformado').textContent = fmtBR(total);
-
-  const dinheiro = parseBR(document.getElementById('dinheiro').value);
-  const dif = dinheiro - ESPERADO;
-  const el  = document.getElementById('difDinheiro');
-  if (dinheiro === 0) { el.textContent = ''; return; }
-  if (Math.abs(dif) < 0.01) {
-    el.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Caixa fechado exato</span>';
-  } else if (dif > 0) {
-    el.innerHTML = `<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i>Sobra de ${fmtBR(dif)}</span>`;
-  } else {
-    el.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Falta de ${fmtBR(Math.abs(dif))}</span>`;
-  }
 }
+
+// Mostra os esperados já na abertura da tela
+calcTotal();
 </script>
 {% endblock %}

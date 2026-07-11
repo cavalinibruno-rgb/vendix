@@ -272,24 +272,26 @@ def _calcular_resumo(caixa):
         Sale.created_at <= (caixa.closed_at or datetime.now()),
     ).all()
 
-    vendas_loja = [v for v in todas_vendas if v.source != 'app' and v.status == 'confirmed']
-    vendas_app  = [v for v in todas_vendas if v.source == 'app'  and v.status == 'confirmed']
+    # Só entram na conferência as vendas que realmente entraram no caixa
+    # (mesma regra da tela de fechamento: entregas só quando concluídas).
+    vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
 
     def tot(lst, methods): return sum(v.total for v in lst if v.payment_method in methods)
 
-    todas = vendas_loja + vendas_app
     desp  = Expense.query.filter_by(cash_register_id=caixa.id).all()
     desp_din = sum(d.amount for d in desp if d.payment_method == 'dinheiro')
     desp_pix = sum(d.amount for d in desp if d.payment_method == 'pix')
     retiradas       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
     total_retiradas = sum(r.amount for r in retiradas)
+
+    vendas_dinheiro = tot(vendas, ('dinheiro', 'entrega_dinheiro'))
     sis = {
-        'dinheiro':    caixa.opening_amount + tot(todas, ('dinheiro', 'entrega_dinheiro')) - total_retiradas - desp_din,
-        'credito':     tot(todas, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
-        'debito':      tot(todas, ('cartao_debito', 'entrega_cartao_debito')),
-        'pix':         tot(todas, ('pix', 'entrega_pix')) - desp_pix,
-        'conta':       tot(todas, ('conta',)),
-        'funcionario': tot(todas, ('funcionario',)),
+        'dinheiro':    caixa.opening_amount + vendas_dinheiro - total_retiradas - desp_din,
+        'credito':     tot(vendas, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
+        'debito':      tot(vendas, ('cartao_debito', 'entrega_cartao_debito')),
+        'pix':         tot(vendas, ('pix', 'entrega_pix')) - desp_pix,
+        'conta':       tot(vendas, ('conta',)),
+        'funcionario': tot(vendas, ('funcionario',)),
     }
 
     op = json.loads(caixa.closing_data) if caixa.closing_data else {k: 0 for k in sis}
@@ -312,13 +314,18 @@ def _calcular_resumo(caixa):
     total_operador = sum(op.values())
 
     return dict(
-        vendas=vendas_loja + vendas_app,
+        vendas=vendas,
         conferencia=conferencia,
         total_sistema=total_sistema,
         total_operador=total_operador,
         diff_total=total_operador - total_sistema,
         retiradas=retiradas,
         total_retiradas=total_retiradas,
+        # Memória de cálculo do dinheiro esperado na gaveta
+        opening_amount=caixa.opening_amount,
+        vendas_dinheiro=vendas_dinheiro,
+        desp_dinheiro=desp_din,
+        dinheiro_esperado=sis['dinheiro'],
     )
 
 
@@ -368,6 +375,15 @@ def escpos(caixa_id):
     if caixa.closed_at:
         d += lft(f'Fechado: {caixa.closed_at.strftime("%d/%m/%Y %H:%M")}')
     d += cols('Troco inicial', brl(caixa.opening_amount))
+    d += sep()
+
+    # Memória de cálculo do dinheiro esperado na gaveta
+    d += lft('DINHEIRO ESPERADO (gaveta)')
+    d += cols('  Troco inicial', brl(ctx['opening_amount']))
+    d += cols('  + Vendas dinheiro', brl(ctx['vendas_dinheiro']))
+    d += cols('  - Sangrias', brl(ctx['total_retiradas']))
+    d += cols('  - Despesas dinheiro', brl(ctx['desp_dinheiro']))
+    d += cols('  = Esperado', brl(ctx['dinheiro_esperado']))
     d += sep()
 
     # Conferência: Sistema vs Operador
