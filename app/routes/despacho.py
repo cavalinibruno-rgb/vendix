@@ -176,9 +176,10 @@ def cancelar(sale_id):
         flash('Usuário ou senha incorretos.', 'danger')
         return redirect(url_for('entregas.index'))
 
+    uid = current_user.id
     sale.status            = 'cancelled'
     sale.cancelled_at      = datetime.now()
-    sale.cancelled_by_id   = current_user.id
+    sale.cancelled_by_id   = None if isinstance(uid, str) and uid.startswith('e_') else uid
     sale.cancelled_by_name = nome_op
     sale.cancel_reason     = motivo
     db.session.commit()
