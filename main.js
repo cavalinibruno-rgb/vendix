@@ -2,7 +2,7 @@ const { app, BrowserWindow, shell, Menu, ipcMain, dialog, net } = require('elect
 const path = require('path');
 const os   = require('os');
 const fs   = require('fs');
-const { execSync } = require('child_process');
+const { execSync, execFile } = require('child_process');
 const { autoUpdater } = require('electron-updater');
 
 const VENDIX_URL = 'https://vendix-production-5c8b.up.railway.app';
@@ -147,7 +147,14 @@ $written = 0
 [RawPrinter]::ClosePrinter($hP) | Out-Null
 Write-Output "OK:$written"
 `;
-    const result = execSync(`powershell -NoProfile -Command "${ps.replace(/\n/g, ' ')}"`, { timeout: 15000 }).toString().trim();
+    // Execução ASSÍNCRONA: não bloqueia o processo principal do Electron
+    // (com execSync a interface inteira congelava enquanto o PowerShell rodava).
+    const result = await new Promise((resolve, reject) => {
+      execFile('powershell',
+        ['-NoProfile', '-NonInteractive', '-Command', ps.replace(/\n/g, ' ')],
+        { timeout: 15000, windowsHide: true, maxBuffer: 1024 * 1024 },
+        (err, stdout) => err ? reject(err) : resolve((stdout || '').toString().trim()));
+    });
     try { fs.unlinkSync(tmpFile); } catch (_) {}
     return { ok: true, written: result };
   } catch (e) {

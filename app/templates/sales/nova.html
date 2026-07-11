@@ -1649,13 +1649,12 @@ function finalizarVenda() {
       .then(r=>r.json()).then(async d => {
         if (d.sale_id) {
           if (window.electronAPI && window.electronAPI.printRaw) {
-            try {
-              const printer   = await getPrinterSelecionada();
-              const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
-              const result    = await window.electronAPI.printRaw(escposUrl, printer);
-              if (result && !result.ok) alert('Erro na impressão:\n' + result.error);
-            } catch(e) { console.error('[print]', e); }
-            limparVenda();
+            const printer   = await getPrinterSelecionada();
+            limparVenda();  // libera o PDV na hora; impressão em segundo plano
+            const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
+            window.electronAPI.printRaw(escposUrl, printer)
+              .then(r => { if (r && !r.ok) alert('Erro na impressão:\n' + r.error); })
+              .catch(e => console.error('[print]', e));
           } else {
             window.location.href = `/vendas/${d.sale_id}/comprovante?autoprint=1`;
           }
@@ -1707,17 +1706,12 @@ function finalizarVenda() {
     if (d.sale_id) {
       const url = `${window.location.origin}/vendas/${d.sale_id}/comprovante`;
       if (window.electronAPI && window.electronAPI.printRaw) {
-        try {
-          const printer   = await getPrinterSelecionada();
-          const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
-          const result    = await window.electronAPI.printRaw(escposUrl, printer);
-          if (result && !result.ok) {
-            alert('Erro na impressão:\n' + result.error);
-          }
-        } catch(e) {
-          console.error('[print]', e);
-        }
-        limparVenda();
+        const printer   = await getPrinterSelecionada();
+        limparVenda();  // libera o PDV na hora; a impressão segue em segundo plano
+        const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
+        window.electronAPI.printRaw(escposUrl, printer)
+          .then(r => { if (r && !r.ok) alert('Erro na impressão:\n' + r.error); })
+          .catch(e => console.error('[print]', e));
       } else {
         window.location.href = url + '?autoprint=1';
       }
