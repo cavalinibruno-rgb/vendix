@@ -9,6 +9,14 @@ from app.models.pedido_online import PedidoOnline
 
 despacho_bp = Blueprint('entregas', __name__, url_prefix='/entregas')
 
+# Formas de pagamento oferecidas para ajuste na entrega (recebidas na porta)
+FORMAS_ENTREGA = {
+    'entrega_dinheiro':       'Dinheiro',
+    'entrega_cartao_credito': 'Crédito',
+    'entrega_cartao_debito':  'Débito',
+    'entrega_pix':            'Pix',
+}
+
 def tid():
     return current_user.tenant_id
 
@@ -38,7 +46,27 @@ def index():
 
     return render_template('despacho/index.html',
         pendentes=pendentes, em_rota=em_rota, concluidas=concluidas,
-        motoboys=motoboys, cfg=cfg, pedidos_map=pedidos_map)
+        motoboys=motoboys, cfg=cfg, pedidos_map=pedidos_map,
+        formas=FORMAS_ENTREGA)
+
+
+@despacho_bp.route('/<int:sale_id>/forma-pagamento', methods=['POST'])
+@login_required
+def alterar_forma_pagamento(sale_id):
+    """Corrige a forma de pagamento de uma entrega (ex.: cliente disse Pix mas
+    pagou em Dinheiro na porta). Só reporta 'changed' se realmente mudou, para o
+    front reimprimir a via somente nesse caso."""
+    sale = Sale.query.filter_by(id=sale_id, tenant_id=tid(),
+                                status='confirmed', delivery_mode='entrega').first_or_404()
+    nova = request.form.get('payment_method', '').strip()
+    if nova not in FORMAS_ENTREGA:
+        return jsonify({'ok': False, 'error': 'Forma de pagamento inválida.'}), 400
+    if sale.payment_method == nova:
+        return jsonify({'ok': True, 'changed': False})
+    sale.payment_method = nova
+    sale.payment_entries = None  # deixa de ser combinado, se era
+    db.session.commit()
+    return jsonify({'ok': True, 'changed': True, 'sale_id': sale.id})
 
 @despacho_bp.route('/<int:sale_id>/despachar', methods=['POST'])
 @login_required

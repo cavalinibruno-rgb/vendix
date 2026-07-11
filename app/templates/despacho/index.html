@@ -35,6 +35,7 @@
           <th>Telefone</th>
           <th>Endereço</th>
           <th class="text-end">Total</th>
+          <th>Pagamento</th>
           <th style="width:210px;">Motoboy</th>
           <th class="pe-4"></th>
         </tr>
@@ -49,6 +50,7 @@
           <td class="small text-muted">{{ (v.customer.phone if v.customer else None) or (po.cliente_tel if po else '—') or '—' }}</td>
           <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.delivery_address or (v.customer.address if v.customer and v.customer.address else None) or '—') }}</td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+          <td><span class="badge bg-secondary">{{ v.payment_label }}</span></td>
           <td>
             <select class="form-select form-select-sm" id="motoboy-{{ v.id }}">
               <option value="">— Selecionar —</option>
@@ -68,7 +70,7 @@
         </tr>
         {% else %}
         <tr>
-          <td colspan="7" class="text-center text-muted py-4">
+          <td colspan="9" class="text-center text-muted py-4">
             <i class="bi bi-check-circle me-1 text-success"></i>Nenhuma entrega aguardando despacho.
           </td>
         </tr>
@@ -97,6 +99,7 @@
           <th>Endereço</th>
           <th>Motoboy</th>
           <th class="text-end">Total</th>
+          <th style="width:230px;">Pagamento</th>
           <th class="pe-4"></th>
         </tr>
       </thead>
@@ -111,6 +114,22 @@
           <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.delivery_address or (v.customer.address if v.customer and v.customer.address else None) or '—') }}</td>
           <td><span class="badge bg-secondary">{{ v.motoboy_name or '—' }}</span></td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
+          <td>
+            <div class="d-flex gap-1 align-items-center">
+              <select class="form-select form-select-sm" id="pgto-{{ v.id }}" style="min-width:120px;">
+                {% if v.payment_method not in formas %}
+                <option value="{{ v.payment_method }}" selected>{{ v.payment_label }} (atual)</option>
+                {% endif %}
+                {% for val, lbl in formas.items() %}
+                <option value="{{ val }}" {% if v.payment_method == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn btn-outline-warning btn-sm" title="Alterar forma de pagamento e reimprimir via"
+                      onclick="alterarPagamento({{ v.id }})">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+            </div>
+          </td>
           <td class="pe-4 d-flex gap-1">
             <button class="btn btn-primary btn-sm fw-semibold" onclick="concluir({{ v.id }})">
               <i class="bi bi-check2-circle me-1"></i>Concluir
@@ -122,7 +141,7 @@
         </tr>
         {% else %}
         <tr id="row-rota-vazio">
-          <td colspan="6" class="text-center text-muted py-4">
+          <td colspan="9" class="text-center text-muted py-4">
             <i class="bi bi-bicycle me-1"></i>Nenhuma entrega em rota no momento.
           </td>
         </tr>
@@ -145,6 +164,7 @@
           <th>Telefone</th>
           <th>Endereço</th>
           <th>Motoboy</th>
+          <th>Pagamento</th>
           <th class="text-end pe-4">Total</th>
         </tr>
       </thead>
@@ -158,10 +178,11 @@
           <td class="small text-muted">{{ (v.customer.phone if v.customer else None) or (po.cliente_tel if po else '—') or '—' }}</td>
           <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.delivery_address or (v.customer.address if v.customer and v.customer.address else None) or '—') }}</td>
           <td><span class="badge bg-success">{{ v.motoboy_name or '—' }}</span></td>
+          <td><span class="badge bg-secondary">{{ v.payment_label }}</span></td>
           <td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-center text-muted py-3">Nenhuma entrega concluída ainda.</td></tr>
+        <tr><td colspan="8" class="text-center text-muted py-3">Nenhuma entrega concluída ainda.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -231,6 +252,42 @@ function cancelarEntrega(saleId, num) {
   document.getElementById('formCancelarEntrega').action = `/entregas/${saleId}/cancelar`;
   document.getElementById('cancelReasonEntrega').value = '';
   new bootstrap.Modal(document.getElementById('modalCancelarEntrega')).show();
+}
+
+// Reimprime a via térmica (nova via com a forma corrigida)
+async function reimprimirComprovante(saleId) {
+  const url = `${window.location.origin}/vendas/${saleId}/escpos`;
+  if (window.electronAPI && window.electronAPI.printRaw) {
+    let printer = localStorage.getItem('vendix_printer');
+    if (!printer && window.electronAPI.getPrinters) {
+      try { const ps = await window.electronAPI.getPrinters(); if (ps && ps.length) printer = ps[0]; } catch(e) {}
+    }
+    if (!printer) { alert('Nenhuma impressora encontrada para reimprimir a via.'); return; }
+    try {
+      const r = await window.electronAPI.printRaw(url, printer);
+      if (r && !r.ok) alert('Erro ao imprimir nova via:\n' + r.error);
+    } catch(e) { console.error('[reimprimir]', e); }
+  } else {
+    window.open(`${window.location.origin}/vendas/${saleId}/comprovante?autoprint=1`, '_blank');
+  }
+}
+
+// Altera a forma de pagamento da entrega e, SÓ SE mudou, reimprime a via
+function alterarPagamento(saleId) {
+  const nova = document.getElementById('pgto-' + saleId).value;
+  const body = new URLSearchParams({ payment_method: nova });
+  fetch(`/entregas/${saleId}/forma-pagamento`, { method: 'POST', body })
+    .then(r => r.json())
+    .then(async d => {
+      if (!d.ok) { alert(d.error || 'Erro ao alterar forma de pagamento.'); return; }
+      if (d.changed) {
+        await reimprimirComprovante(saleId);
+        location.reload();
+      } else {
+        alert('A forma de pagamento não mudou — nada a corrigir.');
+      }
+    })
+    .catch(() => alert('Erro ao alterar forma de pagamento.'));
 }
 </script>
 {% endblock %}
