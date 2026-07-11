@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from collections import defaultdict
+import json
 from app import db
 from app.models.sale import Sale
 from app.models.motoboy import Motoboy
@@ -59,9 +60,37 @@ def alterar_forma_pagamento(sale_id):
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid(),
                                 status='confirmed', delivery_mode='entrega').first_or_404()
     nova = request.form.get('payment_method', '').strip()
+
+    # Combinado: grupo pagando com formas diferentes na porta
+    if nova == 'combinado':
+        metodos_ok = {'dinheiro', 'cartao_credito', 'cartao_debito', 'pix'}
+        try:
+            brutas = json.loads(request.form.get('payment_entries', '[]'))
+        except Exception:
+            brutas = []
+        entries = []
+        for e in brutas:
+            try:
+                amt = round(float(e.get('amount', 0) or 0), 2)
+            except (TypeError, ValueError):
+                amt = 0
+            if e.get('method') in metodos_ok and amt > 0:
+                entries.append({'method': e['method'], 'amount': amt})
+        if not entries:
+            return jsonify({'ok': False, 'error': 'Informe as formas e valores do combinado.'}), 400
+        soma = round(sum(e['amount'] for e in entries), 2)
+        if abs(soma - round(sale.total, 2)) > 0.01:
+            return jsonify({'ok': False,
+                            'error': f'A soma (R$ {soma:.2f}) não bate com o total (R$ {sale.total:.2f}).'}), 400
+        sale.payment_method  = 'combinado'
+        sale.payment_entries = json.dumps(entries)
+        db.session.commit()
+        return jsonify({'ok': True, 'changed': True, 'sale_id': sale.id})
+
+    # Forma única
     if nova not in FORMAS_ENTREGA:
         return jsonify({'ok': False, 'error': 'Forma de pagamento inválida.'}), 400
-    if sale.payment_method == nova:
+    if sale.payment_method == nova and not sale.payment_entries:
         return jsonify({'ok': True, 'changed': False})
     sale.payment_method = nova
     sale.payment_entries = None  # deixa de ser combinado, se era

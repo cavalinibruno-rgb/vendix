@@ -116,13 +116,15 @@
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
           <td>
             <div class="d-flex gap-1 align-items-center">
-              <select class="form-select form-select-sm" id="pgto-{{ v.id }}" style="min-width:120px;">
-                {% if v.payment_method not in formas %}
+              <select class="form-select form-select-sm" id="pgto-{{ v.id }}" style="min-width:120px;"
+                      data-total="{{ '%.2f'|format(v.total) }}">
+                {% if v.payment_method not in formas and v.payment_method != 'combinado' %}
                 <option value="{{ v.payment_method }}" selected>{{ v.payment_label }} (atual)</option>
                 {% endif %}
                 {% for val, lbl in formas.items() %}
                 <option value="{{ val }}" {% if v.payment_method == val %}selected{% endif %}>{{ lbl }}</option>
                 {% endfor %}
+                <option value="combinado" {% if v.payment_method == 'combinado' %}selected{% endif %}>Combinado…</option>
               </select>
               <button class="btn btn-outline-warning btn-sm" title="Alterar forma de pagamento e reimprimir via"
                       onclick="alterarPagamento({{ v.id }})">
@@ -222,6 +224,36 @@
     </div>
   </div>
 </div>
+
+<!-- Modal pagamento combinado (entrega) -->
+<div class="modal fade" id="modalCombinadoEntrega" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-wallet2 me-2 text-warning"></i>Pagamento Combinado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small text-muted mb-2">Total da venda: <strong id="combTotalVenda">R$ 0,00</strong></p>
+        <div id="combLinhas"></div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-1" onclick="addLinhaComb()">
+          <i class="bi bi-plus-lg me-1"></i>Adicionar forma
+        </button>
+        <hr class="my-3">
+        <div class="d-flex justify-content-between fw-bold">
+          <span>Alocado</span><span id="combAlocado" class="text-warning">R$ 0,00</span>
+        </div>
+        <div id="combAviso" class="small mt-1"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning fw-semibold" id="btnConfirmComb" onclick="confirmarCombinado()">
+          <i class="bi bi-check-lg me-1"></i>Confirmar e reimprimir
+        </button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -274,7 +306,12 @@ async function reimprimirComprovante(saleId) {
 
 // Altera a forma de pagamento da entrega e, SÓ SE mudou, reimprime a via
 function alterarPagamento(saleId) {
-  const nova = document.getElementById('pgto-' + saleId).value;
+  const sel  = document.getElementById('pgto-' + saleId);
+  const nova = sel.value;
+  if (nova === 'combinado') {
+    abrirCombinado(saleId, parseFloat(sel.dataset.total) || 0);
+    return;
+  }
   const body = new URLSearchParams({ payment_method: nova });
   fetch(`/entregas/${saleId}/forma-pagamento`, { method: 'POST', body })
     .then(r => r.json())
@@ -288,6 +325,63 @@ function alterarPagamento(saleId) {
       }
     })
     .catch(() => alert('Erro ao alterar forma de pagamento.'));
+}
+
+// ── Pagamento combinado na entrega ────────────────────────────────
+let _combSaleId = null, _combTotal = 0;
+const FORMAS_COMB = { dinheiro: 'Dinheiro', cartao_credito: 'Crédito', cartao_debito: 'Débito', pix: 'Pix' };
+function fmtBRL(v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ','); }
+
+function abrirCombinado(saleId, total) {
+  _combSaleId = saleId; _combTotal = total;
+  document.getElementById('combTotalVenda').textContent = fmtBRL(total);
+  document.getElementById('combLinhas').innerHTML = '';
+  document.getElementById('combAviso').textContent = '';
+  addLinhaComb();
+  calcComb();
+  new bootstrap.Modal(document.getElementById('modalCombinadoEntrega')).show();
+}
+
+function addLinhaComb() {
+  const div = document.createElement('div');
+  div.className = 'd-flex gap-2 mb-2 comb-linha';
+  div.innerHTML =
+    `<select class="form-select form-select-sm comb-metodo">` +
+      Object.entries(FORMAS_COMB).map(([v, l]) => `<option value="${v}">${l}</option>`).join('') +
+    `</select>` +
+    `<input type="text" class="form-control form-control-sm comb-valor" inputmode="decimal" placeholder="0,00" oninput="calcComb()">` +
+    `<button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.comb-linha').remove(); calcComb();"><i class="bi bi-trash"></i></button>`;
+  document.getElementById('combLinhas').appendChild(div);
+}
+
+function calcComb() {
+  let soma = 0;
+  document.querySelectorAll('.comb-valor').forEach(i => soma += parseFloat((i.value || '0').replace(',', '.')) || 0);
+  document.getElementById('combAlocado').textContent = fmtBRL(soma);
+  const dif  = _combTotal - soma;
+  const av   = document.getElementById('combAviso');
+  const btn  = document.getElementById('btnConfirmComb');
+  if (Math.abs(dif) < 0.01)      { av.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Valores conferem</span>'; btn.disabled = false; }
+  else if (dif > 0)             { av.innerHTML = `<span class="text-warning">Faltam ${fmtBRL(dif)}</span>`; btn.disabled = true; }
+  else                         { av.innerHTML = `<span class="text-danger">Excedeu ${fmtBRL(-dif)}</span>`; btn.disabled = true; }
+}
+
+function confirmarCombinado() {
+  const linhas = [...document.querySelectorAll('.comb-linha')].map(d => ({
+    method: d.querySelector('.comb-metodo').value,
+    amount: parseFloat((d.querySelector('.comb-valor').value || '0').replace(',', '.')) || 0,
+  })).filter(l => l.amount > 0);
+  if (!linhas.length) { alert('Adicione ao menos uma forma com valor.'); return; }
+  const body = new URLSearchParams({ payment_method: 'combinado', payment_entries: JSON.stringify(linhas) });
+  fetch(`/entregas/${_combSaleId}/forma-pagamento`, { method: 'POST', body })
+    .then(r => r.json())
+    .then(async d => {
+      if (!d.ok) { alert(d.error || 'Erro ao salvar.'); return; }
+      bootstrap.Modal.getInstance(document.getElementById('modalCombinadoEntrega')).hide();
+      if (d.changed) { await reimprimirComprovante(_combSaleId); location.reload(); }
+      else { alert('Sem alteração.'); }
+    })
+    .catch(() => alert('Erro ao salvar pagamento combinado.'));
 }
 </script>
 {% endblock %}
