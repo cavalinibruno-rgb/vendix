@@ -7,6 +7,30 @@
   <p class="text-muted">Personalize o comportamento do sistema</p>
 </div>
 
+{% if not current_user.is_employee %}
+<!-- ── Acréscimo no cartão ── -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2"><i class="bi bi-credit-card me-2 text-warning"></i>Acréscimo no Cartão</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('config.acrescimo_cartao') }}" class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Valor fixo por pedido (R$)</label>
+            <input type="text" name="acrescimo_cartao" class="form-control" inputmode="decimal" placeholder="0,00"
+                   value="{{ '%.2f'|format(cfg.get('acrescimo_cartao', 0) or 0) }}">
+            <div class="form-text">Somado <strong>uma vez</strong> ao total quando a forma de pagamento for cartão (crédito ou débito). Deixe 0 para não cobrar acréscimo.</div>
+          </div>
+          <div class="col-md-auto">
+            <button type="submit" class="btn btn-warning fw-semibold"><i class="bi bi-floppy me-1"></i>Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if tenant.is_lanchonete %}
 <!-- ── Lanchonete ── -->
 <div class="row g-3 mb-3">

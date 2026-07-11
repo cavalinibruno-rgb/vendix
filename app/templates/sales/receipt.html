@@ -325,6 +325,14 @@
   </div>
   {% endif %}
 
+  {% set acr_cartao = (sale.total or 0) - (sale.subtotal or 0) + (sale.discount or 0) - (sale.delivery_fee or 0) %}
+  {% if acr_cartao > 0.01 %}
+  <div class="totals-row">
+    <span>Acréscimo Cartão</span>
+    <span>R$ {{ '%.2f' | format(acr_cartao) }}</span>
+  </div>
+  {% endif %}
+
   <hr class="divider-solid">
 
   <div class="total-final">

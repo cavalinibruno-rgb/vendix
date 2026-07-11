@@ -620,6 +620,10 @@
               <span>Desconto</span>
               <span id="resumoDesconto" style="color:#6fcf97;"></span>
             </div>
+            <div class="d-flex justify-content-between text-muted small mb-1" id="linhaAcrescimo" style="display:none;">
+              <span>Acréscimo cartão</span>
+              <span>R$ <span id="resumoAcrescimo">0,00</span></span>
+            </div>
             <div class="d-flex justify-content-between fw-bold" style="color:#ddd;">
               <span>Total</span>
               <span class="text-warning fs-5">R$ <span id="resumoTotal">0,00</span></span>
@@ -746,6 +750,7 @@ let bairros = [];
 let origem = 'loja';
 
 const EVENT_MODE = {{ 'true' if (event_mode and evento_visivel and not current_user.tenant.is_lanchonete) else 'false' }};
+const ACRESCIMO_CARTAO = {{ '%.2f'|format(acrescimo_cartao) }};  // acréscimo fixo no total ao pagar no cartão
 let todosProds = [];
 let produtosCache = {};
 let catAtual   = 'todas';
@@ -1241,12 +1246,22 @@ function calcTotais() {
   const subtotal  = carrinho.reduce((s, i) => s + i.total, 0);
   const taxa      = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
   const desconto  = getDesconto(subtotal);
-  const total     = Math.max(0, subtotal - desconto + taxa);
+  const acrescimo = acrescimoAtual();
+  const total     = Math.max(0, subtotal - desconto + taxa + acrescimo);
 
   document.getElementById('resumoSubtotal').textContent = fmtNum(subtotal);
   document.getElementById('resumoTaxa').textContent     = fmtNum(taxa);
   document.getElementById('resumoTotal').textContent    = fmtNum(total);
   document.getElementById('linhaEntrega').style.display = modo === 'entrega' ? 'flex' : 'none';
+
+  // Linha de acréscimo do cartão
+  const linhaAcr = document.getElementById('linhaAcrescimo');
+  if (acrescimo > 0) {
+    document.getElementById('resumoAcrescimo').textContent = fmtNum(acrescimo);
+    if (linhaAcr) linhaAcr.style.display = 'flex';
+  } else if (linhaAcr) {
+    linhaAcr.style.display = 'none';
+  }
 
   // Linha de desconto
   const linhaDesc  = document.getElementById('linhaDesconto');
@@ -1368,17 +1383,18 @@ function selecionarSubCartao(valor, label, btn, subId) {
 }
 
 function precoParaPgto(prod, gelado) {
+  // Itens sempre no preço dinheiro/gelado/evento. O cartão é acréscimo fixo no total.
   if (origem !== 'loja') return prod.sale_price;
   const isEntregaLoja = modo === 'entrega';
   if (EVENT_MODE && !isEntregaLoja && prod.sale_price_event && prod.sale_price_event > 0)
     return prod.sale_price_event;
-  if (gelado && prod.sale_price_cold > 0) {
-    if (isCartao() && prod.sale_price_cold_card > 0) return prod.sale_price_cold_card;
-    return prod.sale_price_cold;
-  }
-  if (isCartao() && prod.sale_price_card && prod.sale_price_card > 0)
-    return prod.sale_price_card;
+  if (gelado && prod.sale_price_cold > 0) return prod.sale_price_cold;
   return prod.sale_price;
+}
+
+// Acréscimo fixo do cartão aplicado ao total (uma vez), se a forma atual for cartão
+function acrescimoAtual() {
+  return (carrinho.length && isCartao()) ? ACRESCIMO_CARTAO : 0;
 }
 
 function setPgto(card) {
@@ -1435,7 +1451,7 @@ function calcTroco() {
   const subtotal = carrinho.reduce((s, i) => s + i.total, 0);
   const taxa     = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
   const desconto = getDesconto(subtotal);
-  const total    = Math.max(0, subtotal - desconto + taxa);
+  const total    = Math.max(0, subtotal - desconto + taxa + acrescimoAtual());
   const recebido = parseFloat(document.getElementById('valorRecebido').value.replace(',', '.')) || 0;
   const troco = recebido - total;
   const val = document.getElementById('trocoValor');
@@ -1553,7 +1569,7 @@ function getLinhasCombinadas() {
 function getTotal() {
   const subtotal = carrinho.reduce((s, i) => s + i.total, 0);
   const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
-  return Math.max(0, subtotal - getDesconto(subtotal) + taxa);
+  return Math.max(0, subtotal - getDesconto(subtotal) + taxa + acrescimoAtual());
 }
 
 function calcCombinado() {

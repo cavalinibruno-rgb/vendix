@@ -29,6 +29,22 @@ def index():
 
     return render_template('config/index.html', cfg=cfg, coupons=coupons, tenant=tenant)
 
+@config_bp.route('/acrescimo-cartao', methods=['POST'])
+@login_required
+def acrescimo_cartao():
+    tenant = current_user.tenant
+    cfg = tenant.get_settings()
+    v = request.form.get('acrescimo_cartao', '0').replace(',', '.').strip() or '0'
+    try:
+        cfg['acrescimo_cartao'] = max(0.0, float(v))
+    except ValueError:
+        cfg['acrescimo_cartao'] = 0.0
+    tenant.save_settings(cfg)
+    db.session.commit()
+    flash('Acréscimo do cartão salvo.', 'success')
+    return redirect(url_for('config.index'))
+
+
 @config_bp.route('/lanchonete', methods=['POST'])
 @login_required
 def lanchonete_settings():

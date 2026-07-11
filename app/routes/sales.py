@@ -92,8 +92,11 @@ def nova():
     from app.models.tenant import Tenant
     tenant = Tenant.query.get(tid())
     event_mode = tenant.event_mode if tenant else False
-    evento_visivel = tenant.get_settings().get('modo_evento_visivel', False) if tenant else False
-    return render_template('sales/nova.html', event_mode=event_mode, evento_visivel=evento_visivel)
+    _cfg = tenant.get_settings() if tenant else {}
+    evento_visivel = _cfg.get('modo_evento_visivel', False)
+    acrescimo_cartao = _cfg.get('acrescimo_cartao', 0) or 0
+    return render_template('sales/nova.html', event_mode=event_mode, evento_visivel=evento_visivel,
+                           acrescimo_cartao=acrescimo_cartao)
 
 @sales_bp.route('/confirmar', methods=['POST'])
 @login_required
@@ -132,14 +135,12 @@ def confirmar():
                   'entrega_cartao', 'entrega_cartao_credito', 'entrega_cartao_debito')
         combinado_tem_cartao = any(e.get('method') in _cards for e in payment_entries_raw)
 
-    # Valida preço server-side — nunca confia no valor enviado pelo cliente
+    # Valida preço server-side — nunca confia no valor enviado pelo cliente.
+    # Itens sempre no preço dinheiro/gelado/evento; o cartão é acréscimo fixo no total.
     _prod_cache = {}
     def _preco_servidor(item):
         pid = item.get('product_id')
         is_gelado = item.get('gelado', False)
-        # Combinado usa preço de cartão só se alguma das formas for cartão
-        is_cartao = (payment_method in ('cartao', 'credito', 'debito')
-                     or (payment_method == 'combinado' and combinado_tem_cartao))
         if pid:
             if pid not in _prod_cache:
                 _prod_cache[pid] = Product.query.filter_by(id=pid, tenant_id=tid()).first()
@@ -149,11 +150,7 @@ def confirmar():
                 if tenant and getattr(tenant, 'event_mode', False) and getattr(p, 'sale_price_event', 0):
                     return p.sale_price_event
                 if is_gelado and getattr(p, 'sale_price_cold', 0):
-                    if is_cartao and getattr(p, 'sale_price_cold_card', 0):
-                        return p.sale_price_cold_card
                     return p.sale_price_cold
-                if is_cartao and getattr(p, 'sale_price_card', 0):
-                    return p.sale_price_card
                 return p.sale_price
         # Produto sem ID (item avulso): aceita o preço do cliente
         return float(item.get('unit_price', 0))
@@ -168,7 +165,19 @@ def confirmar():
     else:
         discount = 0.0
 
-    total = subtotal - discount + (delivery_fee if delivery_mode == 'entrega' else 0)
+    # Acréscimo fixo do cartão (uma vez por pedido) — valor definido nas Configurações
+    usa_cartao = (payment_method in ('cartao', 'credito', 'debito',
+                                     'cartao_credito', 'cartao_debito',
+                                     'entrega_cartao', 'entrega_cartao_credito', 'entrega_cartao_debito')
+                  or (payment_method == 'combinado' and combinado_tem_cartao))
+    acrescimo_cartao = 0.0
+    if usa_cartao and items:
+        try:
+            acrescimo_cartao = float(current_user.tenant.get_settings().get('acrescimo_cartao', 0) or 0)
+        except (TypeError, ValueError):
+            acrescimo_cartao = 0.0
+
+    total = subtotal - discount + (delivery_fee if delivery_mode == 'entrega' else 0) + acrescimo_cartao
     total = max(total, 0)
 
     caixa = _caixa_aberto()
@@ -582,6 +591,9 @@ def escpos(sale_id):
     date_str = dt.strftime('%d/%m/%Y') if dt else ''
     time_str = dt.strftime('%H:%M')    if dt else ''
 
+    # Acréscimo do cartão embutido no total (derivado dos campos salvos)
+    _acr_cartao = round((sale.total or 0) - (sale.subtotal or 0) + (sale.discount or 0) - (sale.delivery_fee or 0), 2)
+
     pgto_map = {
         'dinheiro':'Dinheiro','cartao_credito':'Credito','cartao_debito':'Debito',
         'pix':'Pix','conta':'Conta','funcionario':'Funcionario',
@@ -602,6 +614,8 @@ def escpos(sale_id):
         data += cols('Taxa Entrega', f'R${sale.delivery_fee:.2f}')
     if sale.discount and sale.discount > 0:
         data += cols('Desconto', f'-R${sale.discount:.2f}')
+    if _acr_cartao > 0.01:
+        data += cols('Acrescimo Cartao', f'R${_acr_cartao:.2f}')
     data += sep('=')
     data += LEFT + enc('TOTAL'.ljust(W-12) + f'R${sale.total:.2f}'.rjust(12)) + NL
     data += sep('=')
@@ -636,6 +650,8 @@ def escpos(sale_id):
         data += cols('Taxa Entrega', f'R${sale.delivery_fee:.2f}')
     if sale.discount and sale.discount > 0:
         data += cols('Desconto', f'-R${sale.discount:.2f}')
+    if _acr_cartao > 0.01:
+        data += cols('Acrescimo Cartao', f'R${_acr_cartao:.2f}')
     data += sep('=')
     data += LEFT + enc('TOTAL'.ljust(W-12) + f'R${sale.total:.2f}'.rjust(12)) + NL
     data += sep('=')
