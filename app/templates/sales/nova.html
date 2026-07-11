@@ -1293,8 +1293,26 @@ function setOrigem(o) {
 }
 
 // ── Pagamento ─────────────────────────────────────────
+const _CARD_METHODS = ['cartao','cartao_credito','cartao_debito','entrega_cartao','entrega_cartao_credito','entrega_cartao_debito'];
+
+// True se alguma forma marcada no combinado for cartão
+function combinadoTemCartao() {
+  return [...document.querySelectorAll('.pgto-card.active')].some(c => _CARD_METHODS.includes(c.dataset.pgto));
+}
+
 function isCartao() {
-  return ['cartao','cartao_credito','cartao_debito','entrega_cartao','entrega_cartao_credito','entrega_cartao_debito'].includes(pgto);
+  // No combinado, usa preço de cartão só se houver cartão entre as formas
+  if (modoCombinado) return combinadoTemCartao();
+  return _CARD_METHODS.includes(pgto);
+}
+
+// Reprecifica o carrinho conforme a forma atual (dinheiro vs cartão)
+function reprecificarCarrinho() {
+  carrinho.forEach(item => {
+    const prod = produtosCache[String(item.product_id)];
+    if (prod) { item.unit_price = precoParaPgto(prod, item.gelado); item.total = item.unit_price * item.quantity; }
+  });
+  renderCarrinho(); calcTotais();
 }
 
 let selectedEmployeeId = null;
@@ -1442,6 +1460,7 @@ let modoCombinado = false;
 function handlePgtoClick(card) {
   if (modoCombinado) {
     card.classList.toggle('active');
+    reprecificarCarrinho();   // preço muda se entrou/saiu um cartão do combinado
     renderCamposCombinados();
     calcCombinado();
   } else {
@@ -1457,6 +1476,7 @@ function usar2Formas() {
   document.querySelectorAll('.pgto-card').forEach(c => c.classList.remove('active'));
   document.getElementById('campoTroco').style.display = 'none';
   document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-x-lg me-1"></i>Cancelar combinação';
+  reprecificarCarrinho();   // sem cartão marcado ainda → preço dinheiro
   calcCombinado();
 }
 
@@ -1467,6 +1487,7 @@ function cancelarCombinado() {
   document.getElementById('campoCombinados').innerHTML = '';
   document.getElementById('painelCombinado').style.display = 'none';
   document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-layers me-1"></i>Combinar Formas de Pagamento';
+  reprecificarCarrinho();   // volta ao preço dinheiro
 }
 
 const CASH_METHODS = ['dinheiro', 'entrega_dinheiro'];

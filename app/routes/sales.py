@@ -123,17 +123,23 @@ def confirmar():
     # Pagamento combinado
     payment_entries_raw  = data.get('payment_entries') or []
     payment_entries_json = None
+    combinado_tem_cartao = False
     if payment_entries_raw:
         payment_method       = 'combinado'
         payment_entries_json = _json.dumps(payment_entries_raw)
         amount_paid          = round(sum(float(e.get('amount', 0)) for e in payment_entries_raw), 2)
+        _cards = ('cartao', 'credito', 'debito', 'cartao_credito', 'cartao_debito',
+                  'entrega_cartao', 'entrega_cartao_credito', 'entrega_cartao_debito')
+        combinado_tem_cartao = any(e.get('method') in _cards for e in payment_entries_raw)
 
     # Valida preço server-side — nunca confia no valor enviado pelo cliente
     _prod_cache = {}
     def _preco_servidor(item):
         pid = item.get('product_id')
         is_gelado = item.get('gelado', False)
-        is_cartao = payment_method in ('cartao', 'credito', 'debito', 'combinado')
+        # Combinado usa preço de cartão só se alguma das formas for cartão
+        is_cartao = (payment_method in ('cartao', 'credito', 'debito')
+                     or (payment_method == 'combinado' and combinado_tem_cartao))
         if pid:
             if pid not in _prod_cache:
                 _prod_cache[pid] = Product.query.filter_by(id=pid, tenant_id=tid()).first()

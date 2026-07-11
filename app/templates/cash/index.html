@@ -104,13 +104,13 @@
           <th>Fechado em</th>
           <th>Troco inicial</th>
           <th>Valor contado</th>
-          <th>Diferença</th>
+          <th>Sobra / Falta</th>
           <th class="pe-4"></th>
         </tr>
       </thead>
       <tbody>
         {% for c in historico %}
-        {% set dif = (c.closing_amount or 0) - (c.opening_amount) %}
+        {% set dif = historico_diffs.get(c.id, 0) %}
         <tr>
           <td class="text-muted small ps-4">{{ c.id }}</td>
           <td class="small fw-semibold">{{ c.operator_name or (c.opener.display_name if c.opener else '—') }}</td>

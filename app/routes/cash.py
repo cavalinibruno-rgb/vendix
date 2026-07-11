@@ -70,6 +70,8 @@ def index():
     caixa = caixa_aberto()
     historico = CashRegister.query.filter_by(tenant_id=tid(), status='closed')\
                                   .order_by(CashRegister.closed_at.desc()).limit(30).all()
+    # Sobra/falta real de cada caixa = contado - esperado pelo sistema
+    historico_diffs = {c.id: _calcular_resumo(c)['diff_total'] for c in historico}
     retiradas = []
     total_retiradas = 0.0
     despesas = []
@@ -80,6 +82,7 @@ def index():
         despesas = Expense.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).order_by(Expense.created_at).all()
         total_despesas = sum(d.amount for d in despesas)
     return render_template('cash/index.html', caixa=caixa, historico=historico,
+                           historico_diffs=historico_diffs,
                            retiradas=retiradas, total_retiradas=total_retiradas,
                            despesas=despesas, total_despesas=total_despesas,
                            categorias=CATEGORIAS)
