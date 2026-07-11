@@ -299,10 +299,10 @@ def confirmar():
 @sales_bp.route('/')
 @login_required
 def index():
-    from datetime import date, datetime
-    from app.models.cash import CashRegister
+    from datetime import date, datetime, time
 
     from datetime import timedelta
+    from app.models.cash import CashRegister
     hoje = date.today()
 
     # Aceita período (de/ate); compatível com o parâmetro antigo 'data'
@@ -321,8 +321,20 @@ def index():
     if de_fil > ate_fil:
         de_fil, ate_fil = ate_fil, de_fil
 
-    inicio = datetime.combine(de_fil, datetime.min.time())
-    fim    = datetime.combine(ate_fil, datetime.max.time())
+    # Horários opcionais (para caixa que atravessa a madrugada). Formato "HH:MM".
+    hora_de  = request.args.get('hora_de', '').strip()
+    hora_ate = request.args.get('hora_ate', '').strip()
+    def _parse_hora(s, hfim=False):
+        try:
+            h, m = s.split(':')
+            return time(int(h), int(m), 59 if hfim else 0)
+        except Exception:
+            return None
+    t_de  = _parse_hora(hora_de) or datetime.min.time()
+    t_ate = _parse_hora(hora_ate, hfim=True) or datetime.max.time()
+
+    inicio = datetime.combine(de_fil, t_de)
+    fim    = datetime.combine(ate_fil, t_ate)
 
     # Modo restrito: config ativa + caixa aberto por funcionário
     tenant = current_user.tenant
@@ -363,6 +375,8 @@ def index():
         sales=sales,
         de_fil=de_fil,
         ate_fil=ate_fil,
+        hora_de=hora_de,
+        hora_ate=hora_ate,
         periodo_um_dia=periodo_um_dia,
         total_periodo=total_periodo,
         busca_pedido=busca_pedido,
