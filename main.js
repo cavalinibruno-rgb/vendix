@@ -147,15 +147,19 @@ $written = 0
 [RawPrinter]::ClosePrinter($hP) | Out-Null
 Write-Output "OK:$written"
 `;
-    // Execução ASSÍNCRONA: não bloqueia o processo principal do Electron
-    // (com execSync a interface inteira congelava enquanto o PowerShell rodava).
+    // Execução ASSÍNCRONA via arquivo .ps1: não bloqueia o processo principal
+    // do Electron (execSync congelava a UI) e preserva as quebras de linha do
+    // here-string (achatar em uma linha quebrava o "@"..."@").
+    const psFile = path.join(os.tmpdir(), `vendix_print_${Date.now()}.ps1`);
+    fs.writeFileSync(psFile, ps, 'utf8');
     const result = await new Promise((resolve, reject) => {
       execFile('powershell',
-        ['-NoProfile', '-NonInteractive', '-Command', ps.replace(/\n/g, ' ')],
+        ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', psFile],
         { timeout: 15000, windowsHide: true, maxBuffer: 1024 * 1024 },
         (err, stdout) => err ? reject(err) : resolve((stdout || '').toString().trim()));
     });
     try { fs.unlinkSync(tmpFile); } catch (_) {}
+    try { fs.unlinkSync(psFile); } catch (_) {}
     return { ok: true, written: result };
   } catch (e) {
     return { ok: false, error: e.message };
