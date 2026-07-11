@@ -80,7 +80,7 @@
           <dd class="col-7">{{ sale.customer.name if sale.customer else '—' }}</dd>
 
           <dt class="col-5 text-muted">Pagamento</dt>
-          <dd class="col-7">{{ sale.payment_method|capitalize }}</dd>
+          <dd class="col-7">{{ sale.payment_label }}</dd>
 
           {% if sale.amount_paid %}
           <dt class="col-5 text-muted">Valor pago</dt>

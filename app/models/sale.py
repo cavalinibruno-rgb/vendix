@@ -39,6 +39,31 @@ class Sale(db.Model):
     customer = db.relationship('Customer', backref='sales', lazy=True)
     employee = db.relationship('Employee', backref='sales', lazy=True, foreign_keys=[employee_id])
 
+    PGTO_LABELS = {
+        'dinheiro': 'Dinheiro', 'cartao': 'Cartão', 'cartao_credito': 'Crédito',
+        'cartao_debito': 'Débito', 'pix': 'Pix', 'conta': 'Conta',
+        'funcionario': 'Funcionário',
+        'entrega_dinheiro': 'Dinheiro', 'entrega_pix': 'Pix', 'entrega_cartao': 'Cartão',
+        'entrega_cartao_credito': 'Crédito', 'entrega_cartao_debito': 'Débito',
+        'combinado': 'Combinado',
+    }
+
+    @property
+    def payment_entries_list(self):
+        """Lista [{method, amount}] do pagamento combinado (ou vazia)."""
+        import json
+        if self.payment_method == 'combinado' and self.payment_entries:
+            try:
+                return json.loads(self.payment_entries)
+            except Exception:
+                return []
+        return []
+
+    @property
+    def payment_label(self):
+        """Rótulo legível da forma de pagamento (Combinado permanece 'Combinado')."""
+        return self.PGTO_LABELS.get(self.payment_method, self.payment_method)
+
 class SaleItem(db.Model):
     __tablename__ = 'sale_items'
 

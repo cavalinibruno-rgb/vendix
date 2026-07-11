@@ -37,6 +37,33 @@ def _entra_no_caixa(venda):
         return True
     return venda.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
 
+
+# Mapa de forma de pagamento → categoria da conferência de caixa
+_METODO_CAT = {
+    'dinheiro': 'dinheiro', 'entrega_dinheiro': 'dinheiro',
+    'cartao_credito': 'credito', 'entrega_cartao_credito': 'credito',
+    'cartao': 'credito', 'entrega_cartao': 'credito',
+    'cartao_debito': 'debito', 'entrega_cartao_debito': 'debito',
+    'pix': 'pix', 'entrega_pix': 'pix',
+    'conta': 'conta', 'funcionario': 'funcionario',
+}
+
+def _totais_por_categoria(vendas):
+    """Soma por categoria (dinheiro/credito/debito/pix/conta/funcionario),
+    distribuindo cada parte das vendas COMBINADAS na categoria correta."""
+    cats = {'dinheiro': 0.0, 'credito': 0.0, 'debito': 0.0, 'pix': 0.0, 'conta': 0.0, 'funcionario': 0.0}
+    for v in vendas:
+        if v.payment_method == 'combinado':
+            for e in v.payment_entries_list:
+                cat = _METODO_CAT.get(e.get('method'))
+                if cat:
+                    cats[cat] += float(e.get('amount', 0) or 0)
+        else:
+            cat = _METODO_CAT.get(v.payment_method)
+            if cat:
+                cats[cat] += v.total
+    return cats
+
 @cash_bp.route('/')
 @login_required
 def index():
@@ -198,20 +225,23 @@ def fechar(caixa_id):
 
     vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
 
-    total_dinheiro    = sum(v.total for v in vendas if v.payment_method in ('dinheiro', 'entrega_dinheiro'))
-    total_credito     = sum(v.total for v in vendas if v.payment_method in ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao'))
-    total_debito      = sum(v.total for v in vendas if v.payment_method in ('cartao_debito', 'entrega_cartao_debito'))
-    total_cartao      = total_credito + total_debito
-    total_pix         = sum(v.total for v in vendas if v.payment_method in ('pix', 'entrega_pix'))
-    total_conta       = sum(v.total for v in vendas if v.payment_method == 'conta')
-    total_funcionario = sum(v.total for v in vendas if v.payment_method == 'funcionario')
-    total_geral       = sum(v.total for v in vendas)
+    cats = _totais_por_categoria(vendas)  # inclui as partes das vendas combinadas
     retiradas         = CashWithdrawal.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
     total_retiradas   = sum(r.amount for r in retiradas)
     despesas          = Expense.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
     despesas_dinheiro = sum(d.amount for d in despesas if d.payment_method == 'dinheiro')
+    despesas_pix      = sum(d.amount for d in despesas if d.payment_method == 'pix')
+
+    total_dinheiro    = cats['dinheiro']
+    total_credito     = cats['credito']
+    total_debito      = cats['debito']
+    total_cartao      = total_credito + total_debito
+    total_pix         = cats['pix'] - despesas_pix
+    total_conta       = cats['conta']
+    total_funcionario = cats['funcionario']
+    total_geral       = sum(v.total for v in vendas)
     # Esperado na gaveta = abertura + vendas dinheiro - retiradas - despesas em dinheiro
-    esperado_caixa    = caixa.opening_amount + total_dinheiro - total_retiradas - despesas_dinheiro
+    esperado_caixa    = caixa.opening_amount + cats['dinheiro'] - total_retiradas - despesas_dinheiro
 
     # Bloqueia fechamento se há entregas em rota (despachadas mas não concluídas)
     em_rota = Sale.query.filter(
@@ -276,22 +306,21 @@ def _calcular_resumo(caixa):
     # (mesma regra da tela de fechamento: entregas só quando concluídas).
     vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
 
-    def tot(lst, methods): return sum(v.total for v in lst if v.payment_method in methods)
-
     desp  = Expense.query.filter_by(cash_register_id=caixa.id).all()
     desp_din = sum(d.amount for d in desp if d.payment_method == 'dinheiro')
     desp_pix = sum(d.amount for d in desp if d.payment_method == 'pix')
     retiradas       = CashWithdrawal.query.filter_by(cash_register_id=caixa.id).all()
     total_retiradas = sum(r.amount for r in retiradas)
 
-    vendas_dinheiro = tot(vendas, ('dinheiro', 'entrega_dinheiro'))
+    cats = _totais_por_categoria(vendas)  # inclui as partes das vendas combinadas
+    vendas_dinheiro = cats['dinheiro']
     sis = {
         'dinheiro':    caixa.opening_amount + vendas_dinheiro - total_retiradas - desp_din,
-        'credito':     tot(vendas, ('cartao_credito', 'entrega_cartao_credito', 'cartao', 'entrega_cartao')),
-        'debito':      tot(vendas, ('cartao_debito', 'entrega_cartao_debito')),
-        'pix':         tot(vendas, ('pix', 'entrega_pix')) - desp_pix,
-        'conta':       tot(vendas, ('conta',)),
-        'funcionario': tot(vendas, ('funcionario',)),
+        'credito':     cats['credito'],
+        'debito':      cats['debito'],
+        'pix':         cats['pix'] - desp_pix,
+        'conta':       cats['conta'],
+        'funcionario': cats['funcionario'],
     }
 
     op = json.loads(caixa.closing_data) if caixa.closing_data else {k: 0 for k in sis}

@@ -245,7 +245,9 @@
                 {% elif v.payment_method in ('cartao', 'entrega_cartao') %}<span class="badge bg-primary">Cartão</span>
                 {% elif v.payment_method in ('pix', 'entrega_pix') %}<span class="badge bg-info text-dark">Pix</span>
                 {% elif v.payment_method == 'funcionario' %}<span class="badge bg-secondary">Funcionário</span>
-                {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
+                {% elif v.payment_method == 'conta' %}<span class="badge bg-warning text-dark">Conta</span>
+                {% elif v.payment_method == 'combinado' %}<span class="badge bg-dark">{{ v.payment_label }}</span>
+                {% else %}<span class="badge bg-secondary">{{ v.payment_label }}</span>{% endif %}
               </td>
               {% if not modo_restrito %}<td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>{% endif %}
             </tr>

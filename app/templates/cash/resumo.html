@@ -178,10 +178,13 @@
           <td class="small">{{ v.customer.name if v.customer else '—' }}</td>
           <td>
             {% set pm = v.payment_method %}
-            {% if pm in ('dinheiro','entrega_dinheiro') %}<span class="badge bg-success">Dinheiro</span>
-            {% elif pm in ('cartao','entrega_cartao') %}<span class="badge bg-primary">Cartão</span>
+            {% if pm == 'combinado' %}<span class="badge bg-dark">{{ v.payment_label }}</span>
+            {% elif pm in ('dinheiro','entrega_dinheiro') %}<span class="badge bg-success">Dinheiro</span>
+            {% elif pm in ('cartao','entrega_cartao','cartao_credito','entrega_cartao_credito','cartao_debito','entrega_cartao_debito') %}<span class="badge bg-primary">{{ v.payment_label }}</span>
             {% elif pm in ('pix','entrega_pix') %}<span class="badge bg-info text-dark">Pix</span>
-            {% else %}<span class="badge bg-warning text-dark">Conta</span>{% endif %}
+            {% elif pm == 'conta' %}<span class="badge bg-warning text-dark">Conta</span>
+            {% elif pm == 'funcionario' %}<span class="badge bg-secondary">Funcionário</span>
+            {% else %}<span class="badge bg-secondary">{{ v.payment_label }}</span>{% endif %}
           </td>
           <td class="text-end fw-semibold">R$ {{ '%.2f'|format(v.total) }}</td>
         </tr>

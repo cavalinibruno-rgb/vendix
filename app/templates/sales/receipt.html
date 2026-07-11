@@ -342,7 +342,7 @@
   {% if sale.payment_method == 'combinado' and payment_entries %}
   <div class="totals-row bold" style="margin-top:2mm;">
     <span>PAGAMENTO</span>
-    <span>COMBINADO</span>
+    <span>{{ sale.payment_label }}</span>
   </div>
   {% for e in payment_entries %}
   <div class="totals-row">

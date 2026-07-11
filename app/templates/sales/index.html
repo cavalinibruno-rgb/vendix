@@ -100,7 +100,7 @@
           <td>
             {% set icons = {'dinheiro':'cash','cartao':'credit-card','pix':'qr-code','conta':'person-lines-fill'} %}
             <i class="bi bi-{{ icons.get(s.payment_method, 'cash') }} me-1"></i>
-            {{ s.payment_method|capitalize }}
+            {{ s.payment_label }}
           </td>
           <td>
             <span class="badge {{ 'bg-info text-dark' if s.delivery_mode == 'entrega' else 'bg-secondary' }}">

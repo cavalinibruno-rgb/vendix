@@ -585,7 +585,13 @@ def escpos(sale_id):
     data += sep('=')
     data += LEFT + enc('TOTAL'.ljust(W-12) + f'R${sale.total:.2f}'.rjust(12)) + NL
     data += sep('=')
-    data += cols('Pagamento', pgto_map.get(sale.payment_method, sale.payment_method))
+    if sale.payment_method == 'combinado':
+        data += cols('Pagamento', sale.payment_label)  # ex.: Credito + Pix
+        for e in sale.payment_entries_list:
+            lbl = pgto_map.get(e.get('method'), e.get('method') or '')
+            data += cols(f'  {lbl}', f'R${float(e.get("amount", 0)):.2f}')
+    else:
+        data += cols('Pagamento', pgto_map.get(sale.payment_method, sale.payment_method))
     if sale.payment_method in ('dinheiro','entrega_dinheiro') and sale.amount_paid:
         data += cols('  Recebido', f'R${sale.amount_paid:.2f}')
     if sale.change_amount and sale.change_amount > 0:
