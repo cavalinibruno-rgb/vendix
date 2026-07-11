@@ -28,10 +28,15 @@ def tid():
 def caixa_aberto():
     return CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
 
-def _entra_no_caixa(venda):
-    """Entregas só entram no caixa quando concluídas (motoboy voltou). Retiradas entram imediatamente."""
+def _entra_no_caixa(venda, corte=None):
+    """Entregas só entram no caixa quando concluídas (motoboy voltou). Retiradas entram imediatamente.
+    corte: se informado, entregas só entram se concluídas até esse instante (evita retroatividade)."""
     if venda.delivery_mode == 'entrega':
-        return venda.delivered_at is not None
+        if venda.delivered_at is None:
+            return False
+        if corte and venda.delivered_at > corte:
+            return False
+        return True
     # retirada: loja entra sempre; app só se pago na entrega
     if venda.source == 'loja' or venda.source is None:
         return True
@@ -281,18 +286,17 @@ def fechar(caixa_id):
     # Esperado na gaveta = abertura + vendas dinheiro - retiradas - despesas em dinheiro
     esperado_caixa    = caixa.opening_amount + cats['dinheiro'] - total_retiradas - despesas_dinheiro
 
-    # Bloqueia fechamento se há entregas em rota (despachadas mas não concluídas)
+    # Bloqueia fechamento se há entregas pendentes ou em rota
     em_rota = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
         Sale.delivery_mode == 'entrega',
-        Sale.dispatched_at != None,
         Sale.delivered_at == None,
     ).count()
 
     if request.method == 'POST':
         if em_rota > 0:
-            flash(f'Há {em_rota} entrega(s) ainda em rota. Conclua todas antes de fechar o caixa.', 'danger')
+            flash(f'Há {em_rota} entrega(s) pendente(s) ou em rota. Conclua todas antes de fechar o caixa.', 'danger')
             return redirect(url_for('cash.fechar', caixa_id=caixa_id))
         def fval(name):
             v = request.form.get(name, '0').replace(',', '.').strip() or '0'
@@ -341,8 +345,9 @@ def _calcular_resumo(caixa):
     ).all()
 
     # Só entram na conferência as vendas que realmente entraram no caixa
-    # (mesma regra da tela de fechamento: entregas só quando concluídas).
-    vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
+    # Entregas: só as concluídas ANTES do fechamento (evita retroatividade pós-fechamento).
+    corte = caixa.closed_at or datetime.now()
+    vendas = [v for v in todas_vendas if _entra_no_caixa(v, corte)]
 
     desp  = Expense.query.filter_by(cash_register_id=caixa.id).all()
     desp_din = sum(d.amount for d in desp if d.payment_method == 'dinheiro')
