@@ -125,8 +125,12 @@ def abrir():
         flash('Usuário ou senha incorretos.', 'danger')
         return redirect(url_for('cash.index'))
 
-    if modo == 'funcionario':
-        emp = Employee.query.filter_by(tenant_id=tid(), username=username, role='caixa').first()
+    # O tipo do caixa é determinado por quem está LOGADO, não pelo modo do formulário:
+    # - Funcionário logado (EmployeeLoginProxy): caixa vinculado ao funcionário
+    # - Lojista logado: caixa próprio do lojista (operator_employee_id sempre None)
+    uid = current_user.id
+    if isinstance(uid, str) and uid.startswith('e_'):
+        emp = Employee.query.filter_by(tenant_id=tid(), username=username).first()
         operator_employee_id = emp.id if emp else None
     else:
         operator_employee_id = None
