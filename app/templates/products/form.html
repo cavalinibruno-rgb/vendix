@@ -270,7 +270,7 @@
           {% endif %}
 
           <div class="d-flex gap-2">
-            <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('products.index') }}{% if return_qs %}?{{ return_qs }}{% endif %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
             <button type="submit" class="btn btn-warning fw-semibold flex-grow-1">
