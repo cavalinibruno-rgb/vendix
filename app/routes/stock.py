@@ -75,8 +75,9 @@ def index():
         return p.min_stock
 
     # Movimentações com filtros
-    filtro_tipo = request.args.get('mov_tipo', '')   # entrada | saida | ''
-    filtro_data = request.args.get('mov_data', '')
+    filtro_tipo      = request.args.get('mov_tipo', '')
+    filtro_data      = request.args.get('mov_data', '')
+    filtro_operador  = request.args.get('mov_operador', '')
 
     mov_query = StockMovement.query.filter_by(tenant_id=tid())
     if filtro_tipo:
@@ -84,17 +85,25 @@ def index():
     if filtro_data:
         try:
             d = date.fromisoformat(filtro_data)
-            mov_query = mov_query.filter(
-                db.func.date(StockMovement.created_at) == d
-            )
+            mov_query = mov_query.filter(db.func.date(StockMovement.created_at) == d)
         except ValueError:
             pass
+    if filtro_operador:
+        mov_query = mov_query.filter(StockMovement.user_name == filtro_operador)
     movimentos = mov_query.order_by(StockMovement.created_at.desc()).limit(100).all()
+
+    # Operadores com movimentações (para dropdown)
+    operadores_mov = [r[0] for r in db.session.query(StockMovement.user_name)
+                      .filter(StockMovement.tenant_id == tid(),
+                              StockMovement.user_name != None,
+                              StockMovement.user_name != '')
+                      .distinct().order_by(StockMovement.user_name).all()]
 
     return render_template('stock/index.html',
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
         marcas=marcas, marca_id=marca_id, todos_produtos=todos_produtos,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
+        filtro_operador=filtro_operador, operadores_mov=operadores_mov,
         eff_stock=eff_stock, eff_min=eff_min,
     )
 

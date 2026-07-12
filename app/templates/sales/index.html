@@ -75,6 +75,17 @@
         <input type="time" name="hora_ate" class="form-control form-control-sm" style="width:auto;"
                value="{{ hora_ate }}">
       </div>
+      {% if operadores %}
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">Operador:</label>
+        <select name="operador" class="form-select form-select-sm" style="width:auto;">
+          <option value="">Todos</option>
+          {% for op in operadores %}
+          <option value="{{ op }}" {% if op == filtro_operador %}selected{% endif %}>{{ op }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
       <button type="submit" class="btn btn-sm btn-warning fw-semibold">
         <i class="bi bi-search me-1"></i>Filtrar
       </button>

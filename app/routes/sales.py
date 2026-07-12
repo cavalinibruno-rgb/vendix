@@ -375,25 +375,40 @@ def index():
 
     limite = 15 if modo_restrito else 1000
 
+    # Filtro por operador
+    filtro_operador = request.args.get('operador', '').strip()
+
+    # Lista de operadores com vendas no período (para o dropdown)
+    operadores = [r[0] for r in db.session.query(Sale.cashier_name)
+                  .filter(Sale.tenant_id == tid(), Sale.status == 'confirmed',
+                          Sale.cashier_name != None, Sale.cashier_name != '')
+                  .distinct().order_by(Sale.cashier_name).all()]
+
     # Busca por número do pedido — ignora o filtro de data (vale também no modo operador).
     # Casa com o que a tela mostra (#sale_number, ou #id quando a venda não tem número).
     busca_pedido = request.args.get('pedido', '').strip()
     if busca_pedido:
         from sqlalchemy import or_, and_
         num = int(busca_pedido) if busca_pedido.isdigit() else None
-        sales = Sale.query.filter(
+        q_busca = Sale.query.filter(
             Sale.tenant_id == tid(),
             Sale.status == 'confirmed',
             or_(Sale.sale_number == num,
                 and_(Sale.sale_number == None, Sale.id == num)),
-        ).all() if num is not None else []
+        )
+        if filtro_operador:
+            q_busca = q_busca.filter(Sale.cashier_name == filtro_operador)
+        sales = q_busca.all() if num is not None else []
     else:
-        sales = Sale.query.filter(
+        q_periodo = Sale.query.filter(
             Sale.tenant_id == tid(),
             Sale.status == 'confirmed',
             Sale.created_at >= inicio,
             Sale.created_at <= fim,
-        ).order_by(Sale.created_at.desc()).limit(limite).all()
+        )
+        if filtro_operador:
+            q_periodo = q_periodo.filter(Sale.cashier_name == filtro_operador)
+        sales = q_periodo.order_by(Sale.created_at.desc()).limit(limite).all()
 
     total_periodo = sum(s.total for s in sales)
     periodo_um_dia = (de_fil == ate_fil)
@@ -407,6 +422,8 @@ def index():
         periodo_um_dia=periodo_um_dia,
         total_periodo=total_periodo,
         busca_pedido=busca_pedido,
+        filtro_operador=filtro_operador,
+        operadores=operadores,
         modo_restrito=modo_restrito,
         limite=limite,
         hoje=hoje.isoformat(),

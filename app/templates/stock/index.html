@@ -134,19 +134,28 @@
               <td colspan="6" class="py-2 px-3 border-bottom">
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                   <div class="btn-group btn-group-sm" role="group">
-                    <a href="?mov_tipo=&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+                    <a href="?mov_tipo=&mov_data={{ filtro_data }}&mov_operador={{ filtro_operador }}&q={{ q }}&tipo={{ tipo_id or '' }}"
                        class="btn {{ 'btn-dark' if not filtro_tipo else 'btn-outline-secondary' }}">Todas</a>
-                    <a href="?mov_tipo=entrada&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+                    <a href="?mov_tipo=entrada&mov_data={{ filtro_data }}&mov_operador={{ filtro_operador }}&q={{ q }}&tipo={{ tipo_id or '' }}"
                        class="btn {{ 'btn-success' if filtro_tipo == 'entrada' else 'btn-outline-success' }}">Entradas</a>
-                    <a href="?mov_tipo=saida&mov_data={{ filtro_data }}&q={{ q }}&tipo={{ tipo_id or '' }}"
+                    <a href="?mov_tipo=saida&mov_data={{ filtro_data }}&mov_operador={{ filtro_operador }}&q={{ q }}&tipo={{ tipo_id or '' }}"
                        class="btn {{ 'btn-danger' if filtro_tipo == 'saida' else 'btn-outline-danger' }}">Saídas</a>
                   </div>
                   <input type="date" name="mov_data" value="{{ filtro_data }}"
                          class="form-control form-control-sm" style="width:auto;"
-                         onchange="window.location='?mov_tipo={{ filtro_tipo }}&mov_data='+this.value+'&q={{ q }}&tipo={{ tipo_id or '' }}'">
-                  {% if filtro_data %}
+                         onchange="window.location='?mov_tipo={{ filtro_tipo }}&mov_operador={{ filtro_operador }}&mov_data='+this.value+'&q={{ q }}&tipo={{ tipo_id or '' }}'">
+                  {% if operadores_mov %}
+                  <select class="form-select form-select-sm" style="width:auto;"
+                          onchange="window.location='?mov_tipo={{ filtro_tipo }}&mov_data={{ filtro_data }}&mov_operador='+this.value+'&q={{ q }}&tipo={{ tipo_id or '' }}'">
+                    <option value="">Todos operadores</option>
+                    {% for op in operadores_mov %}
+                    <option value="{{ op }}" {% if op == filtro_operador %}selected{% endif %}>{{ op }}</option>
+                    {% endfor %}
+                  </select>
+                  {% endif %}
+                  {% if filtro_data or filtro_operador %}
                   <a href="?mov_tipo={{ filtro_tipo }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-                     class="btn btn-outline-secondary btn-sm"><i class="bi bi-x"></i></a>
+                     class="btn btn-outline-secondary btn-sm" title="Limpar filtros"><i class="bi bi-x"></i></a>
                   {% endif %}
                 </div>
               </td>
