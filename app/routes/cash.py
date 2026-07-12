@@ -89,8 +89,30 @@ def _totais_por_categoria(vendas):
 @login_required
 def index():
     caixa = caixa_aberto()
-    historico = CashRegister.query.filter_by(tenant_id=tid(), status='closed')\
-                                  .order_by(CashRegister.closed_at.desc()).limit(30).all()
+
+    # Filtros do histórico
+    from datetime import date as _date
+    hist_data     = request.args.get('hist_data', '')
+    hist_operador = request.args.get('hist_operador', '')
+    hist_query = CashRegister.query.filter_by(tenant_id=tid(), status='closed')
+    if hist_data:
+        try:
+            d = _date.fromisoformat(hist_data)
+            hist_query = hist_query.filter(func.date(CashRegister.opened_at) == d)
+        except ValueError:
+            pass
+    if hist_operador:
+        hist_query = hist_query.filter(CashRegister.operator_name == hist_operador)
+    historico = hist_query.order_by(CashRegister.closed_at.desc()).limit(100).all()
+
+    # Operadores distintos no histórico (para dropdown)
+    hist_operadores = [r[0] for r in db.session.query(CashRegister.operator_name)
+                       .filter(CashRegister.tenant_id == tid(),
+                               CashRegister.status == 'closed',
+                               CashRegister.operator_name != None,
+                               CashRegister.operator_name != '')
+                       .distinct().order_by(CashRegister.operator_name).all()]
+
     # Sobra/falta real de cada caixa = contado - esperado pelo sistema
     historico_diffs = {c.id: _calcular_resumo(c)['diff_total'] for c in historico}
     retiradas = []
@@ -117,6 +139,8 @@ def index():
                            retiradas=retiradas, total_retiradas=total_retiradas,
                            despesas=despesas, total_despesas=total_despesas,
                            caixas_abertos=caixas_abertos,
+                           hist_data=hist_data, hist_operador=hist_operador,
+                           hist_operadores=hist_operadores,
                            categorias=CATEGORIAS)
 
 @cash_bp.route('/abrir', methods=['POST'])
