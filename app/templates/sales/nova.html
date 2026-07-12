@@ -1374,6 +1374,26 @@ function selecionarSubCartao(valor, label, btn, subId) {
   btn.classList.remove('btn-outline-primary','btn-outline-secondary');
   btn.classList.add('btn-primary');
   pgto = valor;
+
+  // Atualiza o data-pgto do card ativo para o modo combinado enviar o método correto
+  const baseMethod = valor.startsWith('entrega_cartao') ? 'entrega_cartao' : 'cartao';
+  const cardAtivo = document.querySelector(
+    `.pgto-card[data-pgto="${baseMethod}"], .pgto-card[data-pgto="${valor}"]`
+  );
+  if (cardAtivo) {
+    cardAtivo.dataset.pgto  = valor;
+    cardAtivo.dataset.label = label;
+  }
+  // Atualiza o campo já renderizado no modo combinado (label + data-pgto da linha)
+  const linhaCartao = document.querySelector(
+    `.campo-pgto-linha[data-pgto="${baseMethod}"], .campo-pgto-linha[data-pgto="${valor}"]`
+  );
+  if (linhaCartao) {
+    linhaCartao.dataset.pgto = valor;
+    const spanLabel = linhaCartao.querySelector('.input-group-text');
+    if (spanLabel) spanLabel.textContent = label;
+  }
+
   // Recalcula preços do carrinho
   carrinho.forEach(item => {
     const prod = produtosCache[String(item.product_id)];
@@ -1503,6 +1523,11 @@ function cancelarCombinado() {
   document.getElementById('campoCombinados').innerHTML = '';
   document.getElementById('painelCombinado').style.display = 'none';
   document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-layers me-1"></i>Combinar Formas de Pagamento';
+  // Reseta sub-seleção de cartão (pode ter sido alterado por selecionarSubCartao)
+  const cLoja = document.querySelector('.pgto-card[data-pgto="cartao_credito"], .pgto-card[data-pgto="cartao_debito"]');
+  if (cLoja) { cLoja.dataset.pgto = 'cartao'; cLoja.dataset.label = 'Cartão'; }
+  const cEnt = document.querySelector('.pgto-card[data-pgto="entrega_cartao_credito"], .pgto-card[data-pgto="entrega_cartao_debito"]');
+  if (cEnt) { cEnt.dataset.pgto = 'entrega_cartao'; cEnt.dataset.label = 'Cartão'; }
   reprecificarCarrinho();   // volta ao preço dinheiro
 }
 
