@@ -40,7 +40,11 @@ def _entra_no_caixa(venda, corte=None):
     # retirada: loja entra sempre; app só se pago na entrega
     if venda.source == 'loja' or venda.source is None:
         return True
-    return venda.payment_method in ('entrega_dinheiro', 'entrega_cartao', 'entrega_pix')
+    return venda.payment_method in (
+        'entrega_dinheiro',
+        'entrega_cartao', 'entrega_cartao_credito', 'entrega_cartao_debito',
+        'entrega_pix',
+    )
 
 
 # Mapa de forma de pagamento → categoria da conferência de caixa
