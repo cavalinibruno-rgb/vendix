@@ -326,6 +326,8 @@ def _run_migrations(db):
         "ALTER TABLE cash_registers ALTER COLUMN opened_by DROP NOT NULL",
         # Bairro do cliente em texto livre (preenchido pelo CEP)
         "ALTER TABLE customers ADD COLUMN IF NOT EXISTS bairro VARCHAR(64)",
+        # Multi-caixa: venda vinculada ao caixa do operador que a registrou
+        "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cash_register_id INTEGER REFERENCES cash_registers(id)",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:

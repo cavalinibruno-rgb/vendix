@@ -48,7 +48,17 @@ def aceitar(pedido_id):
         if pedido.status != 'pending':
             return jsonify({'error': 'Pedido já processado.'}), 400
 
-        caixa    = CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
+        uid = current_user.id
+        if isinstance(uid, str) and uid.startswith('e_'):
+            _emp_id = int(uid[2:])
+            caixa = CashRegister.query.filter_by(tenant_id=tid(), status='open', operator_employee_id=_emp_id).first()
+        else:
+            from sqlalchemy import and_
+            caixa = (CashRegister.query
+                     .filter(CashRegister.tenant_id == tid(), CashRegister.status == 'open',
+                             CashRegister.opened_by == uid, CashRegister.operator_employee_id == None)
+                     .first()
+                     or CashRegister.query.filter_by(tenant_id=tid(), status='open').first())
         cashier  = (caixa.operator_name if caixa and caixa.operator_name
                     else (current_user.display_name or current_user.username))
         items    = pedido.items
@@ -67,6 +77,7 @@ def aceitar(pedido_id):
             notes          = pedido.notes,
             source         = 'loja',
             cashier_name   = cashier,
+            cash_register_id = caixa.id if caixa else None,
         )
         db.session.add(sale)
         db.session.flush()

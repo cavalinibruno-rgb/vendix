@@ -124,7 +124,7 @@ def login():
                 return render_template('auth/login.html')
             proxy = EmployeeLoginProxy(emp)
             login_user(proxy, remember=remember)
-            return redirect(_safe_next(next_url) or url_for('dashboard.index'))
+            return redirect(_safe_next(next_url) or url_for('cash.index'))
 
         flash('Usuário ou senha incorretos.', 'danger')
     return render_template('auth/login.html')

@@ -81,7 +81,18 @@ def _user_id():
     return uid
 
 def _caixa_aberto():
-    return CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
+    uid = current_user.id
+    if isinstance(uid, str) and uid.startswith('e_'):
+        emp_id = int(uid[2:])
+        return CashRegister.query.filter_by(
+            tenant_id=tid(), status='open', operator_employee_id=emp_id
+        ).first()
+    return CashRegister.query.filter(
+        CashRegister.tenant_id == tid(),
+        CashRegister.status == 'open',
+        CashRegister.opened_by == uid,
+        CashRegister.operator_employee_id == None,
+    ).first()
 
 @sales_bp.route('/nova')
 @login_required
@@ -202,6 +213,7 @@ def confirmar():
         cashier_name     = cashier,
         payment_entries  = payment_entries_json,
         employee_id      = int(employee_id) if employee_id else None,
+        cash_register_id = caixa.id if caixa else None,
     )
     db.session.add(sale)
     db.session.flush()

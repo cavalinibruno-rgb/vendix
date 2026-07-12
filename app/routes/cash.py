@@ -26,7 +26,19 @@ def tid():
     return current_user.tenant_id
 
 def caixa_aberto():
-    return CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
+    """Retorna o caixa aberto do operador atual (isolado por operador, não por loja)."""
+    uid = current_user.id
+    if isinstance(uid, str) and uid.startswith('e_'):
+        emp_id = int(uid[2:])
+        return CashRegister.query.filter_by(
+            tenant_id=tid(), status='open', operator_employee_id=emp_id
+        ).first()
+    return CashRegister.query.filter(
+        CashRegister.tenant_id == tid(),
+        CashRegister.status == 'open',
+        CashRegister.opened_by == current_user.id,
+        CashRegister.operator_employee_id == None,
+    ).first()
 
 def _entra_no_caixa(venda, corte=None):
     """Entregas só entram no caixa quando concluídas (motoboy voltou). Retiradas entram imediatamente.
@@ -263,14 +275,23 @@ def despesa():
 def fechar(caixa_id):
     caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid(), status='open').first_or_404()
 
-    # Vendas do período — loja + app com pagamento na entrega (entram no caixa físico)
-    todas_vendas = Sale.query.filter(
+    # Vendas vinculadas a este caixa (multi-caixa). Fallback para caixas antigos (cash_register_id NULL).
+    vendas_query = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
-        Sale.created_at >= caixa.opened_at,
-    ).all()
-
-    vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
+        Sale.cash_register_id == caixa.id,
+    )
+    if vendas_query.count() == 0:
+        # Caixa antigo: sem cash_register_id — usa filtro por período
+        todas_vendas = Sale.query.filter(
+            Sale.tenant_id == tid(),
+            Sale.status == 'confirmed',
+            Sale.created_at >= caixa.opened_at,
+        ).all()
+        vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
+    else:
+        todas_vendas = vendas_query.all()
+        vendas = [v for v in todas_vendas if _entra_no_caixa(v)]
 
     cats = _totais_por_categoria(vendas)  # inclui as partes das vendas combinadas
     retiradas         = CashWithdrawal.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).all()
@@ -290,12 +311,13 @@ def fechar(caixa_id):
     # Esperado na gaveta = abertura + vendas dinheiro - retiradas - despesas em dinheiro
     esperado_caixa    = caixa.opening_amount + cats['dinheiro'] - total_retiradas - despesas_dinheiro
 
-    # Bloqueia fechamento se há entregas pendentes ou em rota
+    # Bloqueia fechamento se há entregas deste caixa pendentes ou em rota
     em_rota = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
         Sale.delivery_mode == 'entrega',
         Sale.delivered_at == None,
+        Sale.cash_register_id == caixa.id,
     ).count()
 
     if request.method == 'POST':
@@ -341,17 +363,25 @@ def fechar(caixa_id):
 def _calcular_resumo(caixa):
     """Calcula conferência (sistema vs operador), retiradas e vendas do caixa.
     Reaproveitado pela tela de resumo e pela impressão ESC/POS."""
-    todas_vendas = Sale.query.filter(
+    # Vendas vinculadas a este caixa (multi-caixa). Fallback para caixas antigos (cash_register_id NULL).
+    vendas_query = Sale.query.filter(
         Sale.tenant_id == tid(),
         Sale.status == 'confirmed',
-        Sale.created_at >= caixa.opened_at,
-        Sale.created_at <= (caixa.closed_at or datetime.now()),
-    ).all()
-
-    # Só entram na conferência as vendas que realmente entraram no caixa
-    # Entregas: só as concluídas ANTES do fechamento (evita retroatividade pós-fechamento).
+        Sale.cash_register_id == caixa.id,
+    )
     corte = caixa.closed_at or datetime.now()
-    vendas = [v for v in todas_vendas if _entra_no_caixa(v, corte)]
+    if vendas_query.count() == 0:
+        # Caixa antigo: sem cash_register_id — usa filtro por período
+        todas_vendas = Sale.query.filter(
+            Sale.tenant_id == tid(),
+            Sale.status == 'confirmed',
+            Sale.created_at >= caixa.opened_at,
+            Sale.created_at <= corte,
+        ).all()
+        vendas = [v for v in todas_vendas if _entra_no_caixa(v, corte)]
+    else:
+        todas_vendas = vendas_query.all()
+        vendas = [v for v in todas_vendas if _entra_no_caixa(v, corte)]
 
     desp  = Expense.query.filter_by(cash_register_id=caixa.id).all()
     desp_din = sum(d.amount for d in desp if d.payment_method == 'dinheiro')
