@@ -102,10 +102,21 @@ def index():
         total_retiradas = sum(r.amount for r in retiradas)
         despesas = Expense.query.filter_by(tenant_id=tid(), cash_register_id=caixa.id).order_by(Expense.created_at).all()
         total_despesas = sum(d.amount for d in despesas)
+
+    # Lojista vê todos os caixas abertos; funcionário vê apenas o seu
+    uid = current_user.id
+    if isinstance(uid, str) and uid.startswith('e_'):
+        caixas_abertos = [caixa] if caixa else []
+    else:
+        caixas_abertos = CashRegister.query.filter_by(
+            tenant_id=tid(), status='open'
+        ).order_by(CashRegister.opened_at).all()
+
     return render_template('cash/index.html', caixa=caixa, historico=historico,
                            historico_diffs=historico_diffs,
                            retiradas=retiradas, total_retiradas=total_retiradas,
                            despesas=despesas, total_despesas=total_despesas,
+                           caixas_abertos=caixas_abertos,
                            categorias=CATEGORIAS)
 
 @cash_bp.route('/abrir', methods=['POST'])

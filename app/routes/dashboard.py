@@ -75,7 +75,9 @@ def index():
     ).filter_by(tenant_id=tid, status='confirmed').first()
     ticket_geral = float(_agg[0] or 0)
 
-    caixa = CashRegister.query.filter_by(tenant_id=tid, status='open').first()
+    caixas_abertos = CashRegister.query.filter_by(tenant_id=tid, status='open')\
+                                       .order_by(CashRegister.opened_at).all()
+    caixa = caixas_abertos[0] if caixas_abertos else None
 
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
                                .order_by(Sale.created_at.desc()).limit(10).all()
@@ -137,6 +139,7 @@ def index():
         total_funcionario=total_funcionario,
         total_geral=total_geral,
         caixa=caixa,
+        caixas_abertos=caixas_abertos,
         ultimas_vendas=ultimas_vendas,
         estoque_baixo=estoque_baixo,
         eff_stock=_eff_stock, eff_min=_eff_min,

@@ -6,29 +6,32 @@
   <h1><i class="bi bi-cash-stack me-2"></i>Caixa</h1>
 </div>
 
-{% if caixa %}
-<!-- CAIXA ABERTO -->
-<div class="alert alert-success d-flex align-items-center gap-3">
-  <i class="bi bi-unlock-fill fs-4"></i>
-  <div>
-    <strong>Caixa aberto</strong> desde {{ caixa.opened_at.strftime('%d/%m/%Y às %H:%M') }}
-    — Troco inicial: <strong>R$ {{ '%.2f'|format(caixa.opening_amount) }}</strong>
-    {% if caixa.operator_name %}
-    &nbsp;·&nbsp; Operador: <strong>{{ caixa.operator_name }}</strong>
-    {% endif %}
+{% if caixas_abertos %}
+<!-- CAIXAS ABERTOS -->
+{% for c in caixas_abertos %}
+<div class="alert alert-success d-flex align-items-center gap-3 mb-2">
+  <i class="bi bi-unlock-fill fs-5"></i>
+  <div class="lh-sm">
+    <strong>Caixa {{ loop.index }}</strong>
+    {% if c.operator_name %}aberto por <strong>{{ c.operator_name }}</strong>{% endif %}
+    desde <strong>{{ c.opened_at.strftime('%H:%M') }}</strong>
+    — Troco inicial: <strong>R$ {{ '%.2f'|format(c.opening_amount)|replace('.', ',') }}</strong>
   </div>
   <div class="ms-auto d-flex gap-2">
-    <button class="btn btn-outline-danger fw-semibold" data-bs-toggle="modal" data-bs-target="#modalDespesa">
+    {% if caixa and c.id == caixa.id %}
+    <button class="btn btn-outline-danger btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalDespesa">
       <i class="bi bi-receipt me-1"></i> Despesa
     </button>
-    <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#modalRetirada">
+    <button class="btn btn-warning btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#modalRetirada">
       <i class="bi bi-cash-coin me-1"></i> Retirada
     </button>
-    <a href="{{ url_for('cash.fechar', caixa_id=caixa.id) }}" class="btn btn-danger fw-semibold">
-      <i class="bi bi-lock-fill me-1"></i> Fechar Caixa
+    {% endif %}
+    <a href="{{ url_for('cash.fechar', caixa_id=c.id) }}" class="btn btn-danger btn-sm fw-semibold">
+      <i class="bi bi-lock-fill me-1"></i> Fechar
     </a>
   </div>
 </div>
+{% endfor %}
 
 <!-- Retiradas do caixa atual -->
 {% if retiradas %}
