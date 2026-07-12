@@ -121,7 +121,7 @@
                   <tr>
                     <td>
                       <a href="{{ url_for('sales.detalhe', sale_id=v.id) }}" class="fw-semibold text-decoration-none">
-                        #{{ v.id }}
+                        #{{ v.sale_number or v.id }}
                       </a>
                     </td>
                     <td>{{ v.customer.name if v.customer else '—' }}</td>
