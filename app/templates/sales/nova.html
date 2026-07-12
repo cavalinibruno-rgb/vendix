@@ -465,21 +465,15 @@
           <div class="pgto-card" data-pgto="entrega_dinheiro" data-label="Dinheiro" onclick="handlePgtoClick(this)">
             <i class="bi bi-cash-coin"></i>Dinheiro<span class="pgto-sub">na entrega</span>
           </div>
-          <div class="pgto-card" data-pgto="entrega_cartao" data-label="Cartão" onclick="handlePgtoClick(this)">
-            <i class="bi bi-credit-card"></i>Cartão<span class="pgto-sub">na entrega</span>
+          <div class="pgto-card" data-pgto="entrega_cartao_credito" data-label="Crédito" onclick="handlePgtoClick(this)">
+            <i class="bi bi-credit-card"></i>Crédito<span class="pgto-sub">na entrega</span>
+          </div>
+          <div class="pgto-card" data-pgto="entrega_cartao_debito" data-label="Débito" onclick="handlePgtoClick(this)">
+            <i class="bi bi-credit-card-2-back"></i>Débito<span class="pgto-sub">na entrega</span>
           </div>
           <div class="pgto-card" data-pgto="entrega_pix" data-label="Pix" onclick="handlePgtoClick(this)">
             <i class="bi bi-qr-code"></i>Pix<span class="pgto-sub">na entrega</span>
           </div>
-        </div>
-        <!-- Sub-seleção crédito/débito (entrega) -->
-        <div id="subCartaoEntrega" class="d-none gap-2 mt-2">
-          <button type="button" class="btn btn-sm btn-outline-primary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('entrega_cartao_credito','Crédito (entrega)',this,'subCartaoEntrega')">
-            <i class="bi bi-credit-card me-1"></i>Crédito
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary flex-fill sub-cartao-btn" onclick="selecionarSubCartao('entrega_cartao_debito','Débito (entrega)',this,'subCartaoEntrega')">
-            <i class="bi bi-credit-card-2-back me-1"></i>Débito
-          </button>
         </div>
 
         <!-- Campos combinados -->
@@ -1302,7 +1296,7 @@ function setOrigem(o) {
 }
 
 // ── Pagamento ─────────────────────────────────────────
-const _CARD_METHODS = ['cartao_credito','cartao_debito','entrega_cartao','entrega_cartao_credito','entrega_cartao_debito'];
+const _CARD_METHODS = ['cartao_credito','cartao_debito','entrega_cartao_credito','entrega_cartao_debito'];
 
 // True se alguma forma marcada no combinado for cartão
 function combinadoTemCartao() {
@@ -1360,41 +1354,6 @@ function selecionarFuncionario(id, nome, btn) {
   btn.classList.add('btn-success');
 }
 
-function selecionarSubCartao(valor, label, btn, subId) {
-  document.querySelectorAll(`#${subId} .sub-cartao-btn`).forEach(b => {
-    b.classList.remove('btn-primary','btn-secondary');
-    b.classList.add(b === btn ? 'btn-primary' : 'btn-outline-secondary');
-  });
-  btn.classList.remove('btn-outline-primary','btn-outline-secondary');
-  btn.classList.add('btn-primary');
-  pgto = valor;
-
-  // Atualiza o data-pgto do card ativo para o modo combinado enviar o método correto
-  const baseMethod = valor.startsWith('entrega_cartao') ? 'entrega_cartao' : 'cartao';
-  const cardAtivo = document.querySelector(
-    `.pgto-card[data-pgto="${baseMethod}"], .pgto-card[data-pgto="${valor}"]`
-  );
-  if (cardAtivo) {
-    cardAtivo.dataset.pgto  = valor;
-    cardAtivo.dataset.label = label;
-  }
-  // Atualiza o campo já renderizado no modo combinado (label + data-pgto da linha)
-  const linhaCartao = document.querySelector(
-    `.campo-pgto-linha[data-pgto="${baseMethod}"], .campo-pgto-linha[data-pgto="${valor}"]`
-  );
-  if (linhaCartao) {
-    linhaCartao.dataset.pgto = valor;
-    const spanLabel = linhaCartao.querySelector('.input-group-text');
-    if (spanLabel) spanLabel.textContent = label;
-  }
-
-  // Recalcula preços do carrinho
-  carrinho.forEach(item => {
-    const prod = produtosCache[String(item.product_id)];
-    if (prod) { item.unit_price = precoParaPgto(prod, item.gelado); item.total = item.unit_price * item.quantity; }
-  });
-  renderCarrinho(); calcTotais();
-}
 
 function precoParaPgto(prod, gelado) {
   // Itens sempre no preço dinheiro/gelado/evento. O cartão é acréscimo fixo no total.
@@ -1416,18 +1375,6 @@ function setPgto(card) {
   pgto = card.dataset.pgto;
   document.querySelectorAll('.pgto-card').forEach(c => c.classList.toggle('active', c === card));
 
-  // Mostra sub-seleção crédito/débito se clicou em Cartão (entrega)
-  const subEntrega = document.getElementById('subCartaoEntrega');
-  if (subEntrega) {
-    subEntrega.classList.toggle('d-none', pgto !== 'entrega_cartao');
-    subEntrega.classList.toggle('d-flex', pgto === 'entrega_cartao');
-  }
-  if (pgto === 'entrega_cartao') {
-    document.querySelectorAll('.sub-cartao-btn').forEach(b => {
-      b.classList.remove('btn-primary','btn-secondary');
-      b.classList.add('btn-outline-primary');
-    });
-  }
 
   // Mostra painel de funcionários
   const subFunc = document.getElementById('subFuncionario');
@@ -1511,9 +1458,6 @@ function cancelarCombinado() {
   document.getElementById('campoCombinados').innerHTML = '';
   document.getElementById('painelCombinado').style.display = 'none';
   document.getElementById('btnCombinar').innerHTML = '<i class="bi bi-layers me-1"></i>Combinar Formas de Pagamento';
-  // Reseta sub-seleção de cartão entrega (pode ter sido alterado por selecionarSubCartao)
-  const cEnt = document.querySelector('.pgto-card[data-pgto="entrega_cartao_credito"], .pgto-card[data-pgto="entrega_cartao_debito"]');
-  if (cEnt) { cEnt.dataset.pgto = 'entrega_cartao'; cEnt.dataset.label = 'Cartão'; }
   reprecificarCarrinho();   // volta ao preço dinheiro
 }
 
@@ -1692,7 +1636,6 @@ function finalizarVenda() {
   }
 
   if (!pgto) { aviso('Selecione a forma de pagamento.'); return; }
-  if (pgto === 'entrega_cartao') { aviso('Selecione Crédito ou Débito para o cartão na entrega.'); return; }
   if (pgto === 'funcionario' && !selectedEmployeeId) { aviso('Selecione o funcionário.'); return; }
   if (pgto === 'conta' && !clienteAtual) { aviso('Para lançar na Conta, selecione um cliente.'); return; }
   if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
