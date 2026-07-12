@@ -174,5 +174,22 @@ function calcTotal() {
 
 // Mostra os esperados já na abertura da tela
 calcTotal();
+
+// Enter nos campos de valor: avança para o próximo campo (não submete o form)
+const campos = Array.from(document.querySelectorAll('.campo-valor'));
+campos.forEach((campo, i) => {
+  campo.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const proximo = campos[i + 1];
+      if (proximo) {
+        proximo.focus();
+        proximo.select();
+      } else {
+        document.querySelector('textarea[name="notes"]').focus();
+      }
+    }
+  });
+});
 </script>
 {% endblock %}
