@@ -70,7 +70,7 @@
         {% for v in vendas %}
         <tr>
           <td>
-            <span class="badge bg-danger">#{{ v.id }}</span>
+            <span class="badge bg-danger">#{{ v.sale_number or v.id }}</span>
           </td>
           <td>{{ v.customer.name if v.customer else 'Consumidor' }}</td>
           <td>
