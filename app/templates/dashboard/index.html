@@ -19,8 +19,8 @@
   </button>
   {% endif %}
   {% endif %}
-  {% if caixa %}
-  <a href="{{ url_for('cash.fechar', caixa_id=caixa.id) }}" class="btn btn-outline-danger">
+  {% if caixa_proprio %}
+  <a href="{{ url_for('cash.fechar', caixa_id=caixa_proprio.id) }}" class="btn btn-outline-danger">
     <i class="bi bi-lock me-1"></i> Fechar Caixa
   </a>
   {% else %}

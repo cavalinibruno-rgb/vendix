@@ -83,11 +83,19 @@ def index():
             tenant_id=tid, status='open', operator_employee_id=emp_id
         ).first()
         caixas_abertos = [caixa] if caixa else []
+        caixa_proprio = caixa
     else:
         # Dono: vê todos os caixas abertos da loja
         caixas_abertos = CashRegister.query.filter_by(
             tenant_id=tid, status='open'
         ).order_by(CashRegister.opened_at).all()
+        # caixa_proprio = caixa do próprio dono (para botões Abrir/Fechar Caixa)
+        caixa_proprio = CashRegister.query.filter(
+            CashRegister.tenant_id == tid,
+            CashRegister.status == 'open',
+            CashRegister.opened_by == current_user.id,
+            CashRegister.operator_employee_id == None,
+        ).first()
         caixa = caixas_abertos[0] if caixas_abertos else None
 
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
@@ -151,6 +159,7 @@ def index():
         total_geral=total_geral,
         caixa=caixa,
         caixas_abertos=caixas_abertos,
+        caixa_proprio=caixa_proprio,
         ultimas_vendas=ultimas_vendas,
         estoque_baixo=estoque_baixo,
         eff_stock=_eff_stock, eff_min=_eff_min,
