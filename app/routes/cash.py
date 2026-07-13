@@ -474,6 +474,22 @@ def _calcular_resumo(caixa):
     )
 
 
+# TEMPORÁRIO — remover após limpar caixas duplicados
+@cash_bp.route('/<int:caixa_id>/excluir', methods=['POST'])
+@login_required
+def excluir_caixa(caixa_id):
+    caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid(), status='open').first_or_404()
+    vendas_vinculadas = Sale.query.filter_by(cash_register_id=caixa_id).count()
+    if vendas_vinculadas > 0:
+        flash('Este caixa possui vendas vinculadas e não pode ser excluído.', 'danger')
+        return redirect(url_for('cash.index'))
+    CashWithdrawal.query.filter_by(cash_register_id=caixa_id).delete()
+    Expense.query.filter_by(cash_register_id=caixa_id).delete()
+    db.session.delete(caixa)
+    db.session.commit()
+    flash('Caixa excluído.', 'success')
+    return redirect(url_for('cash.index'))
+
 @cash_bp.route('/<int:caixa_id>/resumo')
 @login_required
 def resumo(caixa_id):
