@@ -77,18 +77,18 @@ def index():
 
     uid = current_user.id
     if isinstance(uid, str) and uid.startswith('e_'):
+        # Operador: vê apenas o próprio caixa
         emp_id = int(uid[2:])
         caixa = CashRegister.query.filter_by(
             tenant_id=tid, status='open', operator_employee_id=emp_id
         ).first()
+        caixas_abertos = [caixa] if caixa else []
     else:
-        caixa = CashRegister.query.filter(
-            CashRegister.tenant_id == tid,
-            CashRegister.status == 'open',
-            CashRegister.opened_by == current_user.id,
-            CashRegister.operator_employee_id == None,
-        ).first()
-    caixas_abertos = [caixa] if caixa else []
+        # Dono: vê todos os caixas abertos da loja
+        caixas_abertos = CashRegister.query.filter_by(
+            tenant_id=tid, status='open'
+        ).order_by(CashRegister.opened_at).all()
+        caixa = caixas_abertos[0] if caixas_abertos else None
 
     ultimas_vendas = Sale.query.filter_by(tenant_id=tid, status='confirmed')\
                                .order_by(Sale.created_at.desc()).limit(10).all()
