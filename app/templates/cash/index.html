@@ -28,12 +28,6 @@
     <a href="{{ url_for('cash.fechar', caixa_id=c.id) }}" class="btn btn-danger btn-sm fw-semibold">
       <i class="bi bi-lock-fill me-1"></i> Fechar
     </a>
-    <form method="post" action="{{ url_for('cash.excluir_caixa', caixa_id=c.id) }}" style="display:inline"
-          onsubmit="return confirm('Excluir este caixa? Esta ação não pode ser desfeita.')">
-      <button type="submit" class="btn btn-outline-danger btn-sm">
-        <i class="bi bi-trash"></i> Excluir
-      </button>
-    </form>
   </div>
 </div>
 {% endfor %}
