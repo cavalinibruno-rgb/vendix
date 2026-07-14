@@ -251,35 +251,48 @@ async function toggleOnline(btn, productId) {
   const tbody = document.querySelector('tbody');
   let draggingRow = null;
 
+  function visivel(tr) {
+    return tr.dataset.id && tr.style.display !== 'none';
+  }
+
   tbody.addEventListener('dragstart', e => {
     const row = e.target.closest('tr[draggable]');
-    if (!row) return;
+    if (!row || !visivel(row)) return;
     draggingRow = row;
-    row.style.opacity = '0.5';
+    setTimeout(() => row.style.opacity = '0.4', 0);
     e.dataTransfer.effectAllowed = 'move';
   });
 
-  tbody.addEventListener('dragend', e => {
+  tbody.addEventListener('dragend', () => {
     if (draggingRow) { draggingRow.style.opacity = ''; draggingRow = null; }
     tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
   });
 
   tbody.addEventListener('dragover', e => {
     e.preventDefault();
+    if (!draggingRow) return;
     const row = e.target.closest('tr[draggable]');
-    if (!row || row === draggingRow) return;
+    if (!row || row === draggingRow || !visivel(row)) return;
     tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
     row.classList.add('drag-over');
-    const rect = row.getBoundingClientRect();
-    const mid  = rect.top + rect.height / 2;
-    if (e.clientY < mid) tbody.insertBefore(draggingRow, row);
-    else row.after(draggingRow);
+    const mid = row.getBoundingClientRect().top + row.offsetHeight / 2;
+    // Insere apenas entre linhas visíveis — encontra o ponto de inserção correto
+    if (e.clientY < mid) {
+      // Inserir antes de `row`, mas após a última linha oculta que precede `row`
+      tbody.insertBefore(draggingRow, row);
+    } else {
+      // Inserir após `row`, antes da próxima linha visível
+      let next = row.nextElementSibling;
+      while (next && !visivel(next)) next = next.nextElementSibling;
+      if (next) tbody.insertBefore(draggingRow, next);
+      else tbody.appendChild(draggingRow);
+    }
   });
 
   tbody.addEventListener('drop', e => {
     e.preventDefault();
-    // Coleta apenas as linhas visíveis (após filtro) na nova ordem
-    const ids = Array.from(tbody.querySelectorAll('tr[data-id]:not([style*="display: none"]):not([style*="display:none"])'))
+    const ids = Array.from(tbody.querySelectorAll('tr[data-id]'))
+                     .filter(visivel)
                      .map(r => r.dataset.id);
     fetch('{{ url_for("products.reordenar") }}', {
       method: 'POST',
