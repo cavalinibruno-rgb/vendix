@@ -73,7 +73,9 @@ def api_produtos(slug):
     cats_ordenadas = sorted(cats.values(), key=ordem_categorias_key)
     pos = {c.id: i for i, c in enumerate(cats_ordenadas)}
     def _ordem_vitrine(p):
-        return (pos.get(p.type_id, 10**9), _chave_alfa(p.name))
+        return (pos.get(p.type_id, 10**9),
+                p.sort_order if p.sort_order is not None else 10**9,
+                _chave_alfa(p.name))
     produtos.sort(key=_ordem_vitrine)
 
     # Componentes dos combos (em lote, evita N+1): { combo_id: [{quantity, name}] }
