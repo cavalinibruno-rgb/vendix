@@ -512,6 +512,7 @@ body.lanchonete .pc-promo{position:static;background:#ff7a00;margin-bottom:4px;d
 const SLUG = {{ tenant.slug | tojson }};
 const IS_LANCHONETE = {{ 'true' if tenant.is_lanchonete else 'false' }};
 const LOJA_ABERTA = {{ 'true' if caixa_aberto else 'false' }};
+const ACRESCIMO_CARTAO = {{ acrescimo_cartao }};
 let todos = [];
 let carrinho = [];
 let pgto = 'entrega_dinheiro';
@@ -1024,14 +1025,20 @@ function renderCartItens() {
     </div>`; }).join('');
 }
 
+function _isCartao() {
+  return pgto === 'entrega_cartao_credito' || pgto === 'entrega_cartao_debito';
+}
+
 function renderCartTotais() {
   const sub      = carrinho.reduce((s, i) => s + i.price * i.qty, 0);
   const desconto = cupomAplicado ? cupomAplicado.desconto : 0;
-  const total    = sub + taxaEntrega - desconto;
+  const acrescimo = (_isCartao() && ACRESCIMO_CARTAO > 0) ? ACRESCIMO_CARTAO : 0;
+  const total    = sub + taxaEntrega - desconto + acrescimo;
   const el       = document.getElementById('cartTotais');
   el.innerHTML = `
     <div class="tot-row"><span>Subtotal</span><span>R$ ${fmt(sub)}</span></div>
     ${taxaEntrega > 0 ? `<div class="tot-row"><span>Taxa de entrega</span><span>R$ ${fmt(taxaEntrega)}</span></div>` : ''}
+    ${acrescimo > 0 ? `<div class="tot-row" style="color:#c0392b;"><span>Acréscimo cartão</span><span>+ R$ ${fmt(acrescimo)}</span></div>` : ''}
     ${desconto > 0 ? `<div class="tot-row" style="color:#27ae60;"><span>Desconto (${cupomAplicado.code})</span><span>− R$ ${fmt(desconto)}</span></div>` : ''}
     <div class="tot-total"><span>Total</span><span>R$ ${fmt(Math.max(0, total))}</span></div>`;
 }
@@ -1089,6 +1096,7 @@ function setPgto(el) {
   el.classList.add('active');
   pgto = el.dataset.pgto;
   document.getElementById('trocoBox').style.display = pgto === 'entrega_dinheiro' ? '' : 'none';
+  renderCartTotais();
 }
 
 function fazerPedido() {
