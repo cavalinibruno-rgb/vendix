@@ -767,6 +767,18 @@ function addItem(id) {
   if (!LOJA_ABERTA) { alert('A loja está fechada no momento. Os pedidos abrem quando ela reabrir.'); return; }
   const prod = todos.find(p => p.id === id);
   if (!prod) return;
+
+  // Depósito sem addons/gelado: adiciona direto ao carrinho sem overlay
+  if (!IS_LANCHONETE && !(prod.addons && prod.addons.length) && !(prod.price_cold > 0)) {
+    const sig = [prod.id, false, '', ''].join('|');
+    const idx = carrinho.findIndex(i => i.sig === sig);
+    if (idx >= 0) { carrinho[idx].qty += 1; }
+    else { carrinho.push({ id: prod.id, name: prod.name, price: prod.price, qty: 1,
+                           thumb: prod.thumb || null, gelado: false, addons: [], obs: '', sig: sig }); }
+    atualizarCartUI();
+    return;
+  }
+
   _prodSheet = prod;
   _prodSheetGelado = false;
   _prodSheetAddons = {};
