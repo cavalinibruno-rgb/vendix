@@ -298,7 +298,9 @@ async function toggleOnline(btn, productId) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
       body: JSON.stringify({ ids })
-    });
+    }).then(r => {
+      if (!r.ok) console.error('Reordenar falhou', r.status);
+    }).catch(err => console.error('Reordenar erro', err));
   });
 })();
 </script>

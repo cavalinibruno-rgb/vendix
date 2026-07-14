@@ -150,7 +150,7 @@ def index():
     products = (Product.query.filter_by(tenant_id=tenant_id())
                 .options(defer(Product.image_data), defer(Product.thumbnail_data),
                          joinedload(Product.type), joinedload(Product.brand))
-                .order_by(Product.name).all())
+                .order_by(Product.sort_order.nulls_last(), Product.name).all())
 
     # Mapa estoque dos pais para calcular estoque efetivo dos packs
     parent_ids = {p.pack_parent_id for p in products if p.pack_parent_id}
