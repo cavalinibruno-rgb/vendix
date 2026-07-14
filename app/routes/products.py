@@ -10,6 +10,7 @@ from app import db
 from app import r2
 from app.models.product import Product, ProductType, Brand
 from app.models.combo import ComboItem
+from app.models.ingredient import Ingredient, ProductIngredient
 
 products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 
@@ -38,6 +39,28 @@ def _parse_promo_dt(value):
         return datetime.fromisoformat(value)
     except ValueError:
         return None
+
+def _salvar_composicao(product_id, composicao_raw):
+    """Salva composição da ficha técnica e retorna o custo calculado (ou None se vazia)."""
+    if not (current_user.tenant and current_user.tenant.is_lanchonete):
+        return None
+    try:
+        itens = json.loads(composicao_raw or '[]')
+    except Exception:
+        itens = []
+    ProductIngredient.query.filter_by(product_id=product_id).delete()
+    custo_total = 0.0
+    for item in itens:
+        ing_id = int(item.get('ingredient_id', 0))
+        qty    = float(item.get('quantity', 1) or 1)
+        ing    = Ingredient.query.filter_by(id=ing_id, tenant_id=tenant_id()).first()
+        if not ing:
+            continue
+        pi = ProductIngredient(product_id=product_id, ingredient_id=ing_id, quantity=qty)
+        db.session.add(pi)
+        custo_total += ing.cost_price * qty
+    return round(custo_total, 2) if itens else None
+
 
 def _parse_addons(raw):
     """Valida os adicionais vindos do form (JSON) -> string JSON limpa, ou None.
@@ -267,6 +290,10 @@ def novo():
                            quantity=float(comp['quantity']))
             db.session.add(ci)
 
+        custo_comp = _salvar_composicao(product.id, request.form.get('composicao_json', '[]'))
+        if custo_comp is not None:
+            product.cost_price = custo_comp
+
         # Nome do conjunto conforme o termo escolhido:
         #   Maço → "Maço de {nome}" (sem quantidade)
         #   Pack/Caixa → "{termo} c/ {N} {nome}"
@@ -310,7 +337,8 @@ def novo():
             flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
 
-    return render_template('products/form.html', types=types, brands=brands, product=None)
+    return render_template('products/form.html', types=types, brands=brands, product=None,
+                           composicao_json='[]')
 
 @products_bp.route('/<int:product_id>/editar', methods=['GET', 'POST'])
 @login_required
@@ -362,6 +390,10 @@ def editar(product_id):
         if combo_components:
             product.stock_quantity = 0
 
+        custo_comp = _salvar_composicao(product.id, request.form.get('composicao_json', '[]'))
+        if custo_comp is not None:
+            product.cost_price = custo_comp
+
         db.session.commit()
         flash('Produto atualizado com sucesso!', 'success')
         # Volta pra lista preservando o filtro (categoria/marca/busca/ordem) e
@@ -378,8 +410,16 @@ def editar(product_id):
          'quantity': ci.quantity, 'cost_price': ci.component.cost_price or 0}
         for ci in product.combo_items
     ]
+    existing_composicao = [
+        {'ingredient_id': pi.ingredient_id, 'name': pi.ingredient.name,
+         'unit': pi.ingredient.unit, 'cost_price': pi.ingredient.cost_price,
+         'quantity': pi.quantity}
+        for pi in ProductIngredient.query.filter_by(product_id=product.id).all()
+        if pi.ingredient
+    ]
     return render_template('products/form.html', types=types, brands=brands, product=product,
                            existing_components=existing_components,
+                           composicao_json=json.dumps(existing_composicao),
                            return_qs=request.query_string.decode())
 
 @products_bp.route('/<int:product_id>/excluir', methods=['POST'])

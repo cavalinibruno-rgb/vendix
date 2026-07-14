@@ -336,6 +336,11 @@
       <a href="{{ url_for('products.marcas') }}" class="nav-link {% if ep == 'products.marcas' %}active{% endif %}">
         <i class="bi bi-bookmark-star"></i><span class="nav-label"> Marcas</span>
       </a>
+      {% if current_user.tenant and current_user.tenant.is_lanchonete %}
+      <a href="{{ url_for('insumos.index') }}" class="nav-link {% if 'insumos' in ep %}active{% endif %}">
+        <i class="bi bi-egg-fried"></i><span class="nav-label"> Insumos</span>
+      </a>
+      {% endif %}
       <a href="{{ url_for('vale.index') }}" class="nav-link {% if 'vale' in ep %}active{% endif %}">
         <i class="bi bi-people"></i><span class="nav-label"> Funcionários</span>
       </a>

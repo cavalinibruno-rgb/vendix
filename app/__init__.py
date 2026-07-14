@@ -328,6 +328,20 @@ def _run_migrations(db):
         "ALTER TABLE customers ADD COLUMN IF NOT EXISTS bairro VARCHAR(64)",
         # Multi-caixa: venda vinculada ao caixa do operador que a registrou
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cash_register_id INTEGER REFERENCES cash_registers(id)",
+        """CREATE TABLE IF NOT EXISTS ingredients (
+            id SERIAL PRIMARY KEY,
+            tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
+            name VARCHAR(128) NOT NULL,
+            unit VARCHAR(16) DEFAULT 'un',
+            cost_price FLOAT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT NOW()
+        )""",
+        """CREATE TABLE IF NOT EXISTS product_ingredients (
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+            ingredient_id INTEGER REFERENCES ingredients(id) ON DELETE CASCADE NOT NULL,
+            quantity FLOAT DEFAULT 1
+        )""",
     ]
     with db.engine.connect() as conn:
         for sql in migrations:
@@ -396,6 +410,7 @@ def create_app():
     from app.routes.assinatura import assinatura_bp
     from app.routes.completar_cadastro import completar_cadastro_bp
     from app.routes.download import download_bp
+    from app.routes.insumos import insumos_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -418,6 +433,7 @@ def create_app():
     app.register_blueprint(assinatura_bp)
     app.register_blueprint(completar_cadastro_bp)
     app.register_blueprint(download_bp)
+    app.register_blueprint(insumos_bp)
 
     # Blueprints que o master (admin do sistema) pode acessar.
     # O master não tem loja própria, então é bloqueado das telas internas de loja.

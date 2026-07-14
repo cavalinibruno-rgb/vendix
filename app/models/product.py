@@ -70,6 +70,9 @@ class Product(db.Model):
     combo_items = db.relationship('ComboItem', foreign_keys='ComboItem.combo_id',
                                   backref='combo_product', cascade='all, delete-orphan', lazy=True)
 
+    ingredients = db.relationship('ProductIngredient', backref='product',
+                                  cascade='all, delete-orphan', lazy=True)
+
     @property
     def effective_stock(self):
         """Para pack: estoque do pai ÷ unidades. Para unitário/combo: stock_quantity normal."""

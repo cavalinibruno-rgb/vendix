@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Insumos – Vendix{% endblock %}
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <h1><i class="bi bi-egg-fried me-2"></i>Insumos</h1>
+  <a href="{{ url_for('insumos.novo') }}" class="btn btn-warning fw-semibold">
+    <i class="bi bi-plus-lg me-1"></i>Novo Insumo
+  </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+  <div class="alert alert-{{ 'success' if cat == 'success' else 'danger' }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endwith %}
+
+{% if insumos %}
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">Nome</th>
+          <th>Unidade</th>
+          <th>Preço de Custo</th>
+          <th class="pe-4"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ing in insumos %}
+        <tr>
+          <td class="ps-4 fw-semibold">{{ ing.name }}</td>
+          <td class="text-muted">{{ ing.unit }}</td>
+          <td class="fw-semibold">R$ {{ '%.2f'|format(ing.cost_price)|replace('.', ',') }}</td>
+          <td class="pe-4 text-end">
+            <a href="{{ url_for('insumos.editar', ing_id=ing.id) }}" class="btn btn-sm btn-outline-secondary me-1">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="post" action="{{ url_for('insumos.excluir', ing_id=ing.id) }}" class="d-inline"
+                  onsubmit="return confirm('Excluir {{ ing.name }}?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body text-center py-5 text-muted">
+    <i class="bi bi-egg-fried fs-1 d-block mb-2 opacity-50"></i>
+    Nenhum insumo cadastrado ainda.
+    <div class="mt-2">
+      <a href="{{ url_for('insumos.novo') }}" class="btn btn-warning btn-sm fw-semibold">
+        <i class="bi bi-plus-lg me-1"></i>Cadastrar primeiro insumo
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
