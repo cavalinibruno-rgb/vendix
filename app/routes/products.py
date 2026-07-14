@@ -422,6 +422,19 @@ def editar(product_id):
                            composicao_json=json.dumps(existing_composicao),
                            return_qs=request.query_string.decode())
 
+@products_bp.route('/reordenar', methods=['POST'])
+@login_required
+def reordenar():
+    """Recebe lista de IDs na nova ordem e salva sort_order em cada um."""
+    ids = request.json.get('ids', [])
+    for pos, pid in enumerate(ids, start=1):
+        p = Product.query.filter_by(id=int(pid), tenant_id=tenant_id()).first()
+        if p:
+            p.sort_order = pos
+    db.session.commit()
+    return jsonify(ok=True)
+
+
 @products_bp.route('/<int:product_id>/excluir', methods=['POST'])
 @login_required
 def excluir(product_id):

@@ -52,6 +52,7 @@ class Product(db.Model):
     thumbnail_data = db.Column(db.LargeBinary)
     created_at     = db.Column(db.DateTime, default=datetime.now)
 
+    sort_order     = db.Column(db.Integer, nullable=True)
     pack_parent_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
     pack_qty       = db.Column(db.Integer, nullable=True)  # unidades contidas neste pack
 

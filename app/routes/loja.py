@@ -64,7 +64,7 @@ def api_produtos(slug):
     produtos = Product.query.filter_by(tenant_id=tenant.id, active=True, online_active=True)\
         .filter(or_(Product.promo_starts_at == None, Product.promo_starts_at <= agora))\
         .filter(or_(Product.promo_ends_at == None, Product.promo_ends_at >= agora))\
-        .order_by(Product.name).all()
+        .order_by(Product.sort_order.nulls_last(), Product.name).all()
     # Vitrine "Todos": agrupada por categoria na MESMA ordem das abas
     # (Promoção 1º, Combos 2º, depois a ordem manual do lojista ou alfabética),
     # produtos alfabéticos dentro de cada categoria; sem categoria por último.

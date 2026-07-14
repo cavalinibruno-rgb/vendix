@@ -62,7 +62,8 @@
     <table class="table table-hover mb-0">
       <thead class="table-light">
         <tr>
-          <th class="ps-4">#</th>
+          <th class="ps-4" style="width:36px;" title="Arraste para reordenar"><i class="bi bi-grip-vertical text-muted"></i></th>
+          <th style="width:40px;">#</th>
           <th>Nome</th>
           <th>Categoria</th>
           <th>Marca</th>
@@ -74,9 +75,13 @@
       </thead>
       <tbody>
         {% for p in products %}
-        <tr id="prod-{{ p.id }}" data-name="{{ p.name|lower }}" data-type="{{ p.type_id or '' }}"
-            data-brand="{{ p.brand_id or '' }}" data-brand-name="{{ p.brand.name if p.brand else '' }}">
-          <td class="text-muted small ps-4">{{ p.product_number or p.id }}</td>
+        <tr id="prod-{{ p.id }}" data-id="{{ p.id }}" data-name="{{ p.name|lower }}" data-type="{{ p.type_id or '' }}"
+            data-brand="{{ p.brand_id or '' }}" data-brand-name="{{ p.brand.name if p.brand else '' }}"
+            draggable="true">
+          <td class="ps-4 drag-handle" style="cursor:grab;color:#aaa;user-select:none;">
+            <i class="bi bi-grip-vertical"></i>
+          </td>
+          <td class="text-muted small">{{ p.product_number or p.id }}</td>
           <td class="fw-semibold">{{ p.name }}</td>
           <td><span class="badge bg-secondary-subtle text-secondary">{{ p.type.name if p.type else '—' }}</span></td>
           <td><span class="badge bg-primary-subtle text-primary">{{ p.brand.name if p.brand else '—' }}</span></td>
@@ -112,11 +117,11 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" class="text-center text-muted py-4">Nenhum produto cadastrado ainda.</td></tr>
+        <tr><td colspan="9" class="text-center text-muted py-4">Nenhum produto cadastrado ainda.</td></tr>
         {% endfor %}
         {% if products %}
         <tr id="semResultados" style="display:none;">
-          <td colspan="8" class="text-center text-muted py-4">Nenhum produto encontrado com esses filtros.</td>
+          <td colspan="9" class="text-center text-muted py-4">Nenhum produto encontrado com esses filtros.</td>
         </tr>
         {% endif %}
       </tbody>
@@ -240,5 +245,52 @@ async function toggleOnline(btn, productId) {
   }
   btn.disabled = false;
 }
+
+/* ── Drag-and-drop para reordenar produtos ── */
+(function() {
+  const tbody = document.querySelector('tbody');
+  let draggingRow = null;
+
+  tbody.addEventListener('dragstart', e => {
+    const row = e.target.closest('tr[draggable]');
+    if (!row) return;
+    draggingRow = row;
+    row.style.opacity = '0.5';
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  tbody.addEventListener('dragend', e => {
+    if (draggingRow) { draggingRow.style.opacity = ''; draggingRow = null; }
+    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+  });
+
+  tbody.addEventListener('dragover', e => {
+    e.preventDefault();
+    const row = e.target.closest('tr[draggable]');
+    if (!row || row === draggingRow) return;
+    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+    row.classList.add('drag-over');
+    const rect = row.getBoundingClientRect();
+    const mid  = rect.top + rect.height / 2;
+    if (e.clientY < mid) tbody.insertBefore(draggingRow, row);
+    else row.after(draggingRow);
+  });
+
+  tbody.addEventListener('drop', e => {
+    e.preventDefault();
+    // Coleta apenas as linhas visíveis (após filtro) na nova ordem
+    const ids = Array.from(tbody.querySelectorAll('tr[data-id]:not([style*="display: none"]):not([style*="display:none"])'))
+                     .map(r => r.dataset.id);
+    fetch('{{ url_for("products.reordenar") }}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+      body: JSON.stringify({ ids })
+    });
+  });
+})();
 </script>
+<style>
+tr.drag-over { outline: 2px solid #c9a84c; background: rgba(201,168,76,.08); }
+tr[draggable] .drag-handle:hover { color: #c9a84c !important; }
+</style>
 {% endblock %}
