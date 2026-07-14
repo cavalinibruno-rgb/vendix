@@ -337,6 +337,7 @@ body.lanchonete .pc-promo{position:static;background:#ff7a00;margin-bottom:4px;d
     <div class="prod-sheet-info">
       <div class="pc-cat" id="prodSheetCat" style="margin-bottom:4px;"></div>
       <div class="prod-sheet-name" id="prodSheetName"></div>
+      <div class="pc-comps" id="prodSheetComps" style="margin-top:6px;display:none;"></div>
       <div class="prod-sheet-desc" id="prodSheetDesc"></div>
     </div>
     <!-- Opção Gelado -->
@@ -788,6 +789,17 @@ function addItem(id) {
   catEl.textContent = prod.type_name || '';
   catEl.style.display = prod.type_name ? '' : 'none';
   document.getElementById('prodSheetName').textContent = prod.name;
+  const compsEl = document.getElementById('prodSheetComps');
+  if (compsEl) {
+    const comps = prod.components || [];
+    if (comps.length) {
+      compsEl.innerHTML = comps.map(c => `<b>${c.quantity}x</b> ${_escapeHtml(c.name)}`).join('<br>');
+      compsEl.style.display = '';
+    } else {
+      compsEl.innerHTML = '';
+      compsEl.style.display = 'none';
+    }
+  }
   const descEl = document.getElementById('prodSheetDesc');
   descEl.textContent = prod.description || '';
   descEl.style.display = prod.description ? '' : 'none';
