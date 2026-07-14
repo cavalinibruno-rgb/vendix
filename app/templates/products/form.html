@@ -339,6 +339,16 @@
 .srch-opt:last-child { border-bottom: none; }
 .srch-opt:hover, .srch-opt.active { background: var(--border-card); color: #c9a84c; }
 .srch-opt.empty { color: #888; font-style: italic; cursor: default; }
+/* Linhas de composição e adicionais — suporte a modo escuro */
+.comp-row, .addon-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  padding: 8px; border-radius: 6px;
+  background: var(--bg-card); border: 1px solid var(--border-card);
+  color: var(--text-main);
+}
+.comp-row .comp-name, .addon-row .addon-name { flex: 1; font-weight: 600; font-size: .9rem; }
+.comp-row .comp-meta, .addon-row .addon-price { font-size: .82rem; color: var(--text-muted, #888); }
+.comp-row .comp-cost { font-size: .85rem; font-weight: 600; color: #16a34a; }
 </style>
 {% endblock %}
 
@@ -640,7 +650,7 @@ function renderComponents() {
     return;
   }
   comboList.innerHTML = comboComponents.map((c, i) => `
-    <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded combo-item-row" style="background:#f8f9fa;">
+    <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded combo-item-row addon-row">
       <span class="flex-grow-1 fw-semibold small">${c.name}</span>
       <div class="input-group" style="width:110px;">
         <button type="button" class="btn btn-outline-secondary btn-sm px-2" onclick="changeQty(${i},-1)">−</button>
@@ -737,10 +747,10 @@ function renderComposicao() {
     const ing = _todosInsumos.find(x => x.id === c.ingredient_id) || {};
     const subtotal = (ing.cost_price || c.cost_price || 0) * c.quantity;
     custo += subtotal;
-    return `<div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:#f0fff4;">
-      <span class="flex-grow-1 fw-semibold small">${c.name}</span>
-      <span class="small text-muted">${c.quantity} ${c.unit || ''}</span>
-      <span class="small text-success fw-semibold">R$ ${subtotal.toFixed(2).replace('.',',')}</span>
+    return `<div class="comp-row">
+      <span class="comp-name">${c.name}</span>
+      <span class="comp-meta">${c.quantity} ${c.unit || ''}</span>
+      <span class="comp-cost">R$ ${subtotal.toFixed(2).replace('.',',')}</span>
       <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1" onclick="removeInsumo(${i})"><i class="bi bi-trash"></i></button>
     </div>`;
   }).join('');
@@ -784,9 +794,9 @@ function renderAdicionais() {
   const list = document.getElementById('adicionaisList');
   if (!adicionais.length) { list.innerHTML = '<p class="text-muted small mb-2">Nenhum adicional cadastrado.</p>'; return; }
   list.innerHTML = adicionais.map((a, i) => `
-    <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded" style="background:#f8f9fa;">
-      <span class="flex-grow-1 fw-semibold small">${_escAd(a.name)}</span>
-      <span class="small text-muted">R$ ${(parseFloat(a.price)||0).toFixed(2)}</span>
+    <div class="addon-row">
+      <span class="addon-name">${_escAd(a.name)}</span>
+      <span class="addon-price">R$ ${(parseFloat(a.price)||0).toFixed(2)}</span>
       <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAdicional(${i})"><i class="bi bi-trash"></i></button>
     </div>`).join('');
 }
