@@ -120,8 +120,17 @@
           <td class="text-muted small">{{ s.items|length }} item(s)</td>
           <td>
             {% set icons = {'dinheiro':'cash','cartao':'credit-card','pix':'qr-code','conta':'person-lines-fill'} %}
+            {% if s.payment_method == 'combinado' and s.payment_entries_list %}
+              {% set plabels = {'dinheiro':'Dinheiro','cartao':'Cartão','cartao_credito':'Crédito','cartao_debito':'Débito','pix':'Pix','conta':'Conta','funcionario':'Funcionário'} %}
+              <div class="small lh-sm">
+                {% for e in s.payment_entries_list %}
+                <div><i class="bi bi-{{ icons.get(e.method, 'cash') }} me-1 opacity-75"></i>{{ plabels.get(e.method, e.method) }} <span class="text-muted">R$ {{ '%.2f'|format(e.amount) }}</span></div>
+                {% endfor %}
+              </div>
+            {% else %}
             <i class="bi bi-{{ icons.get(s.payment_method, 'cash') }} me-1"></i>
             {{ s.payment_label }}
+            {% endif %}
           </td>
           <td>
             <span class="badge {{ 'bg-info text-dark' if s.delivery_mode == 'entrega' else 'bg-secondary' }}">
