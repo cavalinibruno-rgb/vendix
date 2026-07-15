@@ -555,7 +555,7 @@ def _cols():
     """Colunas leves — exclui image_data para não trazer BYTEA na listagem."""
     return [Product.id, Product.name, Product.sale_price, Product.sale_price_card,
             Product.sale_price_event, Product.sale_price_cold, Product.sale_price_cold_card, Product.stock_quantity, Product.type_id, Product.brand_id,
-            Product.image_url, Product.pack_parent_id, Product.pack_qty,
+            Product.image_url, Product.pack_parent_id, Product.pack_qty, Product.sort_order,
             ((Product.image_data != None) | (Product.image_url != None)).label('has_image')]
 
 def _effective_stock(r, parent_stock_map):
@@ -627,6 +627,16 @@ def api_todos():
 
     tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
     marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
+
+    # Para lanchonetes: reordena por categoria (mesma lógica das abas) e sort_order do produto
+    if current_user.tenant and current_user.tenant.is_lanchonete:
+        tipos_obj = {t.id: t for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+        cat_pos = {t.id: i for i, t in enumerate(sorted(tipos_obj.values(), key=ordem_categorias_key))}
+        rows = sorted(rows, key=lambda r: (
+            cat_pos.get(r.type_id, 10**9),
+            r.sort_order if r.sort_order is not None else 10**9,
+            _sem_acentos(r.name)
+        ))
 
     # Busca thumbnails — R2 (URL) tem prioridade; BYTEA como fallback legado
     ids_com_img = [r.id for r in rows if r.has_image]

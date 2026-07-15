@@ -738,6 +738,7 @@ let bairros = [];
 let origem = 'loja';
 
 const EVENT_MODE = {{ 'true' if (event_mode and evento_visivel and not current_user.tenant.is_lanchonete) else 'false' }};
+const IS_LANCHONETE = {{ 'true' if current_user.tenant.is_lanchonete else 'false' }};
 const ACRESCIMO_CARTAO = {{ '%.2f'|format(acrescimo_cartao) }};  // acréscimo fixo no total ao pagar no cartão
 let todosProds = [];
 let produtosCache = {};
@@ -836,6 +837,33 @@ function renderCards(lista) {
   grid.innerHTML = '';
   if (!lista.length) {
     grid.innerHTML = '<div class="text-muted text-center py-5 col-span-all" style="grid-column:1/-1;">Nenhum produto encontrado</div>';
+    return;
+  }
+  // Lanchonete + "Todas as categorias": agrupa por categoria com cabeçalho
+  if (IS_LANCHONETE && catAtual === 'todas') {
+    let catAtualId = null;
+    lista.forEach(p => {
+      if (p.type_id !== catAtualId) {
+        catAtualId = p.type_id;
+        const hdr = document.createElement('div');
+        hdr.className = 'pdv-cat-header';
+        hdr.style.cssText = 'grid-column:1/-1;font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.07em;color:#c9a84c;padding:14px 4px 6px;border-bottom:1px solid #3a3a3a;margin-bottom:4px;';
+        hdr.textContent = p.type_name || 'Sem categoria';
+        grid.appendChild(hdr);
+      }
+      const card = document.createElement('div');
+      card.className = 'pdv-card';
+      card.onclick = () => abrirModalProd(p);
+      const imgHtml = p.thumbnail
+        ? `<div class="pdv-card-img-wrap"><img src="${p.thumbnail}" class="pdv-card-img" alt="${p.name}"></div>`
+        : `<div class="pdv-card-placeholder"><i class="bi bi-box-seam"></i></div>`;
+      card.innerHTML = `
+        ${imgHtml}
+        <div class="pdv-card-name" title="${p.name}">${p.name}</div>
+        <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
+      `;
+      grid.appendChild(card);
+    });
     return;
   }
   lista.forEach(p => {
