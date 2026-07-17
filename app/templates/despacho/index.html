@@ -180,7 +180,24 @@
           <td class="small text-muted">{{ (v.customer.phone if v.customer else None) or (po.cliente_tel if po else '—') or '—' }}</td>
           <td class="small text-muted">{{ po.endereco if po and po.endereco else (v.delivery_address or (v.customer.address if v.customer and v.customer.address else None) or '—') }}</td>
           <td><span class="badge bg-success">{{ v.motoboy_name or '—' }}</span></td>
-          <td><span class="badge bg-secondary">{{ v.payment_label }}</span></td>
+          <td>
+            {% set pm = v.payment_method %}
+            {% set icons = {'dinheiro':'cash','entrega_dinheiro':'cash','cartao_credito':'credit-card','entrega_cartao_credito':'credit-card','cartao_debito':'credit-card-2-back','entrega_cartao_debito':'credit-card-2-back','cartao':'credit-card','entrega_cartao':'credit-card','pix':'qr-code','entrega_pix':'qr-code','conta':'person-lines-fill','funcionario':'person-badge'} %}
+            {% set plabels = {'dinheiro':'Dinheiro','entrega_dinheiro':'Dinheiro','cartao_credito':'Crédito','entrega_cartao_credito':'Crédito','cartao_debito':'Débito','entrega_cartao_debito':'Débito','cartao':'Cartão','entrega_cartao':'Cartão','pix':'Pix','entrega_pix':'Pix','conta':'Conta','funcionario':'Funcionário'} %}
+            {% if pm == 'combinado' and v.payment_entries_list %}
+              <div class="small lh-sm">
+                {% for e in v.payment_entries_list %}
+                <div><i class="bi bi-{{ icons.get(e.method, 'cash') }} me-1 opacity-75"></i>{{ plabels.get(e.method, e.method) }} <span class="text-muted">R$ {{ '%.2f'|format(e.amount) }}</span></div>
+                {% endfor %}
+              </div>
+            {% elif pm in ('dinheiro','entrega_dinheiro') %}<span class="badge bg-success"><i class="bi bi-cash me-1"></i>Dinheiro</span>
+            {% elif pm in ('cartao_credito','entrega_cartao_credito') %}<span class="badge bg-primary"><i class="bi bi-credit-card me-1"></i>Crédito</span>
+            {% elif pm in ('cartao_debito','entrega_cartao_debito','cartao','entrega_cartao') %}<span class="badge bg-primary"><i class="bi bi-credit-card-2-back me-1"></i>Débito</span>
+            {% elif pm in ('pix','entrega_pix') %}<span class="badge bg-info text-dark"><i class="bi bi-qr-code me-1"></i>Pix</span>
+            {% elif pm == 'conta' %}<span class="badge bg-warning text-dark"><i class="bi bi-person-lines-fill me-1"></i>Conta</span>
+            {% elif pm == 'funcionario' %}<span class="badge bg-secondary"><i class="bi bi-person-badge me-1"></i>Funcionário</span>
+            {% else %}<span class="badge bg-secondary">{{ v.payment_label }}</span>{% endif %}
+          </td>
           <td class="text-end fw-semibold pe-4">R$ {{ '%.2f'|format(v.total) }}</td>
         </tr>
         {% else %}
