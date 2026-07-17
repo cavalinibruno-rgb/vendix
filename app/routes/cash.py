@@ -41,6 +41,24 @@ def diagnostico():
         ],
     })
 
+
+@cash_bp.route('/diagnostico/vincular/<int:caixa_id>/<int:emp_id>')
+@login_required
+def diagnostico_vincular(caixa_id, emp_id):
+    """TEMPORÁRIO: vincula um caixa aberto ao funcionário correto (corrige
+    caixa aberto com operator_employee_id errado/nulo)."""
+    caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid(), status='open').first()
+    if not caixa:
+        return jsonify({'erro': 'Caixa aberto não encontrado nesta loja.'}), 404
+    emp = Employee.query.filter_by(id=emp_id, tenant_id=tid()).first()
+    if not emp:
+        return jsonify({'erro': 'Funcionário não encontrado nesta loja.'}), 404
+    caixa.operator_employee_id = emp.id
+    caixa.operator_name = emp.name
+    db.session.commit()
+    return jsonify({'ok': True, 'caixa_id': caixa.id,
+                    'vinculado_a': {'emp_id': emp.id, 'nome': emp.name}})
+
 def _user_id():
     # Funcionários (EmployeeLoginProxy, id "e_<n>") não estão na tabela users;
     # colunas FK->users recebem None. A autoria fica nos campos *_name.
@@ -188,12 +206,21 @@ def abrir():
         flash('Usuário ou senha incorretos.', 'danger')
         return redirect(url_for('cash.index'))
 
-    # O tipo do caixa é determinado por quem está LOGADO, não pelo modo do formulário:
-    # - Funcionário logado (EmployeeLoginProxy): caixa vinculado ao funcionário
-    # - Lojista logado: caixa próprio do lojista (operator_employee_id sempre None)
-    uid = current_user.id
-    if isinstance(uid, str) and uid.startswith('e_'):
-        operator_employee_id = int(uid[2:])
+    # O caixa é vinculado ao DONO DAS CREDENCIAIS digitadas no formulário,
+    # independente de qual conta está logada no dispositivo:
+    # - Credenciais de funcionário: caixa vinculado ao funcionário (ele encontra
+    #   o próprio caixa em qualquer dispositivo logado com o login dele)
+    # - Credenciais do lojista: caixa próprio do lojista (operator_employee_id None)
+    emp_cred = Employee.query.filter_by(tenant_id=tid(), username=username).first()
+    if emp_cred and emp_cred.check_password(senha):
+        operator_employee_id = emp_cred.id
+        # Impede segundo caixa aberto para o mesmo funcionário
+        ja_aberto = CashRegister.query.filter_by(
+            tenant_id=tid(), status='open', operator_employee_id=emp_cred.id
+        ).first()
+        if ja_aberto:
+            flash(f'Já existe um caixa aberto para {emp_cred.name}.', 'warning')
+            return redirect(url_for('cash.index'))
     else:
         operator_employee_id = None
 
