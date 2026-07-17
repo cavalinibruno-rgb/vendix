@@ -1755,6 +1755,13 @@ function limparVenda() {
     renderCarrinho();
     calcTotais();
     irParaStep(0);
+
+    // Reativa o botão Finalizar para a próxima venda
+    const btnFin = document.getElementById('btnFinalizar');
+    if (btnFin) {
+      btnFin.disabled = false;
+      btnFin.innerHTML = '<i class="bi bi-check-circle me-2"></i>FINALIZAR VENDA';
+    }
   } catch(e) {
     console.error('[limparVenda]', e);
   }
