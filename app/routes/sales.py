@@ -379,6 +379,35 @@ def index():
     filtro_operador  = request.args.get('operador', '').strip()
     filtro_pagamento = request.args.get('pagamento', '').strip()
 
+    def _cond_pagamento():
+        from sqlalchemy import or_, and_
+        _direto = {
+            'dinheiro':    ['dinheiro', 'entrega_dinheiro'],
+            'credito':     ['cartao_credito', 'entrega_cartao_credito'],
+            'debito':      ['cartao_debito', 'entrega_cartao_debito', 'cartao', 'entrega_cartao'],
+            'pix':         ['pix', 'entrega_pix'],
+            'conta':       ['conta'],
+            'funcionario': ['funcionario'],
+        }
+        # strings que aparecem no JSON de payment_entries para cada forma
+        _json_keys = {
+            'dinheiro':    ['"dinheiro"'],
+            'credito':     ['"cartao_credito"'],
+            'debito':      ['"cartao_debito"', '"cartao"'],
+            'pix':         ['"pix"'],
+        }
+        vals = _direto.get(filtro_pagamento, [filtro_pagamento])
+        cond_direto = or_(*[Sale.payment_method == v for v in vals])
+        # combinado que contenha essa forma nas entries
+        json_keys = _json_keys.get(filtro_pagamento)
+        if json_keys:
+            cond_comb = and_(
+                Sale.payment_method == 'combinado',
+                or_(*[Sale.payment_entries.contains(k) for k in json_keys])
+            )
+            return or_(cond_direto, cond_comb)
+        return cond_direto
+
     # Lista de operadores com vendas no período (para o dropdown)
     operadores = [r[0] for r in db.session.query(Sale.cashier_name)
                   .filter(Sale.tenant_id == tid(), Sale.status == 'confirmed',
@@ -400,18 +429,7 @@ def index():
         if filtro_operador:
             q_busca = q_busca.filter(Sale.cashier_name == filtro_operador)
         if filtro_pagamento:
-            _pgto_map = {
-                'dinheiro':        ['dinheiro', 'entrega_dinheiro'],
-                'credito':         ['cartao_credito', 'entrega_cartao_credito'],
-                'debito':          ['cartao_debito', 'entrega_cartao_debito', 'cartao', 'entrega_cartao'],
-                'pix':             ['pix', 'entrega_pix'],
-                'conta':           ['conta'],
-                'funcionario':     ['funcionario'],
-                'combinado':       ['combinado'],
-            }
-            _vals = _pgto_map.get(filtro_pagamento, [filtro_pagamento])
-            from sqlalchemy import or_ as _or
-            q_busca = q_busca.filter(_or(*[Sale.payment_method == v for v in _vals]))
+            q_busca = q_busca.filter(_cond_pagamento())
         sales = q_busca.all() if num is not None else []
     else:
         q_periodo = Sale.query.filter(
@@ -423,18 +441,7 @@ def index():
         if filtro_operador:
             q_periodo = q_periodo.filter(Sale.cashier_name == filtro_operador)
         if filtro_pagamento:
-            _pgto_map = {
-                'dinheiro':        ['dinheiro', 'entrega_dinheiro'],
-                'credito':         ['cartao_credito', 'entrega_cartao_credito'],
-                'debito':          ['cartao_debito', 'entrega_cartao_debito', 'cartao', 'entrega_cartao'],
-                'pix':             ['pix', 'entrega_pix'],
-                'conta':           ['conta'],
-                'funcionario':     ['funcionario'],
-                'combinado':       ['combinado'],
-            }
-            _vals = _pgto_map.get(filtro_pagamento, [filtro_pagamento])
-            from sqlalchemy import or_ as _or2
-            q_periodo = q_periodo.filter(_or2(*[Sale.payment_method == v for v in _vals]))
+            q_periodo = q_periodo.filter(_cond_pagamento())
         sales = q_periodo.order_by(Sale.created_at.desc()).limit(limite).all()
 
     total_periodo = sum(s.total for s in sales)
