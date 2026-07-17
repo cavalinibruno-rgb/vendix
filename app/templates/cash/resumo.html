@@ -158,11 +158,14 @@
 <div class="card mb-4">
   <div class="card-header fw-semibold"><i class="bi bi-bar-chart-fill me-2 text-warning"></i>Vendas por Forma de Pagamento</div>
   <div class="card-body">
-    <div class="row g-3 align-items-center">
-      <div class="col-md-4" style="max-width:220px;">
-        <canvas id="graficoPgto"></canvas>
+    <div class="d-flex gap-4 align-items-flex-start flex-wrap">
+      <!-- Gráfico + legenda abaixo -->
+      <div style="width:200px;flex-shrink:0;">
+        <canvas id="graficoPgto" style="width:200px;height:200px;display:block;"></canvas>
+        <div id="legendaGrafico" style="margin-top:10px;font-size:.8rem;"></div>
       </div>
-      <div class="col-md-7">
+      <!-- Tabela -->
+      <div style="flex:1;min-width:260px;">
         <table class="table table-sm mb-0">
           <thead class="table-light">
             <tr><th>Forma</th><th class="text-end">Total</th><th class="text-end">%</th></tr>
@@ -275,7 +278,7 @@ const _TOTAL = {{ '%.2f'|format(total_sistema) }};
     },
     options: {
       plugins: {
-        legend: { position: 'bottom', labels: { color: '#ccc', font: { size: 12 } } },
+        legend: { display: false },
         tooltip: {
           callbacks: {
             label: ctx => ` R$ ${ctx.parsed.toFixed(2).replace('.', ',')} (${(_TOTAL > 0 ? ctx.parsed / _TOTAL * 100 : 0).toFixed(1)}%)`
@@ -284,6 +287,15 @@ const _TOTAL = {{ '%.2f'|format(total_sistema) }};
       },
       cutout: '60%',
     }
+  });
+
+  // Legenda abaixo do gráfico
+  const legenda = document.getElementById('legendaGrafico');
+  itens.forEach((c, i) => {
+    legenda.innerHTML += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <span style="width:12px;height:12px;border-radius:3px;background:${cores[i]};flex-shrink:0;display:inline-block;"></span>
+      <span style="color:#ccc;">${c.label}</span>
+    </div>`;
   });
 
   const tbody = document.getElementById('tabelaGrafico');
