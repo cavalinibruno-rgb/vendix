@@ -84,9 +84,13 @@ def _caixa_aberto():
     uid = current_user.id
     if isinstance(uid, str) and uid.startswith('e_'):
         emp_id = int(uid[2:])
-        return CashRegister.query.filter_by(
+        caixa = CashRegister.query.filter_by(
             tenant_id=tid(), status='open', operator_employee_id=emp_id
         ).first()
+        # fallback: qualquer caixa aberto da loja (caso operador_employee_id divergente)
+        if not caixa:
+            caixa = CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
+        return caixa
     return CashRegister.query.filter(
         CashRegister.tenant_id == tid(),
         CashRegister.status == 'open',
