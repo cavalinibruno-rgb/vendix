@@ -376,7 +376,8 @@ def index():
     limite = 15 if modo_restrito else 1000
 
     # Filtro por operador
-    filtro_operador = request.args.get('operador', '').strip()
+    filtro_operador  = request.args.get('operador', '').strip()
+    filtro_pagamento = request.args.get('pagamento', '').strip()
 
     # Lista de operadores com vendas no período (para o dropdown)
     operadores = [r[0] for r in db.session.query(Sale.cashier_name)
@@ -398,6 +399,19 @@ def index():
         )
         if filtro_operador:
             q_busca = q_busca.filter(Sale.cashier_name == filtro_operador)
+        if filtro_pagamento:
+            _pgto_map = {
+                'dinheiro':        ['dinheiro', 'entrega_dinheiro'],
+                'credito':         ['cartao_credito', 'entrega_cartao_credito'],
+                'debito':          ['cartao_debito', 'entrega_cartao_debito', 'cartao', 'entrega_cartao'],
+                'pix':             ['pix', 'entrega_pix'],
+                'conta':           ['conta'],
+                'funcionario':     ['funcionario'],
+                'combinado':       ['combinado'],
+            }
+            _vals = _pgto_map.get(filtro_pagamento, [filtro_pagamento])
+            from sqlalchemy import or_ as _or
+            q_busca = q_busca.filter(_or(*[Sale.payment_method == v for v in _vals]))
         sales = q_busca.all() if num is not None else []
     else:
         q_periodo = Sale.query.filter(
@@ -408,6 +422,19 @@ def index():
         )
         if filtro_operador:
             q_periodo = q_periodo.filter(Sale.cashier_name == filtro_operador)
+        if filtro_pagamento:
+            _pgto_map = {
+                'dinheiro':        ['dinheiro', 'entrega_dinheiro'],
+                'credito':         ['cartao_credito', 'entrega_cartao_credito'],
+                'debito':          ['cartao_debito', 'entrega_cartao_debito', 'cartao', 'entrega_cartao'],
+                'pix':             ['pix', 'entrega_pix'],
+                'conta':           ['conta'],
+                'funcionario':     ['funcionario'],
+                'combinado':       ['combinado'],
+            }
+            _vals = _pgto_map.get(filtro_pagamento, [filtro_pagamento])
+            from sqlalchemy import or_ as _or2
+            q_periodo = q_periodo.filter(_or2(*[Sale.payment_method == v for v in _vals]))
         sales = q_periodo.order_by(Sale.created_at.desc()).limit(limite).all()
 
     total_periodo = sum(s.total for s in sales)
@@ -423,6 +450,7 @@ def index():
         total_periodo=total_periodo,
         busca_pedido=busca_pedido,
         filtro_operador=filtro_operador,
+        filtro_pagamento=filtro_pagamento,
         operadores=operadores,
         modo_restrito=modo_restrito,
         limite=limite,

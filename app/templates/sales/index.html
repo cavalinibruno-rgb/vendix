@@ -75,6 +75,19 @@
         <input type="time" name="hora_ate" class="form-control form-control-sm" style="width:auto;"
                value="{{ hora_ate }}">
       </div>
+      <div>
+        <label class="fw-semibold small text-muted mb-1 d-block">Pagamento:</label>
+        <select name="pagamento" class="form-select form-select-sm" style="width:auto;">
+          <option value="">Todos</option>
+          <option value="dinheiro"    {% if filtro_pagamento == 'dinheiro'    %}selected{% endif %}>💵 Dinheiro</option>
+          <option value="pix"         {% if filtro_pagamento == 'pix'         %}selected{% endif %}>📱 Pix</option>
+          <option value="credito"     {% if filtro_pagamento == 'credito'     %}selected{% endif %}>💳 Crédito</option>
+          <option value="debito"      {% if filtro_pagamento == 'debito'      %}selected{% endif %}>💳 Débito</option>
+          <option value="conta"       {% if filtro_pagamento == 'conta'       %}selected{% endif %}>👤 Conta</option>
+          <option value="funcionario" {% if filtro_pagamento == 'funcionario' %}selected{% endif %}>🪪 Funcionário</option>
+          <option value="combinado"   {% if filtro_pagamento == 'combinado'   %}selected{% endif %}>🔀 Combinado</option>
+        </select>
+      </div>
       {% if operadores %}
       <div>
         <label class="fw-semibold small text-muted mb-1 d-block">Operador:</label>
