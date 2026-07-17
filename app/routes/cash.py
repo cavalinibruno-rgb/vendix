@@ -13,52 +13,6 @@ from sqlalchemy import func
 
 cash_bp = Blueprint('cash', __name__, url_prefix='/caixa')
 
-
-@cash_bp.route('/diagnostico')
-@login_required
-def diagnostico():
-    """TEMPORÁRIO: mostra login atual, funcionários e caixas abertos para
-    identificar divergência de operator_employee_id."""
-    uid = current_user.id
-    emp_id = int(uid[2:]) if isinstance(uid, str) and str(uid).startswith('e_') else None
-    emps = Employee.query.filter_by(tenant_id=tid()).all()
-    abertos = CashRegister.query.filter_by(tenant_id=tid(), status='open').all()
-    return jsonify({
-        'login_atual': {
-            'current_user_id': str(uid),
-            'emp_id_calculado': emp_id,
-            'tenant_id': tid(),
-            'display_name': getattr(current_user, 'display_name', None),
-            'username': getattr(current_user, 'username', None),
-        },
-        'funcionarios': [
-            {'id': e.id, 'username': e.username, 'name': e.name} for e in emps
-        ],
-        'caixas_abertos': [
-            {'id': c.id, 'operator_employee_id': c.operator_employee_id,
-             'operator_name': c.operator_name, 'opened_by': c.opened_by,
-             'opened_at': str(c.opened_at)} for c in abertos
-        ],
-    })
-
-
-@cash_bp.route('/diagnostico/vincular/<int:caixa_id>/<int:emp_id>')
-@login_required
-def diagnostico_vincular(caixa_id, emp_id):
-    """TEMPORÁRIO: vincula um caixa aberto ao funcionário correto (corrige
-    caixa aberto com operator_employee_id errado/nulo)."""
-    caixa = CashRegister.query.filter_by(id=caixa_id, tenant_id=tid(), status='open').first()
-    if not caixa:
-        return jsonify({'erro': 'Caixa aberto não encontrado nesta loja.'}), 404
-    emp = Employee.query.filter_by(id=emp_id, tenant_id=tid()).first()
-    if not emp:
-        return jsonify({'erro': 'Funcionário não encontrado nesta loja.'}), 404
-    caixa.operator_employee_id = emp.id
-    caixa.operator_name = emp.name
-    db.session.commit()
-    return jsonify({'ok': True, 'caixa_id': caixa.id,
-                    'vinculado_a': {'emp_id': emp.id, 'nome': emp.name}})
-
 def _user_id():
     # Funcionários (EmployeeLoginProxy, id "e_<n>") não estão na tabela users;
     # colunas FK->users recebem None. A autoria fica nos campos *_name.
