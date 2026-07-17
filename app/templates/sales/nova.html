@@ -1658,6 +1658,7 @@ function finalizarVenda() {
       .then(r=>r.json()).then(async d => {
         if (d.sale_id) {
           if (typeof showToast === 'function') showToast(`<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong>`);
+          try { if (window._vendixBC) window._vendixBC.postMessage('nova_venda'); } catch(e) {}
           if (window.electronAPI && window.electronAPI.printRaw) {
             const printer   = await getPrinterSelecionada();
             limparVenda();  // libera o PDV na hora; impressão em segundo plano
@@ -1713,6 +1714,7 @@ function finalizarVenda() {
   .then(async d => {
     if (d.sale_id) {
       if (typeof showToast === 'function') showToast(`<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Nova venda!</strong>`);
+      try { if (window._vendixBC) window._vendixBC.postMessage('nova_venda'); } catch(e) {}
       const url = `${window.location.origin}/vendas/${d.sale_id}/comprovante`;
       if (window.electronAPI && window.electronAPI.printRaw) {
         const printer   = await getPrinterSelecionada();
