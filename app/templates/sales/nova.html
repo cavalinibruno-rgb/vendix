@@ -1618,16 +1618,26 @@ function aviso(msg) {
 function finalizarVenda() {
   if (!carrinho.length) { aviso('Adicione pelo menos um produto.'); return; }
 
+  // Bloqueia o botão imediatamente para evitar duplo clique
+  const btnFin = document.getElementById('btnFinalizar');
+  if (btnFin.disabled) return;
+  btnFin.disabled = true;
+  btnFin.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Finalizando…';
+  const _reativar = () => {
+    btnFin.disabled = false;
+    btnFin.innerHTML = '<i class="bi bi-check-circle me-2"></i>FINALIZAR VENDA';
+  };
+
   if (modoCombinado) {
     const linhas = getLinhasCombinadas();
-    if (!linhas.length) { aviso('Adicione pelo menos uma forma de pagamento.'); return; }
+    if (!linhas.length) { aviso('Adicione pelo menos uma forma de pagamento.'); _reativar(); return; }
     const total = getTotal();
     const alocado = linhas.reduce((s, l) => s + l.amount, 0);
     if (Math.abs(alocado - total) > 0.01) {
-      aviso('O total das formas de pagamento (R$ ' + fmtNum(alocado) + ') não bate com o valor da venda (R$ ' + fmtNum(total) + ').'); return;
+      aviso('O total das formas de pagamento (R$ ' + fmtNum(alocado) + ') não bate com o valor da venda (R$ ' + fmtNum(total) + ').'); _reativar(); return;
     }
     if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
-      aviso('Informe o nome do app (iFood, Anotaí, etc.)'); return;
+      aviso('Informe o nome do app (iFood, Anotaí, etc.)'); _reativar(); return;
     }
     const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
     const subtotal = carrinho.reduce((s,i)=>s+i.total,0);
@@ -1658,22 +1668,22 @@ function finalizarVenda() {
             window.location.href = `/vendas/${d.sale_id}/comprovante?autoprint=1`;
           }
         }
-        else aviso('Erro: ' + (d.error || 'desconhecido'));
-      }).catch(()=>aviso('Erro ao finalizar venda.'));
+        else { aviso('Erro: ' + (d.error || 'desconhecido')); _reativar(); }
+      }).catch(()=>{ aviso('Erro ao finalizar venda.'); _reativar(); });
     return;
   }
 
-  if (!pgto) { aviso('Selecione a forma de pagamento.'); return; }
-  if (pgto === 'funcionario' && !selectedEmployeeId) { aviso('Selecione o funcionário.'); return; }
-  if (pgto === 'conta' && !clienteAtual) { aviso('Para lançar na Conta, selecione um cliente.'); return; }
+  if (!pgto) { aviso('Selecione a forma de pagamento.'); _reativar(); return; }
+  if (pgto === 'funcionario' && !selectedEmployeeId) { aviso('Selecione o funcionário.'); _reativar(); return; }
+  if (pgto === 'conta' && !clienteAtual) { aviso('Para lançar na Conta, selecione um cliente.'); _reativar(); return; }
   if (origem === 'app' && !document.getElementById('appNome').value.trim()) {
-    aviso('Informe o nome do app (iFood, Anotaí, etc.)'); return;
+    aviso('Informe o nome do app (iFood, Anotaí, etc.)'); _reativar(); return;
   }
   if (pgto === 'dinheiro' || pgto === 'entrega_dinheiro') {
     const recebido = parseFloat(document.getElementById('valorRecebido').value.replace(',', '.')) || 0;
     const total = carrinho.reduce((s, i) => s + i.total, 0)
                 + (modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0);
-    if (recebido < total) { aviso('Valor recebido menor que o total.'); return; }
+    if (recebido < total) { aviso('Valor recebido menor que o total.'); _reativar(); return; }
   }
 
   const taxa = modo === 'entrega' ? (parseFloat(document.getElementById('taxaEntrega').value) || 0) : 0;
@@ -1713,7 +1723,7 @@ function finalizarVenda() {
         window.location.href = url + '?autoprint=1';
       }
     }
-    else aviso('Erro: ' + (d.error || 'desconhecido'));
+    else { aviso('Erro: ' + (d.error || 'desconhecido')); _reativar(); }
   })
   .catch(() => aviso('Erro de comunicação ao finalizar venda.'));
 }
