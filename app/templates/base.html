@@ -715,13 +715,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // com carga no servidor — a 10s dobrava as requisições de fundo)
   setInterval(poll, 20000);
 
-  // BroadcastChannel: quando outra aba confirma uma venda, faz poll imediato
-  try {
-    const _bc = new BroadcastChannel('vendix_nova_venda');
-    _bc.onmessage = () => poll();
-    window._vendixBC = _bc;
-  } catch(e) {}
-
   // Expõe funções do modal para uso no onclick do HTML
   window.aceitarPedidoModal  = aceitarPedidoModal;
   window.recusarPedidoModal  = recusarPedidoModal;
