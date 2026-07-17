@@ -30,12 +30,9 @@ def caixa_aberto():
     uid = current_user.id
     if isinstance(uid, str) and uid.startswith('e_'):
         emp_id = int(uid[2:])
-        caixa = CashRegister.query.filter_by(
+        return CashRegister.query.filter_by(
             tenant_id=tid(), status='open', operator_employee_id=emp_id
         ).first()
-        if not caixa:
-            caixa = CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
-        return caixa
     return CashRegister.query.filter(
         CashRegister.tenant_id == tid(),
         CashRegister.status == 'open',
@@ -168,8 +165,7 @@ def abrir():
     # - Lojista logado: caixa próprio do lojista (operator_employee_id sempre None)
     uid = current_user.id
     if isinstance(uid, str) and uid.startswith('e_'):
-        emp = Employee.query.filter_by(tenant_id=tid(), username=username).first()
-        operator_employee_id = emp.id if emp else None
+        operator_employee_id = int(uid[2:])
     else:
         operator_employee_id = None
 

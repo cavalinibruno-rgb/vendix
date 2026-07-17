@@ -87,9 +87,8 @@ def _caixa_aberto():
         caixa = CashRegister.query.filter_by(
             tenant_id=tid(), status='open', operator_employee_id=emp_id
         ).first()
-        # fallback: qualquer caixa aberto da loja (caso operador_employee_id divergente)
-        if not caixa:
-            caixa = CashRegister.query.filter_by(tenant_id=tid(), status='open').first()
+        if caixa is None:
+            _log_caixa_nao_encontrado(uid, emp_id)
         return caixa
     return CashRegister.query.filter(
         CashRegister.tenant_id == tid(),
@@ -97,6 +96,29 @@ def _caixa_aberto():
         CashRegister.opened_by == uid,
         CashRegister.operator_employee_id == None,
     ).first()
+
+
+def _log_caixa_nao_encontrado(uid, emp_id):
+    """DIAGNÓSTICO: registra por que o caixa do funcionário não foi encontrado.
+    Ajuda a identificar bug intermitente 'Abra o caixa' com caixa visivelmente aberto."""
+    try:
+        from flask import current_app
+        abertos = CashRegister.query.filter_by(tenant_id=tid(), status='open').all()
+        detalhe = [
+            {'id': c.id, 'op_emp_id': c.operator_employee_id,
+             'op_name': c.operator_name, 'opened_by': c.opened_by}
+            for c in abertos
+        ]
+        current_app.logger.warning(
+            f'[DIAG_CAIXA] Caixa NAO encontrado | user_id={uid} emp_id={emp_id} '
+            f'tenant={tid()} | caixas_abertos_na_loja={detalhe}'
+        )
+    except Exception as _e:
+        try:
+            from flask import current_app
+            current_app.logger.error(f'[DIAG_CAIXA] falha ao logar: {_e}')
+        except Exception:
+            pass
 
 @sales_bp.route('/nova')
 @login_required
