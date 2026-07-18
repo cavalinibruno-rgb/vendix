@@ -59,30 +59,34 @@ def _calcular_dre(inicio_str, fim_str):
     inicio = datetime.strptime(inicio_str, '%Y-%m-%d')
     fim    = datetime.strptime(fim_str,    '%Y-%m-%d').replace(hour=23, minute=59, second=59)
 
-    # Vendas ativas no período
-    vendas = Sale.query.filter(
-        Sale.tenant_id == tid(),
-        Sale.status.in_(['confirmed', 'cancelled']),
-        Sale.created_at >= inicio,
-        Sale.created_at <= fim,
-    ).all()
+    # Agregações direto no banco (evita carregar todas as vendas + N+1 nos itens)
+    from sqlalchemy import func
 
-    # Vendas arquivadas no mesmo período
-    vendas_arq = SaleArchive.query.filter(
-        SaleArchive.tenant_id == tid(),
-        SaleArchive.status.in_(['confirmed', 'cancelled']),
-        SaleArchive.created_at >= inicio,
-        SaleArchive.created_at <= fim,
-    ).all()
+    def _tot_por_status(model):
+        """{status: (soma_total, qtd)} para o período."""
+        rows = db.session.query(
+            model.status, func.coalesce(func.sum(model.total), 0.0), func.count(model.id)
+        ).filter(
+            model.tenant_id == tid(),
+            model.status.in_(['confirmed', 'cancelled']),
+            model.created_at >= inicio,
+            model.created_at <= fim,
+        ).group_by(model.status).all()
+        return {s: (float(t), int(q)) for s, t, q in rows}
 
-    confirmadas     = [v for v in vendas if v.status == 'confirmed']
-    canceladas      = [v for v in vendas if v.status == 'cancelled']
-    confirmadas_arq = [v for v in vendas_arq if v.status == 'confirmed']
-    canceladas_arq  = [v for v in vendas_arq if v.status == 'cancelled']
+    tot_ativo = _tot_por_status(Sale)
+    tot_arq   = _tot_por_status(SaleArchive)
 
-    receita_bruta      = sum(v.total for v in vendas) + sum(v.total for v in vendas_arq)
-    deducao_cancelados = sum(v.total for v in canceladas) + sum(v.total for v in canceladas_arq)
-    base_imposto       = sum(v.total for v in confirmadas) + sum(v.total for v in confirmadas_arq)
+    def _soma(status):
+        return tot_ativo.get(status, (0.0, 0))[0] + tot_arq.get(status, (0.0, 0))[0]
+
+    def _qtd(status):
+        return tot_ativo.get(status, (0.0, 0))[1] + tot_arq.get(status, (0.0, 0))[1]
+
+    receita_bruta      = _soma('confirmed') + _soma('cancelled')
+    deducao_cancelados = _soma('cancelled')
+    base_imposto       = _soma('confirmed')
+    qtd_vendas_total   = _qtd('confirmed') + _qtd('cancelled')
 
     impostos_detalhado, total_impostos, reduz_receita = _calcular_impostos(regime, cfg, base_imposto)
 
@@ -93,25 +97,29 @@ def _calcular_dre(inicio_str, fim_str):
     # Para MEI o DAS entra como despesa extra, não reduz receita
     das_mei = total_impostos if regime == 'mei' else 0
 
-    # CMV — vendas ativas
-    _produto_cache = {}
-    def _custo_item(item):
-        if item.cost_price:
-            return item.cost_price
-        if item.product_id:
-            if item.product_id not in _produto_cache:
-                _produto_cache[item.product_id] = Product.query.get(item.product_id)
-            p = _produto_cache[item.product_id]
-            return (p.cost_price or 0) if p else 0
-        return 0
+    # CMV — vendas ativas: agregado em SQL. NULLIF(cost_price,0) faz o item sem
+    # custo gravado cair no custo atual do produto (mesma regra de antes).
+    cmv = float(db.session.query(
+        func.coalesce(func.sum(
+            func.coalesce(func.nullif(SaleItem.cost_price, 0), Product.cost_price, 0)
+            * SaleItem.quantity
+        ), 0.0)
+    ).select_from(SaleItem)
+     .join(Sale, SaleItem.sale_id == Sale.id)
+     .outerjoin(Product, SaleItem.product_id == Product.id)
+     .filter(
+        Sale.tenant_id == tid(), Sale.status == 'confirmed',
+        Sale.created_at >= inicio, Sale.created_at <= fim,
+     ).scalar() or 0)
 
-    cmv = sum(_custo_item(item) * item.quantity for v in confirmadas for item in v.items)
-
-    # CMV — vendas arquivadas (itens em JSON)
+    # CMV — vendas arquivadas (itens em JSON): busca só a coluna items_json
     import json as _json
-    for v in confirmadas_arq:
+    for (items_json,) in db.session.query(SaleArchive.items_json).filter(
+        SaleArchive.tenant_id == tid(), SaleArchive.status == 'confirmed',
+        SaleArchive.created_at >= inicio, SaleArchive.created_at <= fim,
+    ).all():
         try:
-            items = _json.loads(v.items_json or '[]')
+            items = _json.loads(items_json or '[]')
             cmv += sum((i.get('cost_price') or 0) * i.get('quantity', 1) for i in items)
         except Exception:
             pass
@@ -152,7 +160,7 @@ def _calcular_dre(inicio_str, fim_str):
         por_categoria=por_categoria,
         resultado_liquido=resultado_liquido,
         categorias=CATEGORIAS,
-        qtd_vendas=len(vendas) + len(vendas_arq),
+        qtd_vendas=qtd_vendas_total,
     )
 
 @dre_bp.route('/')
@@ -207,35 +215,47 @@ def faturamento():
     inicio_dt = datetime.combine(ini, datetime.min.time())
     fim_dt    = datetime.combine(fim, datetime.max.time())
 
-    vendas = Sale.query.filter(
+    # Agregações direto no banco (evita carregar todas as vendas + N+1 nos itens)
+    from sqlalchemy import func
+    fat_ativo, qtd_ativo = db.session.query(
+        func.coalesce(func.sum(Sale.total), 0.0), func.count(Sale.id)
+    ).filter(
         Sale.tenant_id == tid(), Sale.status == 'confirmed',
         Sale.created_at >= inicio_dt, Sale.created_at <= fim_dt,
-    ).all()
-    vendas_arq = SaleArchive.query.filter(
+    ).first()
+    fat_arq, qtd_arq = db.session.query(
+        func.coalesce(func.sum(SaleArchive.total), 0.0), func.count(SaleArchive.id)
+    ).filter(
         SaleArchive.tenant_id == tid(), SaleArchive.status == 'confirmed',
         SaleArchive.created_at >= inicio_dt, SaleArchive.created_at <= fim_dt,
-    ).all()
+    ).first()
 
-    faturamento = sum(v.total for v in vendas) + sum(v.total for v in vendas_arq)
-    qtd = len(vendas) + len(vendas_arq)
+    faturamento = float(fat_ativo) + float(fat_arq)
+    qtd = int(qtd_ativo) + int(qtd_arq)
 
-    # Custo (CMV): usa o custo gravado no item; senão, o custo atual do produto
-    _cache = {}
-    def _custo_item(item):
-        if item.cost_price:
-            return item.cost_price
-        if item.product_id:
-            if item.product_id not in _cache:
-                _cache[item.product_id] = Product.query.get(item.product_id)
-            p = _cache[item.product_id]
-            return (p.cost_price or 0) if p else 0
-        return 0
+    # Custo (CMV): usa o custo gravado no item; senão, o custo atual do produto.
+    # NULLIF(cost_price,0) → cai no COALESCE com o custo do produto quando zerado.
+    custo = float(db.session.query(
+        func.coalesce(func.sum(
+            func.coalesce(func.nullif(SaleItem.cost_price, 0), Product.cost_price, 0)
+            * SaleItem.quantity
+        ), 0.0)
+    ).select_from(SaleItem)
+     .join(Sale, SaleItem.sale_id == Sale.id)
+     .outerjoin(Product, SaleItem.product_id == Product.id)
+     .filter(
+        Sale.tenant_id == tid(), Sale.status == 'confirmed',
+        Sale.created_at >= inicio_dt, Sale.created_at <= fim_dt,
+     ).scalar() or 0)
 
-    custo = sum(_custo_item(i) * i.quantity for v in vendas for i in v.items)
+    # Arquivadas: itens em JSON — busca só a coluna items_json
     import json as _json
-    for v in vendas_arq:
+    for (items_json,) in db.session.query(SaleArchive.items_json).filter(
+        SaleArchive.tenant_id == tid(), SaleArchive.status == 'confirmed',
+        SaleArchive.created_at >= inicio_dt, SaleArchive.created_at <= fim_dt,
+    ).all():
         try:
-            for i in _json.loads(v.items_json or '[]'):
+            for i in _json.loads(items_json or '[]'):
                 custo += (i.get('cost_price') or 0) * i.get('quantity', 1)
         except Exception:
             pass
