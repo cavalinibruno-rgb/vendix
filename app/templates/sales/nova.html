@@ -1725,7 +1725,7 @@ function finalizarVenda() {
     }
     else { aviso('Erro: ' + (d.error || 'desconhecido')); _reativar(); }
   })
-  .catch(() => aviso('Erro de comunicação ao finalizar venda.'));
+  .catch(() => { aviso('Erro de comunicação ao finalizar venda.'); _reativar(); });
 }
 
 // ── Reset PDV após venda (Electron) ───────────────────
