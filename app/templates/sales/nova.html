@@ -1658,8 +1658,8 @@ function finalizarVenda() {
       .then(r=>r.json()).then(async d => {
         if (d.sale_id) {
           if (window.electronAPI && window.electronAPI.printRaw) {
+            limparVenda();  // libera o PDV imediatamente, antes de qualquer await
             const printer   = await getPrinterSelecionada();
-            limparVenda();  // libera o PDV na hora; impressão em segundo plano
             const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
             window.electronAPI.printRaw(escposUrl, printer)
               .then(r => { if (r && !r.ok) alert('Erro na impressão:\n' + r.error); })
@@ -1713,8 +1713,8 @@ function finalizarVenda() {
     if (d.sale_id) {
       const url = `${window.location.origin}/vendas/${d.sale_id}/comprovante`;
       if (window.electronAPI && window.electronAPI.printRaw) {
+        limparVenda();  // libera o PDV imediatamente, antes de qualquer await
         const printer   = await getPrinterSelecionada();
-        limparVenda();  // libera o PDV na hora; a impressão segue em segundo plano
         const escposUrl = `${window.location.origin}/vendas/${d.sale_id}/escpos`;
         window.electronAPI.printRaw(escposUrl, printer)
           .then(r => { if (r && !r.ok) alert('Erro na impressão:\n' + r.error); })
