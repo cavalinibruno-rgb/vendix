@@ -78,6 +78,7 @@ def index():
     filtro_tipo      = request.args.get('mov_tipo', '')
     filtro_data      = request.args.get('mov_data', '')
     filtro_operador  = request.args.get('mov_operador', '')
+    filtro_produto   = request.args.get('mov_produto', '').strip()
 
     mov_query = StockMovement.query.filter_by(tenant_id=tid())
     if filtro_tipo:
@@ -90,7 +91,9 @@ def index():
             pass
     if filtro_operador:
         mov_query = mov_query.filter(StockMovement.user_name == filtro_operador)
-    movimentos = mov_query.order_by(StockMovement.created_at.desc()).limit(100).all()
+    if filtro_produto:
+        mov_query = mov_query.filter(StockMovement.product_name.ilike(f'%{filtro_produto}%'))
+    movimentos = mov_query.order_by(StockMovement.created_at.desc()).limit(200).all()
 
     # Operadores com movimentações (para dropdown)
     operadores_mov = [r[0] for r in db.session.query(StockMovement.user_name)
@@ -103,7 +106,8 @@ def index():
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
         marcas=marcas, marca_id=marca_id, todos_produtos=todos_produtos,
         movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
-        filtro_operador=filtro_operador, operadores_mov=operadores_mov,
+        filtro_operador=filtro_operador, filtro_produto=filtro_produto,
+        operadores_mov=operadores_mov,
         eff_stock=eff_stock, eff_min=eff_min,
     )
 
