@@ -250,47 +250,60 @@ async function toggleOnline(btn, productId) {
 (function() {
   const tbody = document.querySelector('tbody');
   let draggingRow = null;
+  let overRow = null;
+  let lastInsertRef = null;  // evita insertBefore repetido no mesmo alvo
 
   function visivel(tr) {
     return tr.dataset.id && tr.style.display !== 'none';
+  }
+
+  function resetar() {
+    if (draggingRow) { draggingRow.style.opacity = ''; draggingRow = null; }
+    if (overRow) { overRow.classList.remove('drag-over'); overRow = null; }
+    lastInsertRef = null;
   }
 
   tbody.addEventListener('dragstart', e => {
     const row = e.target.closest('tr[draggable]');
     if (!row || !visivel(row)) return;
     draggingRow = row;
-    setTimeout(() => row.style.opacity = '0.4', 0);
+    setTimeout(() => { if (draggingRow) draggingRow.style.opacity = '0.4'; }, 0);
     e.dataTransfer.effectAllowed = 'move';
   });
 
-  tbody.addEventListener('dragend', () => {
-    if (draggingRow) { draggingRow.style.opacity = ''; draggingRow = null; }
-    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
-  });
+  tbody.addEventListener('dragend', () => { salvarOrdem(); resetar(); });
+
+  // Fallback: mouseup garante reset mesmo se dragend não disparar (Electron)
+  document.addEventListener('mouseup', () => { if (draggingRow) resetar(); });
 
   tbody.addEventListener('dragover', e => {
     e.preventDefault();
     if (!draggingRow) return;
     const row = e.target.closest('tr[draggable]');
     if (!row || row === draggingRow || !visivel(row)) return;
-    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
-    row.classList.add('drag-over');
+
+    // Atualiza highlight sem tocar em todos os trs
+    if (row !== overRow) {
+      if (overRow) overRow.classList.remove('drag-over');
+      row.classList.add('drag-over');
+      overRow = row;
+    }
+
+    // Decide ponto de inserção
     const mid = row.getBoundingClientRect().top + row.offsetHeight / 2;
-    // Insere apenas entre linhas visíveis — encontra o ponto de inserção correto
-    if (e.clientY < mid) {
-      // Inserir antes de `row`, mas após a última linha oculta que precede `row`
-      tbody.insertBefore(draggingRow, row);
-    } else {
-      // Inserir após `row`, antes da próxima linha visível
-      let next = row.nextElementSibling;
-      while (next && !visivel(next)) next = next.nextElementSibling;
-      if (next) tbody.insertBefore(draggingRow, next);
+    const insertRef = e.clientY < mid ? row : (row.nextElementSibling || null);
+
+    // Só move o DOM se o ponto de inserção mudou
+    if (insertRef !== lastInsertRef) {
+      lastInsertRef = insertRef;
+      if (insertRef) tbody.insertBefore(draggingRow, insertRef);
       else tbody.appendChild(draggingRow);
     }
   });
 
-  tbody.addEventListener('drop', e => {
-    e.preventDefault();
+  tbody.addEventListener('drop', e => { e.preventDefault(); });
+
+  function salvarOrdem() {
     const ids = Array.from(tbody.querySelectorAll('tr[data-id]'))
                      .filter(visivel)
                      .map(r => r.dataset.id);
@@ -301,7 +314,7 @@ async function toggleOnline(btn, productId) {
     }).then(r => {
       if (!r.ok) console.error('Reordenar falhou', r.status);
     }).catch(err => console.error('Reordenar erro', err));
-  });
+  }
 })();
 </script>
 <style>
