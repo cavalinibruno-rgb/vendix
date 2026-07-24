@@ -828,12 +828,11 @@ function aplicarFiltros() {
   if (catAtual !== 'todas')   lista = lista.filter(p => p.type_id == catAtual);
   if (marcaAtual !== 'todas') lista = lista.filter(p => p.brand_id == marcaAtual);
   if (q) {
-    // Busca por múltiplos termos em qualquer ordem; inclui a composição do combo.
+    // Busca por múltiplos termos em qualquer ordem, apenas no nome do produto.
     // Ex.: "combo red" acha "[COMBO 1] - Red Label 1lt - Gelo Filtrado".
     const termos = q.split(/\s+/).filter(Boolean);
     lista = lista.filter(p => {
-      let hay = _semAcento(p.name);
-      if (p.combo_items) hay += ' ' + p.combo_items.map(c => _semAcento(c.name)).join(' ');
+      const hay = _semAcento(p.name);
       return termos.every(t => hay.includes(t));
     });
   }
