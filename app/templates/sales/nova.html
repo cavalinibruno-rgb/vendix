@@ -848,8 +848,10 @@ document.getElementById('produtoSearch').addEventListener('input', function() {
 
 function comboResumo(p) {
   if (!p.combo_items || !p.combo_items.length) return '';
-  const txt = p.combo_items.map(c => `${+c.qty}x ${c.name}`).join(' + ');
-  return `<div class="pdv-card-combo" title="${txt}">${txt}</div>`;
+  const linhas = p.combo_items.map(c => `${+c.qty}x ${c.name}`);
+  return `<div class="pdv-card-combo" title="${linhas.join(', ')}">`
+       + linhas.map(l => `<div>${l}</div>`).join('')
+       + `</div>`;
 }
 
 function renderCards(lista) {
