@@ -85,7 +85,7 @@
           <td><span class="badge bg-secondary-subtle text-secondary">{{ p.type.name if p.type else '—' }}</span></td>
           <td><span class="badge bg-primary-subtle text-primary">{{ p.brand.name if p.brand else '—' }}</span></td>
           <td class="text-success fw-semibold">R$ {{ '%.2f' | format(p.sale_price) }}</td>
-          <td class="text-muted small">R$ {{ '%.2f' | format(p.cost_price) }}</td>
+          <td class="text-muted small">R$ {{ '%.2f' | format(eff_cost(p)) }}</td>
           <td>
             {% set es = eff_stock(p) %}
             {% set ms = eff_min(p) %}

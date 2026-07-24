@@ -240,11 +240,13 @@ def index():
     parent_ids = {p.pack_parent_id for p in products if p.pack_parent_id}
     parent_stock_map = {}
     parent_min_map   = {}
+    parent_cost_map  = {}
     if parent_ids:
         for pr in Product.query.filter(Product.id.in_(parent_ids)).with_entities(
-                Product.id, Product.stock_quantity, Product.min_stock).all():
+                Product.id, Product.stock_quantity, Product.min_stock, Product.cost_price).all():
             parent_stock_map[pr.id] = pr.stock_quantity
             parent_min_map[pr.id]   = pr.min_stock
+            parent_cost_map[pr.id]  = pr.cost_price or 0
 
     def eff_stock(p):
         if p.pack_parent_id and p.pack_qty:
@@ -256,9 +258,15 @@ def index():
             return parent_min_map.get(p.pack_parent_id, 0) // p.pack_qty
         return p.min_stock
 
+    def eff_cost(p):
+        # Pack: custo = custo do unitário-pai × quantidade (estoque compartilhado)
+        if p.pack_parent_id and p.pack_qty:
+            return parent_cost_map.get(p.pack_parent_id, 0) * p.pack_qty
+        return p.cost_price or 0
+
     return render_template('products/index.html', products=products, types=types, brands=brands,
                            q=q, tipo_id=tipo_id, marca_id=marca_id,
-                           eff_stock=eff_stock, eff_min=eff_min)
+                           eff_stock=eff_stock, eff_min=eff_min, eff_cost=eff_cost)
 
 @products_bp.route('/novo', methods=['GET', 'POST'])
 @login_required
@@ -411,6 +419,10 @@ def editar(product_id):
         if product.pack_parent_id is None and not combo_components:
             db.session.flush()  # garante product.id e campos atualizados
             nomes_packs = _criar_packs(product, _coletar_packs_form())
+            # Propaga o custo unitário aos packs filhos (custo = unitário × qtd)
+            for pk in Product.query.filter_by(pack_parent_id=product.id).all():
+                if pk.pack_qty:
+                    pk.cost_price = (product.cost_price or 0) * pk.pack_qty
 
         db.session.commit()
         if nomes_packs:

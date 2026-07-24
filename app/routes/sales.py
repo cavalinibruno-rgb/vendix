@@ -14,6 +14,18 @@ import json as _json
 sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
 
 
+def _custo_efetivo(prod):
+    """Custo do produto. Para packs (estoque compartilhado), o custo é o do
+    produto unitário-pai multiplicado pela quantidade do pack."""
+    if not prod:
+        return 0
+    if prod.pack_parent_id and prod.pack_qty:
+        parent = Product.query.filter_by(id=prod.pack_parent_id).first()
+        base = (parent.cost_price or 0) if parent else (prod.cost_price or 0)
+        return base * prod.pack_qty
+    return prod.cost_price or 0
+
+
 def _get_sale_or_archive(sale_id, tenant_id):
     """Busca venda ativa; se não achar, reconstrói a partir do arquivo."""
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tenant_id).first()
@@ -262,7 +274,7 @@ def confirmar():
             product_id   = pid,
             product_name = i['name'],
             unit_price   = unit_price_srv,
-            cost_price   = (prod.cost_price or 0) if prod else 0,
+            cost_price   = _custo_efetivo(prod) if prod else 0,
             quantity     = qty,
             total        = unit_price_srv * qty,
         )
