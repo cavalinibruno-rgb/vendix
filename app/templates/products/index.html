@@ -76,8 +76,7 @@
       <tbody>
         {% for p in products %}
         <tr id="prod-{{ p.id }}" data-id="{{ p.id }}" data-name="{{ p.name|lower }}" data-type="{{ p.type_id or '' }}"
-            data-brand="{{ p.brand_id or '' }}" data-brand-name="{{ p.brand.name if p.brand else '' }}"
-            draggable="true">
+            data-brand="{{ p.brand_id or '' }}" data-brand-name="{{ p.brand.name if p.brand else '' }}">
           <td class="ps-4 drag-handle" style="cursor:grab;color:#aaa;user-select:none;">
             <i class="bi bi-grip-vertical"></i>
           </td>
@@ -131,6 +130,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <style>
   tr.prod-destaque { animation: prodFlash 2s ease; }
   @keyframes prodFlash {
@@ -246,79 +246,50 @@ async function toggleOnline(btn, productId) {
   btn.disabled = false;
 }
 
-/* ── Drag-and-drop para reordenar produtos ── */
+/* ── Drag-and-drop para reordenar produtos (SortableJS) ── */
 (function() {
   const tbody = document.querySelector('tbody');
-  let draggingRow = null;
-  let overRow = null;
-  let lastInsertRef = null;  // evita insertBefore repetido no mesmo alvo
+  if (!tbody || typeof Sortable === 'undefined') return;
 
-  function visivel(tr) {
-    return tr.dataset.id && tr.style.display !== 'none';
-  }
-
-  function resetar() {
-    if (draggingRow) { draggingRow.style.opacity = ''; draggingRow = null; }
-    if (overRow) { overRow.classList.remove('drag-over'); overRow = null; }
-    lastInsertRef = null;
-  }
-
-  tbody.addEventListener('dragstart', e => {
-    const row = e.target.closest('tr[draggable]');
-    if (!row || !visivel(row)) return;
-    draggingRow = row;
-    setTimeout(() => { if (draggingRow) draggingRow.style.opacity = '0.4'; }, 0);
-    e.dataTransfer.effectAllowed = 'move';
+  Sortable.create(tbody, {
+    handle: '.drag-handle',
+    draggable: 'tr[data-id]',
+    animation: 150,
+    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    ghostClass: 'drag-ghost',
+    chosenClass: 'drag-chosen',
+    dragClass: 'drag-dragging',
+    forceFallback: true,        // evita bugs de cursor preso no Electron
+    fallbackTolerance: 4,
+    scroll: true,
+    scrollSensitivity: 80,
+    scrollSpeed: 12,
+    onEnd: salvarOrdem
   });
 
-  tbody.addEventListener('dragend', () => { salvarOrdem(); resetar(); });
-
-  // Fallback: mouseup garante reset mesmo se dragend não disparar (Electron)
-  document.addEventListener('mouseup', () => { if (draggingRow) resetar(); });
-
-  tbody.addEventListener('dragover', e => {
-    e.preventDefault();
-    if (!draggingRow) return;
-    const row = e.target.closest('tr[draggable]');
-    if (!row || row === draggingRow || !visivel(row)) return;
-
-    // Atualiza highlight sem tocar em todos os trs
-    if (row !== overRow) {
-      if (overRow) overRow.classList.remove('drag-over');
-      row.classList.add('drag-over');
-      overRow = row;
-    }
-
-    // Decide ponto de inserção
-    const mid = row.getBoundingClientRect().top + row.offsetHeight / 2;
-    const insertRef = e.clientY < mid ? row : (row.nextElementSibling || null);
-
-    // Só move o DOM se o ponto de inserção mudou
-    if (insertRef !== lastInsertRef) {
-      lastInsertRef = insertRef;
-      if (insertRef) tbody.insertBefore(draggingRow, insertRef);
-      else tbody.appendChild(draggingRow);
-    }
-  });
-
-  tbody.addEventListener('drop', e => { e.preventDefault(); });
-
+  let salvando = false;
   function salvarOrdem() {
-    const ids = Array.from(tbody.querySelectorAll('tr[data-id]'))
-                     .filter(visivel)
-                     .map(r => r.dataset.id);
+    if (salvando) return;
+    salvando = true;
+    const ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(r => r.dataset.id);
     fetch('{{ url_for("products.reordenar") }}', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
       body: JSON.stringify({ ids })
     }).then(r => {
       if (!r.ok) console.error('Reordenar falhou', r.status);
-    }).catch(err => console.error('Reordenar erro', err));
+    }).catch(err => console.error('Reordenar erro', err))
+      .finally(() => { salvando = false; });
   }
 })();
 </script>
 <style>
-tr.drag-over { outline: 2px solid #c9a84c; background: rgba(201,168,76,.08); }
-tr[draggable] .drag-handle:hover { color: #c9a84c !important; }
+/* SortableJS */
+.drag-handle:hover { color: #c9a84c !important; }
+.drag-handle:active { cursor: grabbing; }
+tr.drag-ghost { opacity: .35; background: rgba(201,168,76,.12) !important; }
+tr.drag-ghost td { border-top: 2px solid #c9a84c; border-bottom: 2px solid #c9a84c; }
+tr.drag-chosen { background: rgba(201,168,76,.06); }
+tr.drag-dragging { opacity: 1; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
 </style>
 {% endblock %}
