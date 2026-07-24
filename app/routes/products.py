@@ -135,6 +135,90 @@ def _gerar_thumbnail(image_bytes, size=(80, 80), quality=55):
     import base64
     return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
 
+def _salvar_foto_produto(prod, file_field):
+    """Salva a foto enviada no campo `file_field` no produto `prod`."""
+    foto = request.files.get(file_field)
+    if not (foto and foto.filename):
+        return
+    try:
+        img_bytes, mime = _comprimir_imagem(foto)
+        key = r2.unique_key('produtos', '.jpg')
+        try:
+            prod.image_url = r2.upload(img_bytes, key, mime, long_cache=True)
+            prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+        except Exception:
+            prod.image_data = img_bytes
+            prod.image_mime = mime
+            prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
+    except ValueError as e:
+        flash(str(e), 'danger')
+    except Exception:
+        flash('Erro ao processar imagem. Verifique o arquivo e tente novamente.', 'danger')
+
+def _coletar_packs_form():
+    """Lê os campos packs[i][...] do formulário e retorna a lista de packs válidos."""
+    packs_data = []
+    i = 0
+    while True:
+        qty_str = request.form.get(f'packs[{i}][qty]')
+        if qty_str is None:
+            break
+        qty = int(qty_str or 0)
+        if qty > 1:
+            termo = request.form.get(f'packs[{i}][termo]', 'Pack').strip() or 'Pack'
+            if termo not in ('Pack', 'Caixa', 'Maço'):
+                termo = 'Pack'
+            packs_data.append({
+                'qty':        qty,
+                'termo':      termo,
+                'preco':      float(request.form.get(f'packs[{i}][preco]', 0) or 0),
+                'preco_card': float(request.form.get(f'packs[{i}][preco_card]', 0) or 0),
+                'preco_event':float(request.form.get(f'packs[{i}][preco_event]', 0) or 0),
+                'preco_cold':      float(request.form.get(f'packs[{i}][preco_cold]', 0) or 0),
+                'preco_cold_card': float(request.form.get(f'packs[{i}][preco_cold_card]', 0) or 0),
+                'foto_key':   f'packs[{i}][foto]',
+            })
+        i += 1
+    return packs_data
+
+def _nome_pack(termo, qty, nome_base):
+    """Maço → 'Maço de {nome}'; Pack/Caixa → '{termo} c/ {N} {nome}'."""
+    if termo == 'Maço':
+        return f'Maço de {nome_base}'
+    return f'{termo} c/ {qty} {nome_base}'
+
+def _criar_packs(parent, packs_data):
+    """Cria produtos-pack vinculados a `parent` (estoque compartilhado)."""
+    nomes = []
+    for pd in packs_data:
+        nome = _nome_pack(pd['termo'], pd['qty'], parent.name)
+        pack = Product(
+            tenant_id        = parent.tenant_id,
+            type_id          = parent.type_id,
+            brand_id         = parent.brand_id,
+            name             = nome,
+            description      = f'{pd["termo"]} com {pd["qty"]} unidades de {parent.name}.',
+            sale_price       = pd['preco'],
+            sale_price_card  = pd['preco_card'],
+            sale_price_event = pd['preco_event'],
+            sale_price_cold      = pd['preco_cold'],
+            sale_price_cold_card = pd['preco_cold_card'],
+            cost_price           = (parent.cost_price or 0) * pd['qty'],
+            stock_quantity   = 0,
+            min_stock        = 0,
+            pack_parent_id   = parent.id,
+            pack_qty         = pd['qty'],
+        )
+        db.session.add(pack)
+        db.session.flush()
+        last_num = db.session.query(db.func.max(Product.product_number)).filter(
+            Product.tenant_id == parent.tenant_id, Product.id != pack.id
+        ).scalar() or 0
+        pack.product_number = last_num + 1
+        _salvar_foto_produto(pack, pd['foto_key'])
+        nomes.append(nome)
+    return nomes
+
 @products_bp.route('/')
 @login_required
 def index():
@@ -237,52 +321,12 @@ def novo():
         ).scalar() or 0
         product.product_number = last_num + 1
 
-        def _salvar_foto(prod, file_field):
-            foto = request.files.get(file_field)
-            if foto and foto.filename:
-                try:
-                    img_bytes, mime = _comprimir_imagem(foto)
-                    key = r2.unique_key('produtos', '.jpg')
-                    try:
-                        prod.image_url = r2.upload(img_bytes, key, mime, long_cache=True)
-                        prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
-                    except Exception:
-                        prod.image_data = img_bytes
-                        prod.image_mime = mime
-                        prod.thumbnail_data = _gerar_thumbnail(img_bytes).encode()
-                except ValueError as e:
-                    flash(str(e), 'danger')
-                except Exception:
-                    flash('Erro ao processar imagem. Verifique o arquivo e tente novamente.', 'danger')
-
         tem_pack = request.form.get('tem_pack') == '1'
 
         # Coleta packs[0][qty], packs[1][qty], etc.
-        packs_data = []
-        if tem_pack and not is_combo:
-            i = 0
-            while True:
-                qty_str = request.form.get(f'packs[{i}][qty]')
-                if qty_str is None:
-                    break
-                qty = int(qty_str or 0)
-                if qty > 1:
-                    termo = request.form.get(f'packs[{i}][termo]', 'Pack').strip() or 'Pack'
-                    if termo not in ('Pack', 'Caixa', 'Maço'):
-                        termo = 'Pack'
-                    packs_data.append({
-                        'qty':        qty,
-                        'termo':      termo,
-                        'preco':      float(request.form.get(f'packs[{i}][preco]', 0) or 0),
-                        'preco_card': float(request.form.get(f'packs[{i}][preco_card]', 0) or 0),
-                        'preco_event':float(request.form.get(f'packs[{i}][preco_event]', 0) or 0),
-                        'preco_cold':      float(request.form.get(f'packs[{i}][preco_cold]', 0) or 0),
-                        'preco_cold_card': float(request.form.get(f'packs[{i}][preco_cold_card]', 0) or 0),
-                        'foto_key':   f'packs[{i}][foto]',
-                    })
-                i += 1
+        packs_data = _coletar_packs_form() if (tem_pack and not is_combo) else []
 
-        _salvar_foto(product, 'imagem')
+        _salvar_foto_produto(product, 'imagem')
 
         for comp in combo_components:
             ci = ComboItem(combo_id=product.id,
@@ -294,45 +338,12 @@ def novo():
         if custo_comp is not None:
             product.cost_price = custo_comp
 
-        # Nome do conjunto conforme o termo escolhido:
-        #   Maço → "Maço de {nome}" (sem quantidade)
-        #   Pack/Caixa → "{termo} c/ {N} {nome}"
-        def _nome_pack(termo, qty):
-            if termo == 'Maço':
-                return f'Maço de {name}'
-            return f'{termo} c/ {qty} {name}'
-
-        # Cria um produto pack para cada entrada
-        for pd in packs_data:
-            pack = Product(
-                tenant_id        = tenant_id(),
-                type_id          = type_id,
-                brand_id         = brand_id,
-                name             = _nome_pack(pd['termo'], pd['qty']),
-                description      = f'{pd["termo"]} com {pd["qty"]} unidades de {name}.',
-                sale_price       = pd['preco'],
-                sale_price_card  = pd['preco_card'],
-                sale_price_event = pd['preco_event'],
-                sale_price_cold      = pd['preco_cold'],
-                sale_price_cold_card = pd['preco_cold_card'],
-                cost_price           = cost_price * pd['qty'],
-                stock_quantity   = 0,
-                min_stock        = 0,
-                pack_parent_id   = product.id,
-                pack_qty         = pd['qty'],
-            )
-            db.session.add(pack)
-            db.session.flush()
-            last_num = db.session.query(db.func.max(Product.product_number)).filter(
-                Product.tenant_id == tenant_id(), Product.id != pack.id
-            ).scalar() or 0
-            pack.product_number = last_num + 1
-            _salvar_foto(pack, pd['foto_key'])
+        # Cria um produto pack para cada entrada (estoque compartilhado)
+        nomes_packs = _criar_packs(product, packs_data)
 
         db.session.commit()
-        if packs_data:
-            nomes = ', '.join(_nome_pack(p['termo'], p['qty']) for p in packs_data)
-            flash(f'Produto "{name}" e {nomes} cadastrados com sucesso!', 'success')
+        if nomes_packs:
+            flash(f'Produto "{name}" e {", ".join(nomes_packs)} cadastrados com sucesso!', 'success')
         else:
             flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
         return redirect(url_for('products.index'))
@@ -394,8 +405,18 @@ def editar(product_id):
         if custo_comp is not None:
             product.cost_price = custo_comp
 
+        # Novos packs/caixas/maços adicionados na edição (estoque compartilhado).
+        # Só para produtos que não são eles mesmos um pack nem combo.
+        nomes_packs = []
+        if product.pack_parent_id is None and not combo_components:
+            db.session.flush()  # garante product.id e campos atualizados
+            nomes_packs = _criar_packs(product, _coletar_packs_form())
+
         db.session.commit()
-        flash('Produto atualizado com sucesso!', 'success')
+        if nomes_packs:
+            flash(f'Produto atualizado. {", ".join(nomes_packs)} criado(s) com sucesso!', 'success')
+        else:
+            flash('Produto atualizado com sucesso!', 'success')
         # Volta pra lista preservando o filtro (categoria/marca/busca/ordem) e
         # ancorado no produto editado, em vez de jogar tudo pro topo sem filtro.
         return_qs = request.form.get('return_qs', '')
@@ -417,9 +438,13 @@ def editar(product_id):
         for pi in ProductIngredient.query.filter_by(product_id=product.id).all()
         if pi.ingredient
     ]
+    packs_existentes = Product.query.filter_by(
+        tenant_id=tenant_id(), pack_parent_id=product.id
+    ).order_by(Product.pack_qty).all()
     return render_template('products/form.html', types=types, brands=brands, product=product,
                            existing_components=existing_components,
                            composicao_json=json.dumps(existing_composicao),
+                           packs_existentes=packs_existentes,
                            return_qs=request.query_string.decode())
 
 @products_bp.route('/reordenar', methods=['POST'])
