@@ -679,6 +679,16 @@ def api_todos():
                     Product.query.filter_by(id=p.id).update({'thumbnail_data': t.encode()})
             db.session.commit()
 
+    # Composição dos combos — para o operador identificar o que vai no combo
+    row_ids = [r.id for r in rows]
+    combo_map = {}
+    if row_ids:
+        ci_rows = (db.session.query(ComboItem.combo_id, ComboItem.quantity, Product.name)
+                   .join(Product, ComboItem.component_id == Product.id)
+                   .filter(ComboItem.combo_id.in_(row_ids)).all())
+        for combo_id, qty, cname in ci_rows:
+            combo_map.setdefault(combo_id, []).append({'name': cname, 'qty': qty})
+
     psm = _build_parent_stock_map(rows)
     return jsonify([{
         'id': r.id, 'name': r.name,
@@ -694,6 +704,7 @@ def api_todos():
         'type_name': tipos.get(r.type_id, 'Sem categoria'),
         'brand_id': r.brand_id,
         'brand_name': marcas.get(r.brand_id),
+        'combo_items': combo_map.get(r.id),
     } for r in rows])
 
 @products_bp.route('/<int:product_id>/imagem')

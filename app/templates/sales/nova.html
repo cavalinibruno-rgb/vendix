@@ -63,6 +63,12 @@
     font-size: .72rem; color: #ddd; font-weight: 500;
     word-break: break-word; line-height: 1.3;
   }
+  .pdv-card-combo {
+    padding: 0 6px 4px;
+    font-size: .64rem; color: #7fd0a8; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   .pdv-card-price {
     padding: 0 6px 8px;
     font-size: .78rem; color: #c9a84c; font-weight: 700;
@@ -647,7 +653,8 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="text-center text-muted small mb-3" id="modalProdPreco"></div>
+        <div class="text-center text-muted small mb-2" id="modalProdPreco"></div>
+        <div id="modalProdCombo" class="mb-3" style="display:none;"></div>
         <label class="form-label fw-semibold small">Quantidade</label>
         <div class="input-group">
           <button class="btn btn-outline-secondary" onclick="adjQtd(-1)">−</button>
@@ -821,7 +828,16 @@ function aplicarFiltros() {
   let lista = todosProds;
   if (catAtual !== 'todas')   lista = lista.filter(p => p.type_id == catAtual);
   if (marcaAtual !== 'todas') lista = lista.filter(p => p.brand_id == marcaAtual);
-  if (q) lista = lista.filter(p => _semAcento(p.name).includes(q));
+  if (q) {
+    // Busca por múltiplos termos em qualquer ordem; inclui a composição do combo.
+    // Ex.: "combo red" acha "[COMBO 1] - Red Label 1lt - Gelo Filtrado".
+    const termos = q.split(/\s+/).filter(Boolean);
+    lista = lista.filter(p => {
+      let hay = _semAcento(p.name);
+      if (p.combo_items) hay += ' ' + p.combo_items.map(c => _semAcento(c.name)).join(' ');
+      return termos.every(t => hay.includes(t));
+    });
+  }
   renderCards(lista);
 }
 
@@ -831,6 +847,12 @@ document.getElementById('produtoSearch').addEventListener('input', function() {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => aplicarFiltros(), 200);
 });
+
+function comboResumo(p) {
+  if (!p.combo_items || !p.combo_items.length) return '';
+  const txt = p.combo_items.map(c => `${+c.qty}x ${c.name}`).join(' + ');
+  return `<div class="pdv-card-combo" title="${txt}">${txt}</div>`;
+}
 
 function renderCards(lista) {
   const grid = document.getElementById('pdvGrid');
@@ -860,6 +882,7 @@ function renderCards(lista) {
       card.innerHTML = `
         ${imgHtml}
         <div class="pdv-card-name" title="${p.name}">${p.name}</div>
+        ${comboResumo(p)}
         <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
       `;
       grid.appendChild(card);
@@ -876,6 +899,7 @@ function renderCards(lista) {
     card.innerHTML = `
       ${imgHtml}
       <div class="pdv-card-name" title="${p.name}">${p.name}</div>
+      ${comboResumo(p)}
       <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
     `;
     grid.appendChild(card);
@@ -887,6 +911,17 @@ function abrirModalProd(p) {
   prodModalAtual = p;
   document.getElementById('modalProdNome').textContent = p.name;
   document.getElementById('modalProdPreco').textContent = 'R$ ' + fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price);
+  const comboBox = document.getElementById('modalProdCombo');
+  if (p.combo_items && p.combo_items.length) {
+    comboBox.innerHTML = '<div class="fw-semibold small mb-1" style="color:#7fd0a8;"><i class="bi bi-box-seam me-1"></i>Este combo contém:</div>'
+      + '<ul class="mb-0 ps-3 small" style="color:#cfe9dc;">'
+      + p.combo_items.map(c => `<li>${+c.qty}x ${c.name}</li>`).join('')
+      + '</ul>';
+    comboBox.style.display = '';
+  } else {
+    comboBox.style.display = 'none';
+    comboBox.innerHTML = '';
+  }
   document.getElementById('modalQtd').value = 1;
   bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAddProd')).show();
   setTimeout(() => document.getElementById('modalQtd').select(), 300);
