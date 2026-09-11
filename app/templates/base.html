@@ -316,9 +316,11 @@
         <i class="bi bi-person-lines-fill"></i><span class="nav-label"> Fiado</span>
       </a>
       {% endif %}
+      {% if not current_user.tenant.is_lanchonete %}
       <a href="{{ url_for('apps.index') }}" class="nav-link {% if 'apps' in ep %}active{% endif %}">
         <i class="bi bi-phone"></i><span class="nav-label"> Apps</span>
       </a>
+      {% endif %}
 
       <div class="nav-section">Cadastro</div>
       <a href="{{ url_for('customers.index') }}" class="nav-link {% if ep in ('customers.index','customers.novo','customers.editar') %}active{% endif %}">
