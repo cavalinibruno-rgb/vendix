@@ -33,13 +33,14 @@ def _tipos_voltar():
 def _sem_acentos(s):
     return unicodedata.normalize('NFKD', s or '').encode('ascii', 'ignore').decode().lower()
 
-def ordem_categorias_key(t):
+def ordem_categorias_key(t, pin=True):
     """Ordem das categorias: Promoção fixa em 1º, Combos em 2º; depois a ordem
-    manual do lojista (sort_order) e, sem ordem definida, alfabética."""
+    manual do lojista (sort_order) e, sem ordem definida, alfabética.
+    Com pin=False (lanchonete), não fixa nada — ordem 100% manual."""
     n = (t.name or '').lower()
-    if 'promo' in n:
+    if pin and 'promo' in n:
         return (0, 0, '')
-    if 'combo' in n:
+    if pin and 'combo' in n:
         return (1, 0, '')
     return (2, t.sort_order if t.sort_order is not None else 10**9, _sem_acentos(t.name))
 
@@ -294,14 +295,20 @@ def cardapio():
                 .all())
 
     tipos_obj = {t.id: t for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
-    cat_pos   = {t.id: i for i, t in enumerate(sorted(tipos_obj.values(), key=ordem_categorias_key))}
-    produtos.sort(key=lambda p: (cat_pos.get(p.type_id, 10**9), _sem_acentos(p.name)))
+    # Lanchonete: ordem 100% manual (sem fixar Promoção/Combos)
+    cat_key   = lambda t: ordem_categorias_key(t, pin=False)
+    cat_pos   = {t.id: i for i, t in enumerate(sorted(tipos_obj.values(), key=cat_key))}
+    # Dentro da categoria, respeita a ordem manual (sort_order) e depois o nome
+    produtos.sort(key=lambda p: (
+        cat_pos.get(p.type_id, 10**9),
+        p.sort_order if p.sort_order is not None else 10**9,
+        _sem_acentos(p.name)))
 
     from collections import Counter
     cont = Counter(p.type_id for p in produtos)
     categorias = [{'id': t.id, 'name': t.name, 'count': cont.get(t.id, 0),
                    'protected': t.protected}
-                  for t in sorted(tipos_obj.values(), key=ordem_categorias_key)]
+                  for t in sorted(tipos_obj.values(), key=cat_key)]
     sem_cat = cont.get(None, 0)
 
     return render_template('products/cardapio.html',
@@ -549,10 +556,12 @@ def tipos_reordenar():
     """Salva a ordem manual (lista de ids na ordem desejada, só não-protegidas)."""
     ids = (request.get_json(silent=True) or {}).get('ordem', [])
     tipos_map = {t.id: t for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+    # Na lanchonete, até as nativas (Combos/Promoção) podem ser reordenadas
+    lanchonete = current_user.tenant and current_user.tenant.is_lanchonete
     pos = 0
     for tid_ in ids:
         t = tipos_map.get(int(tid_))
-        if t and not t.protected:
+        if t and (lanchonete or not t.protected):
             t.sort_order = pos
             pos += 1
     db.session.commit()
@@ -710,10 +719,10 @@ def api_todos():
     tipos  = {t.id: t.name for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
     marcas = {b.id: b.name for b in Brand.query.filter_by(tenant_id=tenant_id()).all()}
 
-    # Para lanchonetes: reordena por categoria (mesma lógica das abas) e sort_order do produto
+    # Para lanchonetes: reordena por categoria (ordem manual, sem pin) e sort_order do produto
     if current_user.tenant and current_user.tenant.is_lanchonete:
         tipos_obj = {t.id: t for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
-        cat_pos = {t.id: i for i, t in enumerate(sorted(tipos_obj.values(), key=ordem_categorias_key))}
+        cat_pos = {t.id: i for i, t in enumerate(sorted(tipos_obj.values(), key=lambda t: ordem_categorias_key(t, pin=False)))}
         rows = sorted(rows, key=lambda r: (
             cat_pos.get(r.type_id, 10**9),
             r.sort_order if r.sort_order is not None else 10**9,

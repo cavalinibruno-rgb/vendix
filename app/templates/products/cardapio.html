@@ -36,8 +36,10 @@
     <button type="button" class="cardapio-cat active" data-cat="todos" onclick="selecionarCat(this,'todos')">
       <span>Todos</span><span class="cardapio-cat-count">{{ total }}</span>
     </button>
+    <div id="catSortable">
     {% for c in categorias %}
-    <div class="cardapio-cat-row">
+    <div class="cardapio-cat-row" data-catid="{{ c.id }}">
+      <span class="cat-grip" title="Arraste para reordenar"><i class="bi bi-grip-vertical"></i></span>
       <button type="button" class="cardapio-cat" data-cat="{{ c.id }}" onclick="selecionarCat(this,'{{ c.id }}')">
         <span>{{ c.name }}</span><span class="cardapio-cat-count">{{ c.count }}</span>
       </button>
@@ -50,6 +52,7 @@
       </form>
     </div>
     {% endfor %}
+    </div>
     {% if sem_cat %}
     <button type="button" class="cardapio-cat" data-cat="sem" onclick="selecionarCat(this,'sem')">
       <span class="text-muted">Sem categoria</span><span class="cardapio-cat-count">{{ sem_cat }}</span>
@@ -67,8 +70,9 @@
     <div id="cardapioLista">
       {% for p in produtos %}
       {% set disp = (p.disponivel if p.disponivel is not none else True) %}
-      <div class="cardapio-item" data-cat="{{ p.type_id or 'sem' }}" data-name="{{ p.name|lower }}">
+      <div class="cardapio-item" data-id="{{ p.id }}" data-cat="{{ p.type_id or 'sem' }}" data-name="{{ p.name|lower }}">
         <div class="col-item">
+          <span class="item-grip" title="Arraste para reordenar"><i class="bi bi-grip-vertical"></i></span>
           <div class="cardapio-thumb">
             <img src="{{ url_for('products.imagem', product_id=p.id) }}" loading="lazy" alt=""
                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
@@ -121,9 +125,16 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <style>
   .cardapio-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
   @media (max-width: 800px) { .cardapio-wrap { grid-template-columns: 1fr; } }
+  .cat-grip, .item-grip { color: var(--text-muted); cursor: grab; opacity: .5;
+    display: flex; align-items: center; flex-shrink: 0; }
+  .cat-grip { padding: 0 2px; }
+  .cardapio-cat-row:hover .cat-grip, .cardapio-item:hover .item-grip { opacity: 1; }
+  .cardapio-drag-ghost { opacity: .4; background: rgba(255,122,0,.12) !important; }
+  .cardapio-drag-chosen { background: rgba(255,122,0,.06); }
 
   .cardapio-cats { padding: 8px; }
   .cardapio-cats-header { display: flex; justify-content: space-between; align-items: center;
@@ -222,5 +233,51 @@ function toggleDisponivel(input, id) {
     if (window.showToast) window.showToast('Erro ao atualizar disponibilidade.');
   }).finally(() => { input.disabled = false; });
 }
+
+// ── Reordenar categorias e produtos (SortableJS) ──
+(function() {
+  if (typeof Sortable === 'undefined') return;
+  const CSRF = '{{ csrf_token() }}';
+  const opts = {
+    animation: 150,
+    ghostClass: 'cardapio-drag-ghost',
+    chosenClass: 'cardapio-drag-chosen',
+    forceFallback: true,
+    fallbackTolerance: 4,
+  };
+
+  const catBox = document.getElementById('catSortable');
+  if (catBox) {
+    Sortable.create(catBox, Object.assign({}, opts, {
+      handle: '.cat-grip',
+      draggable: '.cardapio-cat-row',
+      onEnd: () => {
+        const ordem = Array.from(catBox.querySelectorAll('.cardapio-cat-row'))
+                           .map(r => parseInt(r.dataset.catid));
+        fetch('{{ url_for("products.tipos_reordenar") }}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+          body: JSON.stringify({ ordem })
+        }).catch(err => console.error('Reordenar categorias', err));
+      }
+    }));
+  }
+
+  const lista = document.getElementById('cardapioLista');
+  if (lista) {
+    Sortable.create(lista, Object.assign({}, opts, {
+      handle: '.item-grip',
+      draggable: '.cardapio-item',
+      onEnd: () => {
+        const ids = Array.from(lista.querySelectorAll('.cardapio-item')).map(i => i.dataset.id);
+        fetch('{{ url_for("products.reordenar") }}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+          body: JSON.stringify({ ids })
+        }).catch(err => console.error('Reordenar produtos', err));
+      }
+    }));
+  }
+})();
 </script>
 {% endblock %}

@@ -72,8 +72,10 @@ def api_produtos(slug):
     # (Promoção 1º, Combos 2º, depois a ordem manual do lojista ou alfabética),
     # produtos alfabéticos dentro de cada categoria; sem categoria por último.
     from app.routes.products import ordem_categorias_key
+    # Lanchonete: ordem das categorias 100% manual (mesma do Cardápio da Loja)
+    _pin = not tenant.is_lanchonete
     cats = {p.type.id: p.type for p in produtos if p.type}
-    cats_ordenadas = sorted(cats.values(), key=ordem_categorias_key)
+    cats_ordenadas = sorted(cats.values(), key=lambda t: ordem_categorias_key(t, pin=_pin))
     pos = {c.id: i for i, c in enumerate(cats_ordenadas)}
     def _ordem_vitrine(p):
         return (pos.get(p.type_id, 10**9),
