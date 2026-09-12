@@ -640,10 +640,12 @@ def escpos(sale_id):
             tot_str = f'R${item.total:.2f}'
             # Nome quebra dentro da coluna PRODUTO; QTD e TOTAL ficam na 1ª linha,
             # alinhados à direita. As demais linhas do nome ficam só na coluna.
+            # A 1ª linha é travada em NAME_W para as colunas NUNCA desalinharem.
             linhas_nm = _wrap_words(full_nm, NAME_W)
-            d += LEFT + enc(linhas_nm[0].ljust(NAME_W) + _dir(qtd_str, tot_str)) + NL
+            nome1 = linhas_nm[0][:NAME_W].ljust(NAME_W)
+            d += LEFT + enc(nome1 + _dir(qtd_str, tot_str)) + NL
             for extra in linhas_nm[1:]:
-                d += LEFT + enc(extra) + NL
+                d += LEFT + enc(extra[:W]) + NL
             # Composição do combo
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
