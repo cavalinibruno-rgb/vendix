@@ -45,14 +45,6 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      /* Blocos de item: mantêm fundo preto e texto branco também na impressão */
-      .item-block, .cli-item-block {
-        background: #000 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-      .item-block, .item-block *,
-      .cli-item-block, .cli-item-block * { color: #fff !important; }
       .no-print { display: none !important; }
     }
 
@@ -107,30 +99,21 @@
       border-bottom: 2px solid #000;
     }
 
-    /* Cada produto (nome + qtd + total + composição) é um bloco preto contínuo;
-       o branco só aparece entre produtos diferentes (o margin). */
-    .item-block {
-      background: #000;
-      color: #fff;
-      margin: 1.5mm 0;
-      padding: 1mm 1.5mm;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+    .item-block { margin: 1.5mm 0; }
     .item-row {
       display: flex;
       justify-content: space-between;
-      gap: 4px;
+      align-items: stretch;
     }
     .item-name  { flex: 1; font-weight: bold; }
-    .item-qty   { width: 10mm; text-align: right; }
-    .item-total { width: 18mm; text-align: right; white-space: nowrap; }
+    .item-qty   { width: 11mm; text-align: right; border-left: 1px solid #000; padding-left: 1.5mm; }
+    .item-total { width: 19mm; text-align: right; white-space: nowrap; border-left: 1px solid #000; padding-left: 1.5mm; }
     .item-comp {
       display: flex;
       padding-left: 3mm;
       font-size: 8pt;
       line-height: 1.4;
-      color: #fff;
+      color: #000;
     }
 
     .items-header {
@@ -188,29 +171,22 @@
       }
     }
 
-    .cli-item-block {
-      background: #000;
-      color: #fff;
-      margin: 2mm 0;
-      padding: 1mm 1.5mm;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+    .cli-item-block { margin: 2mm 0; }
     .cli-item-row {
       display: flex;
       justify-content: space-between;
-      gap: 4px;
+      align-items: stretch;
       font-size: 11pt;
       font-weight: bold;
     }
     .cli-item-name { flex: 1; }
-    .cli-item-qty  { width: 16mm; text-align: right; }
+    .cli-item-qty  { width: 16mm; text-align: right; border-left: 1px solid #000; padding-left: 1.5mm; }
     .cli-item-comp {
       display: flex;
       padding-left: 3mm;
       font-size: 8pt;
       line-height: 1.4;
-      color: #fff;
+      color: #000;
     }
 
     .print-btn {
@@ -321,8 +297,8 @@
   <!-- ITENS -->
   <div class="items-header">
     <span style="flex:1">Produto</span>
-    <span style="width:10mm;text-align:right">Qtd</span>
-    <span style="width:18mm;text-align:right">Total</span>
+    <span style="width:11mm;text-align:right;border-left:1px solid #000;padding-left:1.5mm;">Qtd</span>
+    <span style="width:19mm;text-align:right;border-left:1px solid #000;padding-left:1.5mm;">Total</span>
   </div>
   <hr class="divider">
 
@@ -494,7 +470,7 @@
 
   <div class="items-header">
     <span style="flex:1">Produto</span>
-    <span style="width:16mm;text-align:center">Qtd</span>
+    <span style="width:16mm;text-align:right;border-left:1px solid #000;padding-left:1.5mm;">Qtd</span>
   </div>
   <hr class="divider">
 

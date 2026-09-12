@@ -586,10 +586,6 @@ def escpos(sale_id):
     BON    = b'\x1bE\x01'
     BIG    = b'\x1d!\x11'
     NORM   = b'\x1d!\x00'
-    REV    = b'\x1dB\x01'   # modo reverso: fundo preto, texto branco
-    REV_OFF= b'\x1dB\x00'
-    LS_TIGHT = b'\x1b\x33\x18'  # ESC 3 24: espaçamento = altura do caractere
-    LS_RESET = b'\x1b\x32'      # ESC 2: espaçamento padrão
     CUT    = b'\x1dV\x01'
     NL     = b'\n'
 
@@ -612,15 +608,15 @@ def escpos(sale_id):
         d += sep('=')
         return d
 
-    # Colunas estreitas para QTD e TOTAL, alinhadas à direita com um pequeno
-    # espaço entre elas; o restante sobra para o nome do PRODUTO.
-    QTY_W, GAP, TOT_W = 3, 1, 8
-    RIGHT_W = QTY_W + GAP + TOT_W          # footprint das colunas da direita
-    NAME_W  = W - RIGHT_W                  # largura da coluna do produto (mais larga)
+    # Colunas: PRODUTO | QTD | TOTAL, separadas por barras verticais que se
+    # alinham em todas as linhas formando um "traço" contínuo entre as colunas.
+    QTY_W, TOT_W = 3, 8
+    RIGHT_W = 1 + QTY_W + 1 + TOT_W        # '|' + QTD + '|' + TOTAL
+    NAME_W  = W - RIGHT_W                  # largura da coluna do produto
 
     def _dir(qtd_str, tot_str):
-        """Bloco à direita: QTD e TOTAL, cada um alinhado à direita."""
-        return qtd_str.rjust(QTY_W) + ' ' * GAP + tot_str.rjust(TOT_W)
+        """Bloco à direita com barras: |QTD|TOTAL, cada um alinhado à direita."""
+        return '|' + qtd_str.rjust(QTY_W) + '|' + tot_str.rjust(TOT_W)
 
     def itens_com_combo():
         d  = LEFT + enc('PRODUTO'.ljust(NAME_W) + _dir('QTD', 'TOTAL')) + NL
@@ -642,28 +638,21 @@ def escpos(sale_id):
             full_nm = item.product_name
             qtd_str = str(int(item.quantity))
             tot_str = f'R${item.total:.2f}'
-            # Nome quebra dentro da coluna PRODUTO; QTD e TOTAL ficam na 1ª linha,
-            # alinhados à direita. As demais linhas do nome ficam só na coluna.
-            # A 1ª linha é travada em NAME_W para as colunas NUNCA desalinharem.
-            # Cada linha do item sai em modo reverso (fundo preto, texto branco),
-            # preenchida na largura toda para o fundo cobrir a linha inteira.
-            # Espaçamento apertado: as linhas pretas se encostam formando um
-            # bloco contínuo (sem faixa branca entre linhas do mesmo item).
-            d += LS_TIGHT
+            # Nome quebra dentro da coluna PRODUTO; QTD e TOTAL ficam na 1ª linha.
+            # As barras verticais aparecem em todas as linhas para o traço não
+            # cortar entre as colunas.
             linhas_nm = _wrap_words(full_nm, NAME_W)
             nome1 = linhas_nm[0][:NAME_W].ljust(NAME_W)
-            d += LEFT + REV + enc(nome1 + _dir(qtd_str, tot_str)) + REV_OFF + NL
+            d += LEFT + enc(nome1 + _dir(qtd_str, tot_str)) + NL
             for extra in linhas_nm[1:]:
-                d += LEFT + REV + enc(extra[:W].ljust(W)) + REV_OFF + NL
-            # Composição do combo — dentro do mesmo bloco preto
+                d += LEFT + enc(extra[:NAME_W].ljust(NAME_W) + _dir('', '')) + NL
+            # Composição do combo — mantém as barras; a qtd do item vai na QTD
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
-                    comp_name = f'  - {ci.component.name}'[:W-6]
-                    comp_qty  = f'{int(ci.quantity * item.quantity)}x'.rjust(6)
-                    linha = (comp_name.ljust(W-6) + comp_qty)[:W].ljust(W)
-                    d += LEFT + REV + enc(linha) + REV_OFF + NL
-            # Volta ao espaçamento normal e deixa uma linha branca separando os itens
-            d += LS_RESET + NL
+                    comp_name = f'  - {ci.component.name}'[:NAME_W].ljust(NAME_W)
+                    comp_qty  = f'{int(ci.quantity * item.quantity)}x'
+                    d += LEFT + enc(comp_name + _dir(comp_qty, '')) + NL
+            d += sep('.')
         d += sep()
         return d
 
