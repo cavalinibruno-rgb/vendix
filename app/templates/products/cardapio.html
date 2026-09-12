@@ -28,14 +28,29 @@
 <div class="cardapio-wrap">
   <!-- Painel esquerdo: categorias -->
   <aside class="cardapio-cats card">
-    <div class="cardapio-cats-header">Categorias</div>
+    <div class="cardapio-cats-header">
+      <span>Categorias</span>
+      <button type="button" class="cardapio-cat-add" title="Nova categoria"
+              data-bs-toggle="modal" data-bs-target="#modalNovaCat"><i class="bi bi-plus-lg"></i></button>
+    </div>
     <button type="button" class="cardapio-cat active" data-cat="todos" onclick="selecionarCat(this,'todos')">
       <span>Todos</span><span class="cardapio-cat-count">{{ total }}</span>
     </button>
     {% for c in categorias %}
-    <button type="button" class="cardapio-cat" data-cat="{{ c.id }}" onclick="selecionarCat(this,'{{ c.id }}')">
-      <span>{{ c.name }}</span><span class="cardapio-cat-count">{{ c.count }}</span>
-    </button>
+    <div class="cardapio-cat-row">
+      <button type="button" class="cardapio-cat" data-cat="{{ c.id }}" onclick="selecionarCat(this,'{{ c.id }}')">
+        <span>{{ c.name }}</span><span class="cardapio-cat-count">{{ c.count }}</span>
+      </button>
+      {% if not c.protected %}
+      <form method="post" action="{{ url_for('products.tipo_excluir', tipo_id=c.id) }}"
+            class="cardapio-cat-delform"
+            onsubmit="return confirm('Excluir a categoria \'{{ c.name }}\'? Os itens dela ficam sem categoria.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="origem" value="cardapio">
+        <button type="submit" class="cardapio-cat-del" title="Excluir categoria"><i class="bi bi-trash"></i></button>
+      </form>
+      {% endif %}
+    </div>
     {% endfor %}
     {% if sem_cat %}
     <button type="button" class="cardapio-cat" data-cat="sem" onclick="selecionarCat(this,'sem')">
@@ -83,6 +98,28 @@
     </div>
   </section>
 </div>
+
+<!-- Modal nova categoria -->
+<div class="modal fade" id="modalNovaCat" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ url_for('products.tipo_novo') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="origem" value="cardapio">
+      <div class="modal-header">
+        <h6 class="modal-title"><i class="bi bi-tag me-2" style="color:#ff7a00;"></i>Nova categoria</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label fw-semibold small">Nome da categoria</label>
+        <input type="text" name="name" class="form-control" placeholder="Ex.: Sobremesas" required autofocus>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn fw-semibold" style="background:#ff7a00;color:#fff;">Criar</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -91,8 +128,20 @@
   @media (max-width: 800px) { .cardapio-wrap { grid-template-columns: 1fr; } }
 
   .cardapio-cats { padding: 8px; }
-  .cardapio-cats-header { font-weight: 700; font-size: .78rem; text-transform: uppercase;
+  .cardapio-cats-header { display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: .78rem; text-transform: uppercase;
     letter-spacing: .06em; color: #ff7a00; padding: 8px 10px 6px; }
+  .cardapio-cat-add { border: 0; background: rgba(255,122,0,.14); color: #ff7a00;
+    width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; font-size: .9rem; }
+  .cardapio-cat-add:hover { background: #ff7a00; color: #fff; }
+  .cardapio-cat-row { display: flex; align-items: center; }
+  .cardapio-cat-row .cardapio-cat { flex: 1; }
+  .cardapio-cat-delform { margin: 0; }
+  .cardapio-cat-del { border: 0; background: transparent; color: var(--text-muted);
+    padding: 6px 8px; border-radius: 6px; cursor: pointer; opacity: 0; transition: .15s; }
+  .cardapio-cat-row:hover .cardapio-cat-del { opacity: 1; }
+  .cardapio-cat-del:hover { color: #e03131; background: rgba(224,49,49,.1); }
   .cardapio-cat { display: flex; justify-content: space-between; align-items: center;
     width: 100%; border: 0; background: transparent; color: var(--text-main); text-align: left;
     padding: 10px 12px; border-radius: 8px; font-size: .9rem; cursor: pointer; }

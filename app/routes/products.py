@@ -23,6 +23,13 @@ def _lista_endpoint():
         return 'products.cardapio'
     return 'products.index'
 
+def _tipos_voltar():
+    """Após criar/excluir categoria, volta ao Cardápio da Loja quando a ação
+    veio de lá; caso contrário, à tela de Categorias."""
+    if request.form.get('origem') == 'cardapio':
+        return 'products.cardapio'
+    return 'products.tipos'
+
 def _sem_acentos(s):
     return unicodedata.normalize('NFKD', s or '').encode('ascii', 'ignore').decode().lower()
 
@@ -292,7 +299,8 @@ def cardapio():
 
     from collections import Counter
     cont = Counter(p.type_id for p in produtos)
-    categorias = [{'id': t.id, 'name': t.name, 'count': cont.get(t.id, 0)}
+    categorias = [{'id': t.id, 'name': t.name, 'count': cont.get(t.id, 0),
+                   'protected': t.protected}
                   for t in sorted(tipos_obj.values(), key=ordem_categorias_key)]
     sem_cat = cont.get(None, 0)
 
@@ -574,7 +582,7 @@ def tipo_novo():
         t.type_number = last_num + 1
         db.session.commit()
         flash(f'Categoria "{name}" criada!', 'success')
-    return redirect(url_for('products.tipos'))
+    return redirect(url_for(_tipos_voltar()))
 
 @products_bp.route('/tipos/<int:tipo_id>/excluir', methods=['POST'])
 @login_required
@@ -582,11 +590,11 @@ def tipo_excluir(tipo_id):
     t = ProductType.query.filter_by(id=tipo_id, tenant_id=tenant_id()).first_or_404()
     if t.protected:
         flash('Esta categoria é nativa do sistema e não pode ser removida.', 'danger')
-        return redirect(url_for('products.tipos'))
+        return redirect(url_for(_tipos_voltar()))
     db.session.delete(t)
     db.session.commit()
     flash('Categoria removida.', 'success')
-    return redirect(url_for('products.tipos'))
+    return redirect(url_for(_tipos_voltar()))
 
 # ── Marcas ────────────────────────────────────────────
 @products_bp.route('/marcas')
