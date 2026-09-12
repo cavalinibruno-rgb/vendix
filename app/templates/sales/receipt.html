@@ -99,15 +99,31 @@
       border-bottom: 2px solid #000;
     }
 
+    /* Cada produto (nome + qtd + total + composição) é um bloco preto contínuo;
+       o branco só aparece entre produtos diferentes (o margin). */
+    .item-block {
+      background: #000;
+      color: #fff;
+      margin: 1.5mm 0;
+      padding: 1mm 1.5mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
     .item-row {
       display: flex;
       justify-content: space-between;
       gap: 4px;
-      margin: 1mm 0;
     }
-    .item-name  { flex: 1; }
-    .item-qty   { width: 20mm; text-align: center; }
+    .item-name  { flex: 1; font-weight: bold; }
+    .item-qty   { width: 10mm; text-align: right; }
     .item-total { width: 18mm; text-align: right; white-space: nowrap; }
+    .item-comp {
+      display: flex;
+      padding-left: 3mm;
+      font-size: 8pt;
+      line-height: 1.4;
+      color: #fff;
+    }
 
     .items-header {
       display: flex;
@@ -116,6 +132,7 @@
       text-transform: uppercase;
       letter-spacing: .5px;
       margin-bottom: 1mm;
+      padding: 0 1.5mm;
     }
 
     .totals-row {
@@ -163,16 +180,30 @@
       }
     }
 
+    .cli-item-block {
+      background: #000;
+      color: #fff;
+      margin: 2mm 0;
+      padding: 1mm 1.5mm;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
     .cli-item-row {
       display: flex;
       justify-content: space-between;
       gap: 4px;
-      margin: 2mm 0;
       font-size: 11pt;
       font-weight: bold;
     }
     .cli-item-name { flex: 1; }
-    .cli-item-qty  { width: 16mm; text-align: center; }
+    .cli-item-qty  { width: 16mm; text-align: right; }
+    .cli-item-comp {
+      display: flex;
+      padding-left: 3mm;
+      font-size: 8pt;
+      line-height: 1.4;
+      color: #fff;
+    }
 
     .print-btn {
       display: block;
@@ -282,25 +313,27 @@
   <!-- ITENS -->
   <div class="items-header">
     <span style="flex:1">Produto</span>
-    <span style="width:12mm;text-align:center">Qtd</span>
+    <span style="width:10mm;text-align:right">Qtd</span>
     <span style="width:18mm;text-align:right">Total</span>
   </div>
   <hr class="divider">
 
   {% for item in sale.items %}
-  <div class="item-row">
-    <span class="item-name">{{ item.product_name }}</span>
-    <span class="item-qty">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</span>
-    <span class="item-total">R${{ '%.2f' | format(item.total) }}</span>
-  </div>
-  {% if item.product_id in combo_map %}
-    {% for comp in combo_map[item.product_id] %}
-    <div style="display:flex;padding-left:3mm;font-size:8pt;line-height:1.4;color:#000;">
-      <span style="flex:1;">&#x2514; {{ comp.name }}</span>
-      <span style="width:20mm;text-align:center;">{{ (comp.quantity * item.quantity)|int }}x</span>
+  <div class="item-block">
+    <div class="item-row">
+      <span class="item-name">{{ item.product_name }}</span>
+      <span class="item-qty">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</span>
+      <span class="item-total">R${{ '%.2f' | format(item.total) }}</span>
     </div>
-    {% endfor %}
-  {% endif %}
+    {% if item.product_id in combo_map %}
+      {% for comp in combo_map[item.product_id] %}
+      <div class="item-comp">
+        <span style="flex:1;">&#x2514; {{ comp.name }}</span>
+        <span style="width:20mm;text-align:right;">{{ (comp.quantity * item.quantity)|int }}x</span>
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
   {% endfor %}
 
   <hr class="divider">
@@ -458,18 +491,20 @@
   <hr class="divider">
 
   {% for item in sale.items %}
-  <div class="cli-item-row">
-    <span class="cli-item-name">{{ item.product_name }}</span>
-    <span class="cli-item-qty">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</span>
-  </div>
-  {% if item.product_id in combo_map %}
-    {% for comp in combo_map[item.product_id] %}
-    <div style="display:flex;padding-left:3mm;font-size:8pt;line-height:1.4;">
-      <span style="flex:1;">&#x2514; {{ comp.name }}</span>
-      <span style="width:16mm;text-align:center;">{{ (comp.quantity * item.quantity)|int }}x</span>
+  <div class="cli-item-block">
+    <div class="cli-item-row">
+      <span class="cli-item-name">{{ item.product_name }}</span>
+      <span class="cli-item-qty">{{ item.quantity|int if item.quantity == item.quantity|int else item.quantity }}</span>
     </div>
-    {% endfor %}
-  {% endif %}
+    {% if item.product_id in combo_map %}
+      {% for comp in combo_map[item.product_id] %}
+      <div class="cli-item-comp">
+        <span style="flex:1;">&#x2514; {{ comp.name }}</span>
+        <span style="width:16mm;text-align:right;">{{ (comp.quantity * item.quantity)|int }}x</span>
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
   {% endfor %}
 
   <hr class="divider">
