@@ -45,6 +45,19 @@ def acrescimo_cartao():
     return redirect(url_for('config.index'))
 
 
+@config_bp.route('/recibo-largura', methods=['POST'])
+@login_required
+def recibo_largura():
+    tenant = current_user.tenant
+    cfg = tenant.get_settings()
+    larg = request.form.get('recibo_largura', '80').strip()
+    cfg['recibo_largura'] = '58' if larg == '58' else '80'
+    tenant.save_settings(cfg)
+    db.session.commit()
+    flash('Largura do comprovante salva.', 'success')
+    return redirect(url_for('config.index'))
+
+
 @config_bp.route('/lanchonete', methods=['POST'])
 @login_required
 def lanchonete_settings():

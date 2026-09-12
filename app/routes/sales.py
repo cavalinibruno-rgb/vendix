@@ -578,7 +578,7 @@ def escpos(sale_id):
             if ci_list:
                 combo_map[item.product_id] = ci_list
 
-    W = 42
+    W = current_user.tenant.recibo_cols
     INIT   = b'\x1b@'
     CP850  = b'\x1bt\x02'   # seleciona code page PC850 (suporte a ã õ ç etc.)
     CENTER = b'\x1ba\x01'
@@ -627,18 +627,24 @@ def escpos(sale_id):
         for item in sale.items:
             full_nm = item.product_name
             col_nm  = W - 20
-            linhas_nm = _wrap_words(full_nm, col_nm)
-            # primeira linha: nome + qtd + total
-            d += LEFT + enc(linhas_nm[0].ljust(col_nm) + str(int(item.quantity)).center(8) + f'R${item.total:.2f}'.rjust(12)) + NL
-            # linhas seguintes (se nome longo)
-            for extra in linhas_nm[1:]:
-                d += LEFT + enc(extra) + NL
+            qtd_str = str(int(item.quantity))
+            tot_str = f'R${item.total:.2f}'
+            if len(full_nm) <= col_nm:
+                # Nome curto: uma linha só (nome + qtd + total)
+                d += LEFT + enc(full_nm.ljust(col_nm) + qtd_str.center(8) + tot_str.rjust(12)) + NL
+            else:
+                # Nome longo (combos): destaque em negrito ocupando a largura toda,
+                # e Qtd/Total numa linha própria — evita o texto "embolado".
+                for ln in _wrap_words(full_nm, W):
+                    d += LEFT + BON + enc(ln) + NORM + NL
+                d += LEFT + enc(('Qtd: ' + qtd_str).ljust(W - len(tot_str)) + tot_str) + NL
             # Composição do combo
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
                     comp_name = f'  - {ci.component.name}'[:W-6]
                     comp_qty  = f'{int(ci.quantity * item.quantity)}x'.rjust(6)
                     d += LEFT + enc(comp_name.ljust(W-6) + comp_qty) + NL
+            d += sep('.')
         d += sep()
         return d
 

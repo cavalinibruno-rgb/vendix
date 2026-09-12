@@ -240,7 +240,7 @@ def retirada_escpos(wid):
     w = CashWithdrawal.query.filter_by(id=wid, tenant_id=tid()).first_or_404()
     store_name = current_user.tenant.store_name or 'Vendix'
 
-    W = 42
+    W = current_user.tenant.recibo_cols
     INIT, CP850 = b'\x1b@', b'\x1bt\x02'
     CENTER, LEFT = b'\x1ba\x01', b'\x1ba\x00'
     BON, BOFF = b'\x1bE\x01', b'\x1bE\x00'
@@ -499,7 +499,7 @@ def escpos(caixa_id):
     ctx = _calcular_resumo(caixa)
     store_name = current_user.tenant.store_name or 'Vendix'
 
-    W = 42
+    W = current_user.tenant.recibo_cols
     INIT   = b'\x1b@'
     CP850  = b'\x1bt\x02'
     CENTER = b'\x1ba\x01'

@@ -29,6 +29,30 @@
     </div>
   </div>
 </div>
+
+<!-- ── Comprovante / Impressão ── -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header py-2"><i class="bi bi-printer me-2 text-warning"></i>Comprovante (impressão térmica)</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('config.recibo_largura') }}" class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Largura do papel</label>
+            <select name="recibo_largura" class="form-select">
+              <option value="80" {% if cfg.get('recibo_largura', '80') != '58' %}selected{% endif %}>80mm (padrão)</option>
+              <option value="58" {% if cfg.get('recibo_largura', '80') == '58' %}selected{% endif %}>58mm (bobina estreita)</option>
+            </select>
+            <div class="form-text">Escolha conforme a bobina da sua impressora. Se o texto sai cortado ou embolado, provavelmente é 58mm.</div>
+          </div>
+          <div class="col-md-auto">
+            <button type="submit" class="btn btn-warning fw-semibold"><i class="bi bi-floppy me-1"></i>Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 {% endif %}
 
 {% if tenant.is_lanchonete %}

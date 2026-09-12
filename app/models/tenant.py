@@ -55,5 +55,11 @@ class Tenant(db.Model):
         import json
         self.settings = json.dumps(data)
 
+    @property
+    def recibo_cols(self):
+        """Colunas do comprovante térmico conforme a largura do papel (58/80mm)."""
+        larg = str(self.get_settings().get('recibo_largura', '80'))
+        return 32 if larg == '58' else 42
+
     def __repr__(self):
         return f'<Tenant {self.slug}>'
