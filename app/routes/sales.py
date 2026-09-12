@@ -588,6 +588,8 @@ def escpos(sale_id):
     NORM   = b'\x1d!\x00'
     REV    = b'\x1dB\x01'   # modo reverso: fundo preto, texto branco
     REV_OFF= b'\x1dB\x00'
+    LS_TIGHT = b'\x1b\x33\x18'  # ESC 3 24: espaçamento = altura do caractere
+    LS_RESET = b'\x1b\x32'      # ESC 2: espaçamento padrão
     CUT    = b'\x1dV\x01'
     NL     = b'\n'
 
@@ -645,18 +647,23 @@ def escpos(sale_id):
             # A 1ª linha é travada em NAME_W para as colunas NUNCA desalinharem.
             # Cada linha do item sai em modo reverso (fundo preto, texto branco),
             # preenchida na largura toda para o fundo cobrir a linha inteira.
+            # Espaçamento apertado: as linhas pretas se encostam formando um
+            # bloco contínuo (sem faixa branca entre linhas do mesmo item).
+            d += LS_TIGHT
             linhas_nm = _wrap_words(full_nm, NAME_W)
             nome1 = linhas_nm[0][:NAME_W].ljust(NAME_W)
             d += LEFT + REV + enc(nome1 + _dir(qtd_str, tot_str)) + REV_OFF + NL
             for extra in linhas_nm[1:]:
                 d += LEFT + REV + enc(extra[:W].ljust(W)) + REV_OFF + NL
-            # Composição do combo
+            # Composição do combo — dentro do mesmo bloco preto
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
                     comp_name = f'  - {ci.component.name}'[:W-6]
                     comp_qty  = f'{int(ci.quantity * item.quantity)}x'.rjust(6)
-                    d += LEFT + enc(comp_name.ljust(W-6) + comp_qty) + NL
-            d += sep('.')
+                    linha = (comp_name.ljust(W-6) + comp_qty)[:W].ljust(W)
+                    d += LEFT + REV + enc(linha) + REV_OFF + NL
+            # Volta ao espaçamento normal e deixa uma linha branca separando os itens
+            d += LS_RESET + NL
         d += sep()
         return d
 
