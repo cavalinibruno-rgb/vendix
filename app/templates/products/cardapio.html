@@ -94,41 +94,45 @@
   .cardapio-cats-header { font-weight: 700; font-size: .78rem; text-transform: uppercase;
     letter-spacing: .06em; color: #ff7a00; padding: 8px 10px 6px; }
   .cardapio-cat { display: flex; justify-content: space-between; align-items: center;
-    width: 100%; border: 0; background: transparent; color: #ddd; text-align: left;
+    width: 100%; border: 0; background: transparent; color: var(--text-main); text-align: left;
     padding: 10px 12px; border-radius: 8px; font-size: .9rem; cursor: pointer; }
-  .cardapio-cat:hover { background: rgba(255,122,0,.08); }
-  .cardapio-cat.active { background: rgba(255,122,0,.16); color: #fff; font-weight: 600; }
-  .cardapio-cat-count { font-size: .78rem; color: #999; background: rgba(255,255,255,.06);
+  .cardapio-cat:hover { background: rgba(255,122,0,.10); }
+  .cardapio-cat.active { background: rgba(255,122,0,.16); color: #d15f00; font-weight: 700; }
+  [data-theme="dark"] .cardapio-cat.active { color: #ffab5e; }
+  .cardapio-cat-count { font-size: .78rem; color: var(--text-muted); background: var(--border-card);
     border-radius: 10px; padding: 1px 8px; }
-  .cardapio-cat.active .cardapio-cat-count { color: #ff7a00; }
+  .cardapio-cat.active .cardapio-cat-count { color: #d15f00; background: rgba(255,122,0,.18); }
 
   .cardapio-itens { padding: 0; overflow: hidden; }
   .cardapio-itens-head, .cardapio-item {
     display: grid; grid-template-columns: 1fr 120px 160px; align-items: center; }
   .cardapio-itens-head { padding: 10px 16px; font-size: .74rem; text-transform: uppercase;
-    letter-spacing: .05em; color: #888; border-bottom: 1px solid #333; }
-  .cardapio-item { padding: 10px 16px; border-bottom: 1px solid #2a2a2a; }
+    letter-spacing: .05em; color: var(--text-muted); border-bottom: 1px solid var(--border-topbar); }
+  .cardapio-item { padding: 10px 16px; border-bottom: 1px solid var(--border-card); }
   .cardapio-item:last-of-type { border-bottom: 0; }
+  .cardapio-item:hover { background: rgba(255,122,0,.05); }
   .col-item { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .cardapio-thumb { width: 48px; height: 48px; border-radius: 8px; overflow: hidden;
-    background: #2a2a2a; flex-shrink: 0; }
+    background: var(--border-card); flex-shrink: 0; }
   .cardapio-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .cardapio-thumb-ph { width: 100%; height: 100%; align-items: center; justify-content: center;
-    color: #666; font-size: 1.3rem; }
+    color: var(--text-muted); font-size: 1.3rem; }
   .cardapio-item-info { min-width: 0; }
-  .cardapio-item-nome { color: #eee; font-weight: 600; font-size: .92rem; text-decoration: none;
+  .cardapio-item-nome { color: var(--text-main); font-weight: 600; font-size: .92rem; text-decoration: none;
     display: block; overflow: hidden; text-overflow: ellipsis; }
   .cardapio-item-nome:hover { color: #ff7a00; }
-  .cardapio-item-cat { font-size: .74rem; color: #888; }
-  .col-preco { font-weight: 700; color: #ff9d42; }
+  .cardapio-item-cat { font-size: .74rem; color: var(--text-muted); }
+  .col-preco { font-weight: 700; color: #d15f00; }
+  [data-theme="dark"] .col-preco { color: #ff9d42; }
   .col-status { display: flex; align-items: center; gap: 10px; }
-  .cardapio-status-txt { font-size: .82rem; color: #aaa; }
+  .cardapio-status-txt { font-size: .82rem; color: var(--text-muted); }
 
   /* toggle switch */
   .cardapio-switch { position: relative; display: inline-block; width: 40px; height: 22px; margin: 0; }
   .cardapio-switch input { opacity: 0; width: 0; height: 0; }
-  .cardapio-slider { position: absolute; inset: 0; background: #555; border-radius: 22px;
+  .cardapio-slider { position: absolute; inset: 0; background: #c2c7cf; border-radius: 22px;
     transition: .2s; cursor: pointer; }
+  [data-theme="dark"] .cardapio-slider { background: #555; }
   .cardapio-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px;
     bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
   .cardapio-switch input:checked + .cardapio-slider { background: #ff7a00; }
