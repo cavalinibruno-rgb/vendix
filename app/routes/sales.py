@@ -610,9 +610,9 @@ def escpos(sale_id):
 
     # Colunas estreitas para QTD e TOTAL, alinhadas à direita com um pequeno
     # espaço entre elas; o restante sobra para o nome do PRODUTO.
-    QTY_W, GAP, TOT_W = 3, 2, 9
+    QTY_W, GAP, TOT_W = 3, 1, 8
     RIGHT_W = QTY_W + GAP + TOT_W          # footprint das colunas da direita
-    NAME_W  = W - RIGHT_W                  # largura da coluna do produto
+    NAME_W  = W - RIGHT_W                  # largura da coluna do produto (mais larga)
 
     def _dir(qtd_str, tot_str):
         """Bloco à direita: QTD e TOTAL, cada um alinhado à direita."""
