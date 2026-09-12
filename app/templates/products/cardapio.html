@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Cardápio da Loja — Vendix{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex align-items-center justify-content-between">
+  <div>
+    <h1><i class="bi bi-card-list me-2" style="color:#ff7a00;"></i>Cardápio da Loja</h1>
+    <p>Gerencie os itens e a disponibilidade do seu cardápio</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('products.tipos') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-tags me-1"></i>Categorias
+    </a>
+    <a href="{{ url_for('products.novo') }}" class="btn fw-semibold" style="background:#ff7a00;color:#fff;">
+      <i class="bi bi-plus-circle me-1"></i>Novo item
+    </a>
+  </div>
+</div>
+
+<!-- Busca -->
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <input type="text" id="cardapioBusca" class="form-control form-control-sm"
+           placeholder="Pesquisar item…" style="max-width:320px;" oninput="filtrarCardapio()">
+  </div>
+</div>
+
+<div class="cardapio-wrap">
+  <!-- Painel esquerdo: categorias -->
+  <aside class="cardapio-cats card">
+    <div class="cardapio-cats-header">Categorias</div>
+    <button type="button" class="cardapio-cat active" data-cat="todos" onclick="selecionarCat(this,'todos')">
+      <span>Todos</span><span class="cardapio-cat-count">{{ total }}</span>
+    </button>
+    {% for c in categorias %}
+    <button type="button" class="cardapio-cat" data-cat="{{ c.id }}" onclick="selecionarCat(this,'{{ c.id }}')">
+      <span>{{ c.name }}</span><span class="cardapio-cat-count">{{ c.count }}</span>
+    </button>
+    {% endfor %}
+    {% if sem_cat %}
+    <button type="button" class="cardapio-cat" data-cat="sem" onclick="selecionarCat(this,'sem')">
+      <span class="text-muted">Sem categoria</span><span class="cardapio-cat-count">{{ sem_cat }}</span>
+    </button>
+    {% endif %}
+  </aside>
+
+  <!-- Painel direito: itens -->
+  <section class="cardapio-itens card">
+    <div class="cardapio-itens-head">
+      <div class="col-item">Itens</div>
+      <div class="col-preco">Preço</div>
+      <div class="col-status">Status</div>
+    </div>
+    <div id="cardapioLista">
+      {% for p in produtos %}
+      {% set disp = (p.disponivel if p.disponivel is not none else True) %}
+      <div class="cardapio-item" data-cat="{{ p.type_id or 'sem' }}" data-name="{{ p.name|lower }}">
+        <div class="col-item">
+          <div class="cardapio-thumb">
+            <img src="{{ url_for('products.imagem', product_id=p.id) }}" loading="lazy" alt=""
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <div class="cardapio-thumb-ph" style="display:none;"><i class="bi bi-card-image"></i></div>
+          </div>
+          <div class="cardapio-item-info">
+            <a href="{{ url_for('products.editar', product_id=p.id) }}" class="cardapio-item-nome">{{ p.name }}</a>
+            {% if p.type %}<div class="cardapio-item-cat">{{ p.type.name }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="col-preco">R$ {{ '%.2f'|format(p.sale_price or 0) }}</div>
+        <div class="col-status">
+          <label class="cardapio-switch" title="Disponível no cardápio">
+            <input type="checkbox" {% if disp %}checked{% endif %}
+                   onchange="toggleDisponivel(this, {{ p.id }})">
+            <span class="cardapio-slider"></span>
+          </label>
+          <span class="cardapio-status-txt">{{ 'Disponível' if disp else 'Indisponível' }}</span>
+        </div>
+      </div>
+      {% endfor %}
+      <div id="cardapioVazio" class="text-muted text-center py-5" style="display:none;">
+        Nenhum item encontrado.
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .cardapio-wrap { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 800px) { .cardapio-wrap { grid-template-columns: 1fr; } }
+
+  .cardapio-cats { padding: 8px; }
+  .cardapio-cats-header { font-weight: 700; font-size: .78rem; text-transform: uppercase;
+    letter-spacing: .06em; color: #ff7a00; padding: 8px 10px 6px; }
+  .cardapio-cat { display: flex; justify-content: space-between; align-items: center;
+    width: 100%; border: 0; background: transparent; color: #ddd; text-align: left;
+    padding: 10px 12px; border-radius: 8px; font-size: .9rem; cursor: pointer; }
+  .cardapio-cat:hover { background: rgba(255,122,0,.08); }
+  .cardapio-cat.active { background: rgba(255,122,0,.16); color: #fff; font-weight: 600; }
+  .cardapio-cat-count { font-size: .78rem; color: #999; background: rgba(255,255,255,.06);
+    border-radius: 10px; padding: 1px 8px; }
+  .cardapio-cat.active .cardapio-cat-count { color: #ff7a00; }
+
+  .cardapio-itens { padding: 0; overflow: hidden; }
+  .cardapio-itens-head, .cardapio-item {
+    display: grid; grid-template-columns: 1fr 120px 160px; align-items: center; }
+  .cardapio-itens-head { padding: 10px 16px; font-size: .74rem; text-transform: uppercase;
+    letter-spacing: .05em; color: #888; border-bottom: 1px solid #333; }
+  .cardapio-item { padding: 10px 16px; border-bottom: 1px solid #2a2a2a; }
+  .cardapio-item:last-of-type { border-bottom: 0; }
+  .col-item { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .cardapio-thumb { width: 48px; height: 48px; border-radius: 8px; overflow: hidden;
+    background: #2a2a2a; flex-shrink: 0; }
+  .cardapio-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .cardapio-thumb-ph { width: 100%; height: 100%; align-items: center; justify-content: center;
+    color: #666; font-size: 1.3rem; }
+  .cardapio-item-info { min-width: 0; }
+  .cardapio-item-nome { color: #eee; font-weight: 600; font-size: .92rem; text-decoration: none;
+    display: block; overflow: hidden; text-overflow: ellipsis; }
+  .cardapio-item-nome:hover { color: #ff7a00; }
+  .cardapio-item-cat { font-size: .74rem; color: #888; }
+  .col-preco { font-weight: 700; color: #ff9d42; }
+  .col-status { display: flex; align-items: center; gap: 10px; }
+  .cardapio-status-txt { font-size: .82rem; color: #aaa; }
+
+  /* toggle switch */
+  .cardapio-switch { position: relative; display: inline-block; width: 40px; height: 22px; margin: 0; }
+  .cardapio-switch input { opacity: 0; width: 0; height: 0; }
+  .cardapio-slider { position: absolute; inset: 0; background: #555; border-radius: 22px;
+    transition: .2s; cursor: pointer; }
+  .cardapio-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px;
+    bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+  .cardapio-switch input:checked + .cardapio-slider { background: #ff7a00; }
+  .cardapio-switch input:checked + .cardapio-slider::before { transform: translateX(18px); }
+</style>
+<script>
+let catAtualCardapio = 'todos';
+
+function selecionarCat(btn, cat) {
+  catAtualCardapio = cat;
+  document.querySelectorAll('.cardapio-cat').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filtrarCardapio();
+}
+
+function filtrarCardapio() {
+  const q = (document.getElementById('cardapioBusca').value || '').trim().toLowerCase();
+  let visiveis = 0;
+  document.querySelectorAll('.cardapio-item').forEach(item => {
+    const okCat  = catAtualCardapio === 'todos' || item.dataset.cat === catAtualCardapio;
+    const okNome = !q || (item.dataset.name || '').includes(q);
+    const mostra = okCat && okNome;
+    item.style.display = mostra ? '' : 'none';
+    if (mostra) visiveis++;
+  });
+  document.getElementById('cardapioVazio').style.display = visiveis ? 'none' : '';
+}
+
+function toggleDisponivel(input, id) {
+  const txt = input.closest('.col-status').querySelector('.cardapio-status-txt');
+  input.disabled = true;
+  fetch(`/produtos/${id}/toggle-disponivel`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+  }).then(r => r.json()).then(d => {
+    input.checked = d.disponivel;
+    txt.textContent = d.disponivel ? 'Disponível' : 'Indisponível';
+  }).catch(() => {
+    input.checked = !input.checked;  // reverte visualmente em caso de erro
+    if (window.showToast) window.showToast('Erro ao atualizar disponibilidade.');
+  }).finally(() => { input.disabled = false; });
+}
+</script>
+{% endblock %}

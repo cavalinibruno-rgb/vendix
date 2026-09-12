@@ -17,6 +17,12 @@ products_bp = Blueprint('products', __name__, url_prefix='/produtos')
 def tenant_id():
     return current_user.tenant_id
 
+def _lista_endpoint():
+    """Endpoint da listagem: Cardápio da Loja na lanchonete, Produtos no varejo."""
+    if current_user.tenant and current_user.tenant.is_lanchonete:
+        return 'products.cardapio'
+    return 'products.index'
+
 def _sem_acentos(s):
     return unicodedata.normalize('NFKD', s or '').encode('ascii', 'ignore').decode().lower()
 
@@ -268,6 +274,31 @@ def index():
                            q=q, tipo_id=tipo_id, marca_id=marca_id,
                            eff_stock=eff_stock, eff_min=eff_min, eff_cost=eff_cost)
 
+@products_bp.route('/cardapio')
+@login_required
+def cardapio():
+    """Cardápio da Loja — visão de dois painéis (categorias + itens) da lanchonete."""
+    if not (current_user.tenant and current_user.tenant.is_lanchonete):
+        return redirect(url_for('products.index'))
+
+    produtos = (Product.query.filter_by(tenant_id=tenant_id(), active=True)
+                .options(defer(Product.image_data), defer(Product.thumbnail_data),
+                         joinedload(Product.type))
+                .all())
+
+    tipos_obj = {t.id: t for t in ProductType.query.filter_by(tenant_id=tenant_id()).all()}
+    cat_pos   = {t.id: i for i, t in enumerate(sorted(tipos_obj.values(), key=ordem_categorias_key))}
+    produtos.sort(key=lambda p: (cat_pos.get(p.type_id, 10**9), _sem_acentos(p.name)))
+
+    from collections import Counter
+    cont = Counter(p.type_id for p in produtos)
+    categorias = [{'id': t.id, 'name': t.name, 'count': cont.get(t.id, 0)}
+                  for t in sorted(tipos_obj.values(), key=ordem_categorias_key)]
+    sem_cat = cont.get(None, 0)
+
+    return render_template('products/cardapio.html',
+        produtos=produtos, categorias=categorias, sem_cat=sem_cat, total=len(produtos))
+
 @products_bp.route('/novo', methods=['GET', 'POST'])
 @login_required
 def novo():
@@ -354,7 +385,7 @@ def novo():
             flash(f'Produto "{name}" e {", ".join(nomes_packs)} cadastrados com sucesso!', 'success')
         else:
             flash(f'Produto "{name}" cadastrado com sucesso!', 'success')
-        return redirect(url_for('products.index'))
+        return redirect(url_for(_lista_endpoint()))
 
     return render_template('products/form.html', types=types, brands=brands, product=None,
                            composicao_json='[]')
@@ -429,8 +460,10 @@ def editar(product_id):
             flash(f'Produto atualizado. {", ".join(nomes_packs)} criado(s) com sucesso!', 'success')
         else:
             flash('Produto atualizado com sucesso!', 'success')
-        # Volta pra lista preservando o filtro (categoria/marca/busca/ordem) e
-        # ancorado no produto editado, em vez de jogar tudo pro topo sem filtro.
+        # Lanchonete volta ao Cardápio da Loja; varejo volta à lista preservando
+        # o filtro (categoria/marca/busca/ordem) e ancorado no produto editado.
+        if current_user.tenant and current_user.tenant.is_lanchonete:
+            return redirect(url_for('products.cardapio'))
         return_qs = request.form.get('return_qs', '')
         url = url_for('products.index')
         if return_qs:
@@ -491,7 +524,7 @@ def excluir(product_id):
     db.session.delete(product)
     db.session.commit()
     flash('Produto removido.', 'success')
-    return redirect(url_for('products.index'))
+    return redirect(url_for(_lista_endpoint()))
 
 # ── Tipos ─────────────────────────────────────────────
 @products_bp.route('/tipos')
@@ -810,3 +843,13 @@ def toggle_online(product_id):
     p.online_active = not p.online_active
     db.session.commit()
     return jsonify({'online_active': p.online_active})
+
+
+@products_bp.route('/<int:product_id>/toggle-disponivel', methods=['POST'])
+@login_required
+def toggle_disponivel(product_id):
+    """Liga/desliga a disponibilidade do item no Cardápio da Loja (lanchonete)."""
+    p = Product.query.filter_by(id=product_id, tenant_id=tenant_id()).first_or_404()
+    p.disponivel = not (p.disponivel if p.disponivel is not None else True)
+    db.session.commit()
+    return jsonify({'disponivel': p.disponivel})

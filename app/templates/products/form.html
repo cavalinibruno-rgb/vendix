@@ -325,9 +325,15 @@
           {% endif %}
 
           <div class="d-flex gap-2">
+            {% if current_user.tenant and current_user.tenant.is_lanchonete %}
+            <a href="{{ url_for('products.cardapio') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            {% else %}
             <a href="{{ url_for('products.index') }}{% if return_qs %}?{{ return_qs }}{% endif %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
+            {% endif %}
             <button type="submit" class="btn btn-warning fw-semibold flex-grow-1">
               <i class="bi bi-check-circle me-2"></i>{{ 'Salvar Alterações' if product else 'Cadastrar Produto' }}
             </button>

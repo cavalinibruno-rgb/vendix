@@ -329,6 +329,8 @@ def _run_migrations(db):
         # Multi-caixa: venda vinculada ao caixa do operador que a registrou
         "ALTER TABLE sales ADD COLUMN IF NOT EXISTS cash_register_id INTEGER REFERENCES cash_registers(id)",
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS sort_order INTEGER",
+        # Disponibilidade no Cardápio da Loja (lanchonete)
+        "ALTER TABLE products ADD COLUMN IF NOT EXISTS disponivel BOOLEAN DEFAULT TRUE",
         """CREATE TABLE IF NOT EXISTS ingredients (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,

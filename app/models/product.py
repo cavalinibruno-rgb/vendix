@@ -45,6 +45,7 @@ class Product(db.Model):
     min_stock      = db.Column(db.Integer, default=0)
     active         = db.Column(db.Boolean, default=True)
     online_active  = db.Column(db.Boolean, default=True)
+    disponivel     = db.Column(db.Boolean, default=True)  # disponibilidade no Cardápio da Loja (lanchonete)
     image_path     = db.Column(db.String(256))
     image_url      = db.Column(db.String(512))
     image_data     = db.Column(db.LargeBinary)

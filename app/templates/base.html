@@ -329,12 +329,18 @@
       <a href="{{ url_for('customers.bairros') }}" class="nav-link {% if ep == 'customers.bairros' %}active{% endif %}">
         <i class="bi bi-geo-alt"></i><span class="nav-label"> Bairros</span>
       </a>
+      {% if current_user.tenant and current_user.tenant.is_lanchonete %}
+      <a href="{{ url_for('products.cardapio') }}" class="nav-link {% if ep in ('products.cardapio','products.novo','products.editar','products.tipos') %}active{% endif %}">
+        <i class="bi bi-card-list"></i><span class="nav-label"> Cardápio da Loja</span>
+      </a>
+      {% else %}
       <a href="{{ url_for('products.index') }}" class="nav-link {% if ep in ('products.index','products.novo','products.editar') %}active{% endif %}">
         <i class="bi bi-box-seam"></i><span class="nav-label"> Produtos</span>
       </a>
       <a href="{{ url_for('products.tipos') }}" class="nav-link {% if ep == 'products.tipos' %}active{% endif %}">
         <i class="bi bi-tags"></i><span class="nav-label"> Categorias</span>
       </a>
+      {% endif %}
       <a href="{{ url_for('products.marcas') }}" class="nav-link {% if ep == 'products.marcas' %}active{% endif %}">
         <i class="bi bi-bookmark-star"></i><span class="nav-label"> Marcas</span>
       </a>
