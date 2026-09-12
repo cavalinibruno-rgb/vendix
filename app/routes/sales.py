@@ -586,6 +586,8 @@ def escpos(sale_id):
     BON    = b'\x1bE\x01'
     BIG    = b'\x1d!\x11'
     NORM   = b'\x1d!\x00'
+    REV    = b'\x1dB\x01'   # modo reverso: fundo preto, texto branco
+    REV_OFF= b'\x1dB\x00'
     CUT    = b'\x1dV\x01'
     NL     = b'\n'
 
@@ -641,11 +643,13 @@ def escpos(sale_id):
             # Nome quebra dentro da coluna PRODUTO; QTD e TOTAL ficam na 1ª linha,
             # alinhados à direita. As demais linhas do nome ficam só na coluna.
             # A 1ª linha é travada em NAME_W para as colunas NUNCA desalinharem.
+            # Cada linha do item sai em modo reverso (fundo preto, texto branco),
+            # preenchida na largura toda para o fundo cobrir a linha inteira.
             linhas_nm = _wrap_words(full_nm, NAME_W)
             nome1 = linhas_nm[0][:NAME_W].ljust(NAME_W)
-            d += LEFT + enc(nome1 + _dir(qtd_str, tot_str)) + NL
+            d += LEFT + REV + enc(nome1 + _dir(qtd_str, tot_str)) + REV_OFF + NL
             for extra in linhas_nm[1:]:
-                d += LEFT + enc(extra[:W]) + NL
+                d += LEFT + REV + enc(extra[:W].ljust(W)) + REV_OFF + NL
             # Composição do combo
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
