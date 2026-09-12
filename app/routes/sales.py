@@ -636,18 +636,14 @@ def escpos(sale_id):
 
         for item in sale.items:
             full_nm = item.product_name
-            col_nm  = NAME_W
             qtd_str = str(int(item.quantity))
             tot_str = f'R${item.total:.2f}'
-            if len(full_nm) <= col_nm:
-                # Nome curto: uma linha só (nome + qtd + total)
-                d += LEFT + enc(full_nm.ljust(col_nm) + _dir(qtd_str, tot_str)) + NL
-            else:
-                # Nome longo (combos): destaque em negrito ocupando a largura toda,
-                # e Qtd/Total numa linha própria alinhados à direita.
-                for ln in _wrap_words(full_nm, W):
-                    d += LEFT + BON + enc(ln) + NORM + NL
-                d += LEFT + enc(''.ljust(NAME_W) + _dir(qtd_str, tot_str)) + NL
+            # Nome quebra dentro da coluna PRODUTO; QTD e TOTAL ficam na 1ª linha,
+            # alinhados à direita. As demais linhas do nome ficam só na coluna.
+            linhas_nm = _wrap_words(full_nm, NAME_W)
+            d += LEFT + enc(linhas_nm[0].ljust(NAME_W) + _dir(qtd_str, tot_str)) + NL
+            for extra in linhas_nm[1:]:
+                d += LEFT + enc(extra) + NL
             # Composição do combo
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
