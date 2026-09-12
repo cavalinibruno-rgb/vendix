@@ -608,8 +608,18 @@ def escpos(sale_id):
         d += sep('=')
         return d
 
+    # Colunas estreitas para QTD e TOTAL, alinhadas à direita com um pequeno
+    # espaço entre elas; o restante sobra para o nome do PRODUTO.
+    QTY_W, GAP, TOT_W = 3, 2, 9
+    RIGHT_W = QTY_W + GAP + TOT_W          # footprint das colunas da direita
+    NAME_W  = W - RIGHT_W                  # largura da coluna do produto
+
+    def _dir(qtd_str, tot_str):
+        """Bloco à direita: QTD e TOTAL, cada um alinhado à direita."""
+        return qtd_str.rjust(QTY_W) + ' ' * GAP + tot_str.rjust(TOT_W)
+
     def itens_com_combo():
-        d  = LEFT + enc('PRODUTO'.ljust(W-20) + 'QTD'.center(8) + 'TOTAL'.rjust(12)) + NL
+        d  = LEFT + enc('PRODUTO'.ljust(NAME_W) + _dir('QTD', 'TOTAL')) + NL
         d += sep()
         def _wrap_words(text, width):
             """Quebra texto em linhas respeitando palavras inteiras."""
@@ -626,18 +636,18 @@ def escpos(sale_id):
 
         for item in sale.items:
             full_nm = item.product_name
-            col_nm  = W - 20
+            col_nm  = NAME_W
             qtd_str = str(int(item.quantity))
             tot_str = f'R${item.total:.2f}'
             if len(full_nm) <= col_nm:
                 # Nome curto: uma linha só (nome + qtd + total)
-                d += LEFT + enc(full_nm.ljust(col_nm) + qtd_str.center(8) + tot_str.rjust(12)) + NL
+                d += LEFT + enc(full_nm.ljust(col_nm) + _dir(qtd_str, tot_str)) + NL
             else:
                 # Nome longo (combos): destaque em negrito ocupando a largura toda,
-                # e Qtd/Total numa linha própria — evita o texto "embolado".
+                # e Qtd/Total numa linha própria alinhados à direita.
                 for ln in _wrap_words(full_nm, W):
                     d += LEFT + BON + enc(ln) + NORM + NL
-                d += LEFT + enc(('Qtd: ' + qtd_str).ljust(W - len(tot_str)) + tot_str) + NL
+                d += LEFT + enc(''.ljust(NAME_W) + _dir(qtd_str, tot_str)) + NL
             # Composição do combo
             if item.product_id and item.product_id in combo_map:
                 for ci in combo_map[item.product_id]:
