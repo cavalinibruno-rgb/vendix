@@ -588,7 +588,11 @@ def tipo_novo():
 @login_required
 def tipo_excluir(tipo_id):
     t = ProductType.query.filter_by(id=tipo_id, tenant_id=tenant_id()).first_or_404()
-    if t.protected:
+    # Na lanchonete, pelo Cardápio da Loja, até as categorias nativas
+    # (Combos/Promoção) podem ser removidas.
+    lanchonete_cardapio = (request.form.get('origem') == 'cardapio'
+                           and current_user.tenant and current_user.tenant.is_lanchonete)
+    if t.protected and not lanchonete_cardapio:
         flash('Esta categoria é nativa do sistema e não pode ser removida.', 'danger')
         return redirect(url_for(_tipos_voltar()))
     db.session.delete(t)

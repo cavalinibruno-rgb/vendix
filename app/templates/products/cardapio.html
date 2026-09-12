@@ -41,7 +41,6 @@
       <button type="button" class="cardapio-cat" data-cat="{{ c.id }}" onclick="selecionarCat(this,'{{ c.id }}')">
         <span>{{ c.name }}</span><span class="cardapio-cat-count">{{ c.count }}</span>
       </button>
-      {% if not c.protected %}
       <form method="post" action="{{ url_for('products.tipo_excluir', tipo_id=c.id) }}"
             class="cardapio-cat-delform"
             onsubmit="return confirm('Excluir a categoria \'{{ c.name }}\'? Os itens dela ficam sem categoria.');">
@@ -49,7 +48,6 @@
         <input type="hidden" name="origem" value="cardapio">
         <button type="submit" class="cardapio-cat-del" title="Excluir categoria"><i class="bi bi-trash"></i></button>
       </form>
-      {% endif %}
     </div>
     {% endfor %}
     {% if sem_cat %}
