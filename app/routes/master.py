@@ -195,6 +195,21 @@ def tenant_ativar(tenant_id):
     return redirect(url_for('master.dashboard'))
 
 
+@master_bp.route('/tenant/<int:tenant_id>/visual-novo', methods=['POST'])
+@login_required
+@master_required
+def tenant_visual_novo(tenant_id):
+    """Liga/desliga o novo design para uma loja (teste antes de liberar a todos)."""
+    tenant = Tenant.query.get_or_404(tenant_id)
+    cfg = tenant.get_settings()
+    cfg['visual_novo'] = not bool(cfg.get('visual_novo'))
+    tenant.save_settings(cfg)
+    db.session.commit()
+    estado = 'LIGADO' if cfg['visual_novo'] else 'desligado'
+    flash(f'Visual novo {estado} para "{tenant.store_name}".', 'success')
+    return redirect(url_for('master.dashboard'))
+
+
 @master_bp.route('/tenant/<int:tenant_id>/adicionar-dias', methods=['POST'])
 @login_required
 @master_required

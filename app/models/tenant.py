@@ -56,6 +56,11 @@ class Tenant(db.Model):
         self.settings = json.dumps(data)
 
     @property
+    def visual_novo(self):
+        """Loja com o novo design ligado (chave controlada só pelo master)."""
+        return bool(self.get_settings().get('visual_novo'))
+
+    @property
     def recibo_cols(self):
         """Colunas do comprovante térmico conforme a largura do papel (58/80mm)."""
         larg = str(self.get_settings().get('recibo_largura', '80'))

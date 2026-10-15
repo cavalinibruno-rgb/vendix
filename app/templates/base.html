@@ -263,7 +263,7 @@
   {% block head %}{% endblock %}
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})()</script>
 </head>
-<body>
+<body{% if current_user.is_authenticated and current_user.tenant and current_user.tenant.visual_novo %} data-visual="novo"{% endif %}>
 
 <div class="sidebar" id="sidebar">
   <div class="sidebar-brand">

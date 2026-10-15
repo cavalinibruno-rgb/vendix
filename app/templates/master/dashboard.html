@@ -94,7 +94,8 @@
         {% for t in tenants %}
         <tr>
           <td class="text-muted small">{{ t.id }}</td>
-          <td class="fw-semibold">{{ t.store_name }}</td>
+          <td class="fw-semibold">{{ t.store_name }}
+            {% if t.visual_novo %}<span class="badge ms-1" style="background:#c9a84c;color:#1a1a2e;">Visual novo</span>{% endif %}</td>
           <td class="text-muted small">{{ t.email }}</td>
           <td class="text-muted small">{{ t.phone or '—' }}</td>
           <td>
@@ -128,6 +129,13 @@
                 <i class="bi bi-play-circle"></i>
               </button>
               {% endif %}
+              <form method="post" action="{{ url_for('master.tenant_visual_novo', tenant_id=t.id) }}" class="m-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm {{ 'btn-warning' if t.visual_novo else 'btn-outline-warning' }}"
+                  title="{{ 'Desligar' if t.visual_novo else 'Ligar' }} o visual novo nesta loja">
+                  <i class="bi bi-palette"></i>
+                </button>
+              </form>
               <button class="btn btn-sm btn-outline-danger"
                 onclick="abrirExcluir({{ t.id }}, '{{ t.store_name }}')">
                 <i class="bi bi-trash"></i>
