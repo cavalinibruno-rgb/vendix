@@ -132,7 +132,7 @@
         <table class="table table-sm table-hover mb-0 align-middle" style="font-size:.82rem;">
           <thead class="table-light">
             <tr>
-              <td colspan="6" class="py-2 px-3 border-bottom">
+              <td colspan="7" class="py-2 px-3 border-bottom">
                 {# Um formulário só para todos os filtros: trocar um não perde os outros #}
                 <form method="get" id="movFiltros" class="d-flex gap-2 align-items-center flex-wrap m-0">
                   <input type="hidden" name="q" value="{{ q }}">
@@ -207,6 +207,7 @@
               <th class="ps-3">Produto</th>
               <th>Tipo</th>
               <th class="text-center">Qtd</th>
+              <th class="text-center" title="Estoque do produto logo após esta movimentação">Estoque<br>após</th>
               <th>Motivo</th>
               <th>Responsável</th>
               <th>Data</th>
@@ -224,12 +225,13 @@
                 {% endif %}
               </td>
               <td class="text-center fw-semibold">{{ m.quantity }}</td>
+              <td class="text-center fw-bold" style="color:#c9a84c;">{{ m.estoque_apos if m.estoque_apos is not none else '—' }}</td>
               <td class="text-muted" style="max-width:110px;">{{ m.motive or '—' }}</td>
               <td class="text-muted">{{ m.user_name or '—' }}</td>
               <td class="text-muted">{{ m.created_at.strftime('%d/%m %H:%M') }}</td>
             </tr>
             {% else %}
-            <tr><td colspan="6" class="text-center text-muted py-3">Nenhuma movimentação encontrada.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted py-3">Nenhuma movimentação encontrada.</td></tr>
             {% endfor %}
           </tbody>
         </table>

@@ -331,6 +331,8 @@ def _run_migrations(db):
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS sort_order INTEGER",
         # Disponibilidade no Cardápio da Loja (lanchonete)
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS disponivel BOOLEAN DEFAULT TRUE",
+        # Estoque do produto logo após cada movimentação (extrato)
+        "ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS estoque_apos INTEGER",
         """CREATE TABLE IF NOT EXISTS ingredients (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
