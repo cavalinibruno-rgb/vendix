@@ -231,7 +231,24 @@
           <div class="row g-3 mb-3" id="stockFields">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Estoque Atual</label>
-              {% if current_user.is_employee %}
+              {% if product %}
+              {# Na edição o estoque é só leitura: mudanças passam pelo Estoque (com histórico) #}
+              {% if product.pack_parent_id and product.pack_parent %}
+              <input type="text" class="form-control" readonly
+                     value="{{ product.effective_stock }} (usa o estoque de {{ product.pack_parent.name }})">
+              <a href="{{ url_for('stock.index', ajustar=product.pack_parent_id) }}" class="btn btn-sm btn-outline-warning mt-2">
+                <i class="bi bi-sliders me-1"></i>Ajustar estoque de {{ product.pack_parent.name }}</a>
+              {% elif product.combo_items %}
+              <input type="text" class="form-control" readonly value="Usa o estoque dos itens do combo">
+              {% else %}
+              <input type="text" class="form-control" readonly value="{{ product.stock_quantity }}">
+              {% if not current_user.is_employee %}
+              <a href="{{ url_for('stock.index', ajustar=product.id) }}" class="btn btn-sm btn-outline-warning mt-2">
+                <i class="bi bi-sliders me-1"></i>Ajustar estoque</a>
+              {% endif %}
+              {% endif %}
+              <div class="form-text"><i class="bi bi-lock me-1"></i>Para alterar, use Estoque → Entrada ou Ajuste — fica registrado no histórico.</div>
+              {% elif current_user.is_employee %}
               <input type="text" class="form-control" value="{{ product.stock_quantity if product else '0' }}"
                      readonly disabled title="Apenas o administrador pode alterar o estoque.">
               <div class="form-text text-muted"><i class="bi bi-lock me-1"></i>Somente o administrador pode alterar o estoque.</div>

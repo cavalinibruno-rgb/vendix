@@ -375,6 +375,20 @@ def novo():
         ).scalar() or 0
         product.product_number = last_num + 1
 
+        # Estoque inicial informado no cadastro fica registrado no histórico
+        if stock > 0:
+            from app.models.stock import StockMovement
+            db.session.add(StockMovement(
+                tenant_id    = tenant_id(),
+                product_id   = product.id,
+                product_name = product.name,
+                type         = 'entrada',
+                quantity     = stock,
+                motive       = 'Estoque inicial (cadastro do produto)',
+                user_id      = None if current_user.is_employee else current_user.id,
+                user_name    = current_user.display_name or current_user.username,
+            ))
+
         tem_pack = request.form.get('tem_pack') == '1'
 
         # Coleta packs[0][qty], packs[1][qty], etc.
@@ -421,9 +435,9 @@ def editar(product_id):
         product.sale_price_cold      = float(request.form.get('sale_price_cold', 0) or 0)
         product.sale_price_cold_card = float(request.form.get('sale_price_cold_card', 0) or 0)
         product.cost_price           = float(request.form.get('cost_price', 0) or 0)
-        # Operador de caixa não pode alterar o Estoque Atual (mantém o valor existente)
-        if not current_user.is_employee:
-            product.stock_quantity = int(request.form.get('stock_quantity', 0) or 0)
+        # O estoque NÃO é alterado pela edição do produto: toda mudança passa por
+        # Estoque → Entrada/Ajuste, que registra quem fez, o motivo e a quantidade.
+        # (Evita sobrescrever o estoque com um valor antigo de uma aba aberta há dias.)
         product.min_stock      = int(request.form.get('min_stock', 0) or 0)
         product.description    = request.form.get('description', '').strip()
         product.promo_starts_at = _parse_promo_dt(request.form.get('promo_inicio'))

@@ -222,7 +222,7 @@
             <select name="product_id" class="form-select" required>
               <option value="">— Selecione —</option>
               {% for p in produtos %}
-              <option value="{{ p.id }}">{{ p.name }} (atual: {{ es }})</option>
+              <option value="{{ p.id }}">{{ p.name }} (atual: {{ eff_stock(p) }})</option>
               {% endfor %}
             </select>
           </div>
@@ -277,7 +277,7 @@
             <select name="product_id_ajuste" id="produtoAjuste" class="form-select" required onchange="selecionarProdutoAjuste(this)">
               <option value="">— Selecione —</option>
               {% for p in produtos %}
-              <option value="{{ p.id }}" data-qtd="{{ es }}">{{ p.name }} (atual: {{ es }})</option>
+              <option value="{{ p.id }}" data-qtd="{{ eff_stock(p) }}">{{ p.name }} (atual: {{ eff_stock(p) }})</option>
               {% endfor %}
             </select>
           </div>
@@ -348,6 +348,16 @@ function selecionarProdutoAjuste(sel) {
   const id = sel.value;
   document.getElementById('formAjuste').action = id ? `/estoque/${id}/ajustar` : '#';
 }
+
+// Vindo do botão "Ajustar estoque" da edição do produto: abre o ajuste com o produto já escolhido
+document.addEventListener('DOMContentLoaded', () => {
+  const id = new URLSearchParams(location.search).get('ajustar');
+  const sel = document.getElementById('produtoAjuste');
+  if (!id || !sel || !sel.querySelector(`option[value="${CSS.escape(id)}"]`)) return;
+  sel.value = id;
+  selecionarProdutoAjuste(sel);
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAjuste')).show();
+});
 
 const todosProdEstoque = [
   {% for p in todos_produtos %}
