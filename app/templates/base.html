@@ -262,8 +262,160 @@
   <meta name="apple-mobile-web-app-title" content="Vendix">
   {% block head %}{% endblock %}
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})()</script>
+<style>
+  /* ═══ VISUAL NOVO — menu no topo (só lojas com a chave ligada) ═══ */
+  body[data-visual="novo"] { --vn-bg: #ffffff; --vn-line: #e3e5ea; --vn-txt: #14161c; --vn-mut: #5b6170;
+                             --vn-acc: #d9ad52; --vn-cta: #14161c; --vn-cta-txt: #ffffff; --vn-page: #f3f4f7;
+                             font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+  html[data-theme="dark"] body[data-visual="novo"] { --vn-bg: #17182a; --vn-line: #2b2d45; --vn-txt: #eceef4;
+                             --vn-mut: #a3a9bb; --vn-cta: #d9ad52; --vn-cta-txt: #14161c; --vn-page: #0f0f19; }
+  body[data-visual="novo"] .sidebar,
+  body[data-visual="novo"] .sidebar-backdrop,
+  body[data-visual="novo"] .topbar { display: none !important; }
+  body[data-visual="novo"] { background: var(--vn-page); }
+  body[data-visual="novo"] .main-content,
+  body[data-visual="novo"] .main-content.collapsed { margin-left: auto !important; margin-right: auto !important; max-width: 1320px; padding: 28px 40px 48px; }
+  @media (max-width: 768px) { body[data-visual="novo"] .main-content { padding: 18px 14px 40px; } }
+
+  .vn-nav { position: sticky; top: 0; z-index: 1030; background: var(--vn-bg); border-bottom: 1px solid var(--vn-line); padding: 0; }
+  .vn-nav-inner { display: flex; flex-wrap: wrap; align-items: center; width: 100%; padding: 0 32px; min-height: 68px; gap: 8px 24px; }
+  .vn-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--vn-txt); }
+  .vn-logo { width: 32px; height: 32px; border-radius: 9px; background: #14161c; color: var(--vn-acc);
+             display: flex; align-items: center; justify-content: center; font-weight: 800; }
+  .vn-brand-txt { font-weight: 800; letter-spacing: .12em; }
+  .vn-toggler { margin-left: auto; border: 1px solid var(--vn-line); color: var(--vn-txt); font-size: 1.4rem; padding: 4px 10px; }
+  .vn-nav .navbar-collapse { flex-grow: 1; }
+  .vn-links { gap: 4px; }
+  .vn-link { display: flex; align-items: center; gap: 6px; padding: 22px 12px; text-decoration: none; color: var(--vn-mut);
+             font-weight: 500; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .vn-link:hover { color: var(--vn-txt); }
+  .vn-link.active { color: var(--vn-txt); font-weight: 700; border-bottom-color: var(--vn-acc); }
+  .vn-badge { min-width: 20px; padding: 1px 7px; border-radius: 999px; background: #d63a2f; color: #fff;
+              font-size: .7rem; font-weight: 800; text-align: center; }
+  .vn-badge-gold { background: var(--vn-acc); color: #14161c; }
+  .vn-drop { border-radius: 12px; border: 1px solid var(--vn-line); box-shadow: 0 12px 32px rgba(20,22,28,.12); padding: 6px; }
+  .vn-drop .dropdown-item { border-radius: 8px; padding: 9px 14px; font-weight: 500; }
+  .vn-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+  .vn-pill { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .82rem; padding: 7px 12px;
+             border-radius: 999px; text-decoration: none; white-space: nowrap; }
+  .vn-pill-ok  { background: #e8f6ee; color: #146c3b; }
+  .vn-pill-off { background: #fdecec; color: #a3261f; }
+  .vn-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .vn-cta { display: inline-flex; align-items: center; height: 44px; padding: 0 20px; border-radius: 10px; background: var(--vn-cta);
+            color: var(--vn-cta-txt); font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .vn-cta:hover { opacity: .9; color: var(--vn-cta-txt); }
+  .vn-user { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--vn-line); background: transparent; padding: 0;
+             display: flex; align-items: center; justify-content: center; }
+  .vn-user::after { display: none; }
+  .vn-avatar { font-weight: 800; color: var(--vn-txt); }
+  @media (max-width: 991.98px) {
+    .vn-nav-inner { padding: 8px 16px; }
+    .vn-link { padding: 12px 6px; border-bottom: 0; border-left: 3px solid transparent; }
+    .vn-link.active { border-left-color: var(--vn-acc); }
+    .vn-right { margin: 8px 0 12px; flex-wrap: wrap; }
+  }
+</style>
 </head>
 <body{% if current_user.is_authenticated and current_user.tenant and current_user.tenant.visual_novo %} data-visual="novo"{% endif %}>
+
+{% if current_user.is_authenticated and not current_user.is_master and current_user.tenant and current_user.tenant.visual_novo %}
+{% set ep = request.endpoint or '' %}
+{# ═══ VISUAL NOVO: menu no topo (substitui a barra lateral, que fica oculta) ═══ #}
+<header class="vn-nav navbar navbar-expand-lg" aria-label="Menu principal">
+  <div class="vn-nav-inner">
+    <a class="vn-brand" href="{{ url_for('dashboard.index') }}">
+      <span class="vn-logo" aria-hidden="true">V</span><span class="vn-brand-txt">VENDIX</span>
+    </a>
+    <button class="navbar-toggler vn-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#vnMenu"
+            aria-controls="vnMenu" aria-expanded="false" aria-label="Abrir menu"><i class="bi bi-list"></i></button>
+    <div class="collapse navbar-collapse" id="vnMenu">
+      <ul class="navbar-nav vn-links">
+        <li class="nav-item"><a class="vn-link {% if ep == 'dashboard.index' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+        <li class="nav-item dropdown">
+          <a class="vn-link dropdown-toggle {% if ep in ('sales.nova','sales.index') or 'cash' in ep or 'account' in ep or 'apps' in ep %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Vendas</a>
+          <ul class="dropdown-menu vn-drop">
+            <li><a class="dropdown-item" href="{{ url_for('sales.nova') }}">Nova venda</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('sales.index') }}">Histórico de vendas</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('cash.index') }}">Caixa</a></li>
+            {% if not current_user.tenant.is_lanchonete %}
+            <li><a class="dropdown-item" href="{{ url_for('account.index') }}">Fiado</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('apps.index') }}">Vendas de apps</a></li>
+            {% endif %}
+          </ul>
+        </li>
+        <li class="nav-item"><a class="vn-link {% if 'pedidos_online' in ep %}active{% endif %}" href="{{ url_for('pedidos_online.index') }}">Pedidos online
+          <span class="vn-badge" data-espelho="badge-pedidos-online" style="display:none;"></span></a></li>
+        <li class="nav-item"><a class="vn-link {% if 'entregas' in ep %}active{% endif %}" href="{{ url_for('entregas.index') }}">Entregas
+          <span class="vn-badge" data-espelho="badge-entrega-pend" style="{% if entregas_pendentes == 0 %}display:none;{% endif %}">{{ entregas_pendentes }}</span>
+          <span class="vn-badge vn-badge-gold" data-espelho="badge-entrega-ret" style="{% if entregas_retorno == 0 %}display:none;{% endif %}">{{ entregas_retorno }}</span></a></li>
+        <li class="nav-item"><a class="vn-link {% if 'stock' in ep %}active{% endif %}" href="{{ url_for('stock.index') }}">Estoque</a></li>
+        <li class="nav-item dropdown">
+          <a class="vn-link dropdown-toggle {% if 'products' in ep or 'customers' in ep or 'vale' in ep or 'insumos' in ep %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Cadastros</a>
+          <ul class="dropdown-menu vn-drop">
+            {% if current_user.tenant.is_lanchonete %}
+            <li><a class="dropdown-item" href="{{ url_for('products.cardapio') }}">Cardápio da loja</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('insumos.index') }}">Insumos</a></li>
+            {% else %}
+            <li><a class="dropdown-item" href="{{ url_for('products.index') }}">Produtos</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('products.tipos') }}">Categorias</a></li>
+            {% endif %}
+            <li><a class="dropdown-item" href="{{ url_for('products.marcas') }}">Marcas</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('customers.index') }}">Clientes</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('customers.bairros') }}">Bairros</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('vale.index') }}">Funcionários</a></li>
+          </ul>
+        </li>
+        {% if not current_user.is_employee %}
+        <li class="nav-item dropdown">
+          <a class="vn-link dropdown-toggle {% if 'dre' in ep %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Financeiro</a>
+          <ul class="dropdown-menu vn-drop">
+            <li><a class="dropdown-item" href="{{ url_for('dre.faturamento') }}">Faturamento</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('dre.index') }}">DRE</a></li>
+          </ul>
+        </li>
+        {% endif %}
+      </ul>
+      <div class="vn-right">
+        {% if caixa_aberto_nav %}
+        <a class="vn-pill vn-pill-ok" href="{{ url_for('cash.index') }}"><span class="vn-dot" aria-hidden="true"></span>Caixa aberto</a>
+        {% else %}
+        <a class="vn-pill vn-pill-off" href="{{ url_for('cash.index') }}"><span class="vn-dot" aria-hidden="true"></span>Caixa fechado</a>
+        {% endif %}
+        <a class="vn-cta" href="{{ url_for('sales.nova') }}">+ Nova venda</a>
+        <div class="dropdown">
+          <button class="vn-user dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Menu do usuário">
+            <span class="vn-avatar" aria-hidden="true">{{ (current_user.display_name or current_user.username or '?')[:1]|upper }}</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end vn-drop">
+            <li><span class="dropdown-item-text small text-muted">{{ current_user.tenant.store_name }}<br>{{ current_user.display_name or current_user.username }} · v{{ app_version }}</span></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('config.index') }}">Configurações</a></li>
+            {% if not current_user.is_employee %}
+            <li><a class="dropdown-item" href="{{ url_for('assinatura.index') }}">Assinatura</a></li>
+            {% endif %}
+            <li><button class="dropdown-item" type="button" onclick="toggleTheme()">Alternar tema claro/escuro</button></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">Sair</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+<script>
+  // Espelha no menu novo os contadores que o polling atualiza no menu antigo (oculto)
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-espelho]').forEach(alvo => {
+      const orig = document.getElementById(alvo.dataset.espelho);
+      if (!orig) return;
+      const copiar = () => { alvo.textContent = orig.textContent; alvo.style.display = orig.style.display; };
+      copiar();
+      new MutationObserver(copiar).observe(orig, { childList: true, characterData: true, subtree: true, attributes: true });
+    });
+  });
+</script>
+{% endif %}
 
 <div class="sidebar" id="sidebar">
   <div class="sidebar-brand">

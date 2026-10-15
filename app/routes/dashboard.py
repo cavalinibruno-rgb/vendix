@@ -147,6 +147,13 @@ def index():
     desbloqueado = caixa is not None or session.get('dashboard_desbloqueado', False)
     senha_erro = session.pop('dashboard_erro', False)
 
+    # Visual novo (Dashboard B). Bloqueio por senha e visão restrita do operador
+    # continuam na tela atual, para manter essas proteções.
+    if tenant and tenant.visual_novo and desbloqueado and not modo_restrito:
+        from app.routes.dashboard_novo import dados as dados_novo
+        return render_template('dashboard/novo.html', tenant=tenant,
+                               d=dados_novo(tenant, request.args.get('periodo', 'hoje')))
+
     return render_template('dashboard/index.html',
         tenant=tenant,
         qtd_vendas=len(vendas_hoje),

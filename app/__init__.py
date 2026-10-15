@@ -534,6 +534,11 @@ def create_app():
                 base = Sale.query.filter_by(tenant_id=tid, status='confirmed', delivery_mode='entrega')
                 badges['entregas_pendentes'] = base.filter(Sale.dispatched_at == None).count()
                 badges['entregas_retorno']   = base.filter(Sale.dispatched_at != None, Sale.delivered_at == None).count()
+                # Visual novo: selo "Caixa aberto" no menu do topo (só nessas lojas)
+                t = current_user.tenant
+                if t is not None and t.visual_novo:
+                    from app.models.cash import CashRegister
+                    badges['caixa_aberto_nav'] = CashRegister.query.filter_by(tenant_id=tid, status='open').count() > 0
         except Exception:
             pass
         return badges

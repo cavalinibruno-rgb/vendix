@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Vendix{% endblock %}
+
+{% block head %}
+<style>
+  .db-wrap { display: flex; flex-direction: column; gap: 24px; color: var(--vn-txt); }
+  .db-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px; }
+  .db-data { color: var(--vn-mut); font-size: .9rem; }
+  .db-titulo { margin: 2px 0 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; color: var(--vn-txt); }
+  .db-seg { display: flex; background: var(--vn-bg); border: 1px solid var(--vn-line); border-radius: 10px; padding: 4px; gap: 4px; }
+  .db-seg a { border-radius: 7px; padding: 8px 14px; font-weight: 600; font-size: .88rem; color: var(--vn-mut); text-decoration: none; }
+  .db-seg a.on { background: #14161c; color: #fff; }
+  html[data-theme="dark"] .db-seg a.on { background: #d9ad52; color: #14161c; }
+  .db-card { background: var(--vn-bg); border: 1px solid var(--vn-line); border-radius: 16px; padding: 24px; }
+  .db-card h2 { margin: 0; font-size: 1.06rem; font-weight: 700; color: var(--vn-txt); }
+  .db-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); padding: 0; overflow: hidden; }
+  .db-kpi { padding: 22px 24px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--vn-line); }
+  .db-kpi:last-child { border-right: 0; }
+  .db-kpi-rot { color: var(--vn-mut); font-size: .82rem; font-weight: 600; }
+  .db-kpi-val { font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; color: var(--vn-txt); }
+  .db-kpi-sub { color: var(--vn-mut); font-size: .82rem; }
+  .db-up { color: #146c3b; font-weight: 700; } .db-down { color: #b4232a; font-weight: 700; }
+  html[data-theme="dark"] .db-up { color: #6fd39a; } html[data-theme="dark"] .db-down { color: #ff8a8a; }
+  .db-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 18px; }
+  .db-meta { display: flex; gap: 18px; color: var(--vn-mut); font-size: .82rem; } .db-meta b { color: var(--vn-txt); }
+  .db-bars { display: flex; align-items: flex-end; gap: 12px; height: 190px; border-bottom: 1px solid var(--vn-line); overflow-x: auto; }
+  .db-col { flex: 1 1 0; min-width: 34px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; }
+  .db-col-v { font-size: .72rem; font-weight: 700; color: var(--vn-mut); white-space: nowrap; }
+  .db-bar { width: 100%; max-width: 44px; border-radius: 8px 8px 2px 2px; background: #d5d9e2; }
+  html[data-theme="dark"] .db-bar { background: #3a3d57; }
+  .db-bar.pico { background: #d9ad52 !important; }
+  .db-labels { display: flex; gap: 12px; margin-top: 10px; overflow: hidden; }
+  .db-labels span { flex: 1 1 0; min-width: 34px; text-align: center; color: var(--vn-mut); font-size: .74rem; font-weight: 600; }
+  .db-row { display: flex; flex-wrap: wrap; gap: 24px; }
+  .db-row > .db-card { flex: 1 1 380px; min-width: 0; }
+  .db-stack { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 3px; margin: 18px 0; }
+  .db-leg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; }
+  .db-leg div { display: flex; justify-content: space-between; gap: 8px; }
+  .db-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+  .db-at { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; margin-top: 12px; color: var(--vn-txt); }
+  .db-at b { min-width: 28px; font-weight: 800; }
+  .db-at span { flex: 1; }
+  .db-at a { font-weight: 700; text-decoration: none; color: #8a5a00; }
+  .db-at.aviso { background: #fff4e5; } .db-at.aviso b { color: #8a5a00; }
+  .db-at.perigo { background: #fdecec; } .db-at.perigo b { color: #a3261f; }
+  .db-at.neutro { background: #f1f2f5; } .db-at.neutro b { color: #3d4352; }
+  html[data-theme="dark"] .db-at.aviso { background: #3a2f17; } html[data-theme="dark"] .db-at.perigo { background: #3a1d1d; }
+  html[data-theme="dark"] .db-at.neutro { background: #24263a; } html[data-theme="dark"] .db-at a { color: #e8c97a; }
+  html[data-theme="dark"] .db-at b { color: #f2f1ed !important; }
+  .db-ok { margin-top: 12px; padding: 14px; border-radius: 12px; background: #e8f6ee; color: #146c3b; font-weight: 600; }
+  html[data-theme="dark"] .db-ok { background: #17321f; color: #7fd6a5; }
+  .db-top5 { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(120px, 3fr) 90px; align-items: center; gap: 16px; margin-top: 16px; }
+  .db-trilho { height: 10px; background: #eef0f3; border-radius: 999px; overflow: hidden; }
+  html[data-theme="dark"] .db-trilho { background: #24263a; }
+  .db-trilho div { height: 100%; border-radius: 999px; background: #14161c; }
+  html[data-theme="dark"] .db-trilho div { background: #d9ad52; }
+  .db-vazio { color: var(--vn-mut); padding: 24px 0 8px; text-align: center; }
+  @media (max-width: 640px) { .db-kpi { border-right: 0; border-bottom: 1px solid var(--vn-line); } .db-top5 { grid-template-columns: 1fr 70px; } .db-top5 .db-trilho { display: none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-wrap">
+  <div class="db-top">
+    <div>
+      <div class="db-data">{{ d.data_txt }}</div>
+      <h1 class="db-titulo">{{ d.titulo }}</h1>
+    </div>
+    <nav class="db-seg" aria-label="Período">
+      <a href="?periodo=hoje" class="{{ 'on' if d.periodo == 'hoje' }}">Hoje</a>
+      <a href="?periodo=7d" class="{{ 'on' if d.periodo == '7d' }}">7 dias</a>
+      <a href="?periodo=mes" class="{{ 'on' if d.periodo == 'mes' }}">Mês</a>
+    </nav>
+  </div>
+
+  <section class="db-card db-kpis" aria-label="Indicadores">
+    <div class="db-kpi">
+      <span class="db-kpi-rot">Faturamento</span>
+      <span class="db-kpi-val">{{ d.faturamento }}</span>
+      {% if d.variacao is none %}<span class="db-kpi-sub">sem base para comparar</span>
+      {% elif d.variacao >= 0 %}<span class="db-up">+{{ d.variacao }}% {{ d.comp_txt }}</span>
+      {% else %}<span class="db-down">{{ d.variacao }}% {{ d.comp_txt }}</span>{% endif %}
+    </div>
+    <div class="db-kpi">
+      <span class="db-kpi-rot">Pedidos</span>
+      <span class="db-kpi-val">{{ d.pedidos }}</span>
+      <span class="db-kpi-sub">{{ d.balcao }} balcão · {{ d.entrega }} entrega</span>
+    </div>
+    <div class="db-kpi">
+      <span class="db-kpi-rot">Ticket médio</span>
+      <span class="db-kpi-val">{{ d.ticket }}</span>
+      <span class="db-kpi-sub">Mês: {{ d.ticket_mes }}</span>
+    </div>
+    {% if not current_user.is_employee %}
+    <div class="db-kpi">
+      <span class="db-kpi-rot">Lucro estimado</span>
+      <span class="db-kpi-val">{{ d.lucro }}</span>
+      <span class="db-kpi-sub">Margem {{ d.margem }}</span>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="db-card" aria-label="{{ 'Vendas por hora' if d.por_hora else 'Vendas por dia' }}">
+    <div class="db-head">
+      <h2>{{ 'Vendas por hora' if d.por_hora else 'Vendas por dia' }}</h2>
+      {% if d.pico %}
+      <div class="db-meta">
+        <span>Pico: <b>{{ d.pico[0] }} · {{ d.pico[1] }}</b></span>
+        {% if d.calmo %}<span>Mais tranquilo: <b>{{ d.calmo }}</b></span>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% if d.barras and d.pico %}
+    <div class="db-bars">
+      {% for b in d.barras %}
+      <div class="db-col">
+        <span class="db-col-v">{{ b.valor if b.valor != 'R$ 0' else '' }}</span>
+        <div class="db-bar {{ 'pico' if b.pico }}" style="height: {{ b.alt }};"></div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="db-labels">{% for b in d.barras %}<span>{{ b.label }}</span>{% endfor %}</div>
+    {% else %}
+    <div class="db-vazio">Nenhuma venda {{ d.rotulo }} ainda.</div>
+    {% endif %}
+  </section>
+
+  <div class="db-row">
+    <section class="db-card" aria-label="Formas de pagamento">
+      <h2>Formas de pagamento</h2>
+      {% if d.pagamentos %}
+      <div class="db-stack" aria-hidden="true">
+        {% for p in d.pagamentos %}<div style="flex: {{ p.pct or 1 }}; background: {{ p.cor }};"></div>{% endfor %}
+      </div>
+      <div class="db-leg">
+        {% for p in d.pagamentos %}
+        <div title="{{ p.valor }}"><span><span class="db-sw" style="background: {{ p.cor }};"></span>{{ p.nome }}</span><b>{{ p.pct }}%</b></div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="db-vazio">Nenhuma venda {{ d.rotulo }} ainda.</div>
+      {% endif %}
+    </section>
+
+    <section class="db-card" aria-label="Precisa de atenção">
+      <h2>Precisa de atenção</h2>
+      {% for a in d.atencao %}
+      <div class="db-at {{ a.tom }}"><b>{{ a.n }}</b><span>{{ a.txt }}</span><a href="{{ a.url }}">{{ a.acao }}</a></div>
+      {% else %}
+      <div class="db-ok">Tudo em ordem por aqui.</div>
+      {% endfor %}
+    </section>
+  </div>
+
+  <section class="db-card" aria-label="Mais vendidos">
+    <h2>Mais vendidos {{ d.rotulo }}</h2>
+    {% for m in d.mais %}
+    <div class="db-top5">
+      <span style="font-weight: 600;">{{ m.nome }}</span>
+      <div class="db-trilho"><div style="width: {{ m.w }};"></div></div>
+      <span style="text-align: right; font-weight: 700;">{{ m.qtd }} un.</span>
+    </div>
+    {% else %}
+    <div class="db-vazio">Nenhuma venda {{ d.rotulo }} ainda.</div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}
