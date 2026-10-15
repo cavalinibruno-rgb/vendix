@@ -795,6 +795,10 @@ def escpos(sale_id):
 def cancelar(sale_id):
     from datetime import datetime
     sale = Sale.query.filter_by(id=sale_id, tenant_id=tid()).first_or_404()
+    # Venda já cancelada: não devolve o estoque de novo (clique duplo / reenvio do formulário)
+    if sale.status == 'cancelled':
+        flash('Esta venda já estava cancelada.', 'warning')
+        return redirect(url_for('sales.detalhe', sale_id=sale_id))
     motivo      = request.form.get('cancel_reason', '').strip()
     op_username = request.form.get('op_username', '').strip()
     op_password = request.form.get('op_password', '').strip()

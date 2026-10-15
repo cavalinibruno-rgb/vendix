@@ -596,3 +596,79 @@ def storage_info():
         })
     except Exception as e:
         return jsonify({'erro': str(e)}), 500
+
+
+# ── DIAGNÓSTICO TEMPORÁRIO (somente leitura): histórico de estoque de um produto ──
+# Uso: /master/diag-estoque?loja=<parte do nome da loja>&produto=<parte do nome>&desde=AAAA-MM-DD
+@master_bp.route('/diag-estoque')
+@login_required
+@master_required
+def diag_estoque():
+    from app.models.product import Product
+    from app.models.combo import ComboItem
+    from app.models.stock import StockMovement
+    from collections import Counter
+    loja    = request.args.get('loja', '').strip()
+    produto = request.args.get('produto', '').strip()
+    desde   = datetime.strptime(request.args.get('desde', '2026-10-01'), '%Y-%m-%d')
+    lojas = Tenant.query.filter(Tenant.store_name.ilike(f'%{loja}%')).all()
+    if len(lojas) != 1:
+        return jsonify({'erro': 'loja não encontrada ou ambígua',
+                        'encontradas': [t.store_name for t in lojas]}), 400
+    t = lojas[0]
+    prods = Product.query.filter(Product.tenant_id == t.id, Product.name.ilike(f'%{produto}%')).all()
+    out = {'loja': t.store_name, 'tenant_id': t.id, 'desde': str(desde.date()), 'produtos': []}
+    for p in prods:
+        if p.pack_parent_id:
+            continue                                   # packs aparecem dentro do pai
+        combos = ComboItem.query.filter_by(component_id=p.id).all()
+        packs  = Product.query.filter_by(tenant_id=t.id, pack_parent_id=p.id).all()
+        consumidores = {p.id: ('produto', 1)}
+        consumidores.update({c.combo_id: ('combo', c.quantity) for c in combos})
+        consumidores.update({k.id: ('pack', k.pack_qty) for k in packs})
+        # combos que usam uma caixa/pack deste produto também consomem as unidades dele
+        pack_qty = {k.id: k.pack_qty for k in packs}
+        combos_pack = ComboItem.query.filter(ComboItem.component_id.in_(list(pack_qty))).all() if pack_qty else []
+        consumidores.update({c.combo_id: ('combo', c.quantity * pack_qty[c.component_id]) for c in combos_pack})
+        combos = combos + combos_pack
+        nomes = {x.id: x.name for x in Product.query.filter(Product.id.in_(list(consumidores))).all()}
+
+        movs = (StockMovement.query.filter(StockMovement.tenant_id == t.id,
+                                           StockMovement.product_id == p.id,
+                                           StockMovement.created_at >= desde)
+                .order_by(StockMovement.created_at).all())
+        dup = Counter(m.motive for m in movs if m.type == 'entrada' and (m.motive or '').startswith('Cancelamento'))
+
+        itens = (db.session.query(SaleItem, Sale)
+                 .join(Sale, SaleItem.sale_id == Sale.id)
+                 .filter(Sale.tenant_id == t.id, Sale.created_at >= desde,
+                         SaleItem.product_id.in_(list(consumidores)))
+                 .order_by(Sale.created_at).all())
+        vendas = []
+        un_vendidas = un_canceladas = 0
+        for it, s in itens:
+            tipo, fator = consumidores[it.product_id]
+            un = int((fator or 1) * it.quantity)        # mesma conta usada na baixa de estoque
+            vendas.append({'venda': s.sale_number or s.id, 'sale_id': s.id, 'quando': str(s.created_at)[:19],
+                           'status': s.status, 'cancelada_em': str(s.cancelled_at)[:19] if s.cancelled_at else None,
+                           'cancelada_por': s.cancelled_by_name, 'item': it.product_name,
+                           'tipo': tipo, 'qtd_item': it.quantity, 'unidades_do_produto': un,
+                           'origem': s.source})
+            un_vendidas += un
+            if s.status == 'cancelled':
+                un_canceladas += un
+
+        out['produtos'].append({
+            'id': p.id, 'nome': p.name, 'estoque_atual': p.stock_quantity, 'ativo': p.active,
+            'combos_que_usam': [{'combo': nomes.get(c.combo_id), 'qtd_por_combo': c.quantity} for c in combos],
+            'packs': [{'pack': k.name, 'unidades': k.pack_qty} for k in packs],
+            'movimentacoes': [{'quando': str(m.created_at)[:19], 'tipo': m.type, 'qtd': m.quantity,
+                               'motivo': m.motive, 'por': m.user_name} for m in movs],
+            'soma_entradas': sum(m.quantity for m in movs if m.type == 'entrada'),
+            'soma_saidas':   sum(m.quantity for m in movs if m.type == 'saida'),
+            'cancelamentos_repetidos': {k: v for k, v in dup.items() if v > 1},
+            'vendas': vendas,
+            'unidades_vendidas_total': un_vendidas,
+            'unidades_em_vendas_canceladas': un_canceladas,
+        })
+    return jsonify(out)
