@@ -57,6 +57,53 @@
     background: #ff9f43; border-color: #ff9f43; color: #17130d; border-radius: 14px; font-weight: 800; min-height: 52px;
   }
   body[data-visual="novo"] .cart-area .btn-warning:hover { background: #ffb066; border-color: #ffb066; }
+  /* Tela cheia (imagem C): sem menu, ocupa a largura toda */
+  .vn-pdv-only { display: none !important; }
+  body[data-visual="novo"] .vn-pdv-only { display: flex !important; }
+  body[data-visual="novo"] .vn-nav { display: none !important; }
+  body[data-visual="novo"], body[data-visual="novo"] .main-content { background: #101114 !important; }
+  body[data-visual="novo"] .cart-area { min-height: calc(100vh - 32px); }
+  body[data-visual="novo"] .main-content { max-width: none !important; padding: 16px 20px !important; }
+  body[data-visual="novo"] .vn-pdv-top { align-items: center; gap: 10px; margin-bottom: 14px; }
+  body[data-visual="novo"] .vn-sair { color: #9a9ca4; text-decoration: none; font-weight: 700; font-size: .9rem; white-space: nowrap;
+    border: 1px solid #2b2e36; border-radius: 12px; padding: 0 14px; height: 54px; display: inline-flex; align-items: center; gap: 6px; }
+  body[data-visual="novo"] .vn-sair:hover { color: #f2f1ed; border-color: #ff9f43; }
+  body[data-visual="novo"] .vn-busca { flex: 1; min-width: 0; }
+  body[data-visual="novo"] .vn-busca .input-group { margin: 0 !important; }
+  body[data-visual="novo"] #produtoSearch { height: 54px; }
+  body[data-visual="novo"] .vn-filtros { display: none !important; }
+  body[data-visual="novo"] .vn-modo { display: flex; background: #191b21; border: 1px solid #2b2e36; border-radius: 14px; padding: 4px; gap: 4px; }
+  body[data-visual="novo"] .vn-modo button { border: 0; background: transparent; color: #9a9ca4; font-weight: 700; border-radius: 10px; padding: 0 16px; height: 44px; }
+  body[data-visual="novo"] .vn-modo button.on { background: #f2f1ed; color: #101114; }
+  body[data-visual="novo"] .pdv-grid { max-height: calc(100vh - 210px); }
+  body[data-visual="novo"] .pdv-area { min-height: calc(100vh - 32px); }
+  body[data-visual="novo"] .cart-panel { position: sticky; top: 16px; }
+  body[data-visual="novo"] .cart-area { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  body[data-visual="novo"] .vn-venda-head { justify-content: space-between; align-items: baseline; }
+  body[data-visual="novo"] .vn-venda-head h2 { margin: 0; font-size: 1.25rem; font-weight: 800; color: #f2f1ed; }
+  body[data-visual="novo"] .vn-venda-head span { color: #9a9ca4; font-size: .88rem; font-weight: 600; }
+  body[data-visual="novo"] #secaoCliente .cart-section-header { display: none; }
+  body[data-visual="novo"] .vn-cart-sec { background: transparent !important; }
+  body[data-visual="novo"] .vn-cart-sec > .cart-section-header { display: none; }
+  body[data-visual="novo"] #carrinhoTabela td { background: transparent; border-color: #24262d; color: #f2f1ed; vertical-align: middle; }
+  body[data-visual="novo"] .vn-item { display: flex; align-items: center; gap: 10px; padding: 12px 2px; }
+  body[data-visual="novo"] .vn-item-info { flex: 1; min-width: 0; }
+  body[data-visual="novo"] .vn-item-nome { font-weight: 700; color: #f2f1ed; font-size: .95rem; }
+  body[data-visual="novo"] .vn-item-unit { color: #9a9ca4; font-size: .8rem; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  body[data-visual="novo"] .vn-qtd { display: flex; align-items: center; gap: 6px; }
+  body[data-visual="novo"] .vn-qtd button { width: 44px; height: 44px; border-radius: 12px; border: 1px solid #2f323b; background: #1d1f25; color: #f2f1ed; font-size: 1.2rem; font-weight: 700; }
+  body[data-visual="novo"] .vn-qtd button:hover { border-color: #ff9f43; }
+  body[data-visual="novo"] .vn-qtd span { min-width: 26px; text-align: center; font-weight: 800; color: #f2f1ed; }
+  body[data-visual="novo"] .vn-item-total { min-width: 80px; text-align: right; font-weight: 800; color: #f2f1ed; }
+  body[data-visual="novo"] .vn-pg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  body[data-visual="novo"] .vn-pg button { height: 52px; border-radius: 12px; border: 1px solid #2f323b; background: transparent; color: #d6d5cf; font-weight: 700; }
+  body[data-visual="novo"] .vn-pg button.on { border: 2px solid #ff9f43; background: rgba(255,159,67,.12); color: #ffd3a3; }
+  body[data-visual="novo"] .vn-mais { background: none; border: 0; color: #9a9ca4; font-weight: 600; font-size: .85rem; text-decoration: underline; padding: 0; }
+  body[data-visual="novo"] .vn-cart-sec .cart-section-footer { background: transparent; padding: 8px 2px 0; }
+  body[data-visual="novo"] .vn-total-linha { align-items: baseline; }
+  body[data-visual="novo"] .vn-total-linha > span:first-child { font-size: 1.05rem; color: #9a9ca4; }
+  body[data-visual="novo"] .vn-total-linha .text-warning { font-size: 2.1rem !important; font-weight: 800; color: #f2f1ed !important; letter-spacing: -.02em; }
+  body[data-visual="novo"] #btnFinalizar { min-height: 64px; font-size: 1.25rem; }
 </style>
 <style>
   /* ── Área de produtos: tema escuro ── */
@@ -375,8 +422,17 @@
     <div id="pdvProdutos">
     <div class="pdv-area">
 
+      <div class="vn-pdv-only vn-pdv-top">
+        <a href="/" class="vn-sair" title="Sair do PDV"><i class="bi bi-arrow-left"></i> Sair</a>
+        <div class="vn-busca" id="vnBuscaSlot"></div>
+        <div class="vn-modo" role="group" aria-label="Tipo de venda">
+          <button type="button" data-vnmodo="balcao" onclick="vnModo('balcao')">Balcão</button>
+          <button type="button" data-vnmodo="entrega" onclick="vnModo('entrega')">Entrega</button>
+          <button type="button" data-vnmodo="app" onclick="vnModo('app')">App</button>
+        </div>
+      </div>
       <!-- Busca -->
-      <div class="input-group mb-3">
+      <div class="input-group mb-3" id="buscaGrupo">
         <span class="input-group-text" style="background:#2d2d2d;border-color:#3d3d3d;color:#777;">
           <i class="bi bi-search"></i>
         </span>
@@ -385,7 +441,7 @@
       </div>
 
       <!-- Filtros -->
-      <div class="d-flex gap-2 mb-3 align-items-center">
+      <div class="d-flex gap-2 mb-3 align-items-center vn-filtros">
         <select id="filtroCategoria" class="form-select form-select-sm pdv-search" onchange="filtrarCategoria(this.value)">
           <option value="todas">Todas as categorias</option>
         </select>
@@ -606,6 +662,7 @@
   <div class="col-lg-5">
     <div class="cart-panel">
       <div class="cart-area">
+        <div class="vn-pdv-only vn-venda-head"><h2>Venda atual</h2><span id="vnQtdItens">0 itens</span></div>
 
         <!-- Origem: mantido oculto para compatibilidade com JS -->
         <div style="display:none;">
@@ -651,7 +708,7 @@
         </div>
 
         <!-- Carrinho (abaixo do cliente) -->
-        <div class="cart-section">
+        <div class="cart-section vn-cart-sec">
           <div class="cart-section-header">
             <span><i class="bi bi-cart3 me-1"></i>Carrinho</span>
             <button class="btn btn-outline-danger btn-sm" onclick="limparCarrinho()">
@@ -683,13 +740,23 @@
               <span>Acréscimo cartão</span>
               <span>R$ <span id="resumoAcrescimo">0,00</span></span>
             </div>
-            <div class="d-flex justify-content-between fw-bold" style="color:#ddd;">
+            <div class="d-flex justify-content-between fw-bold vn-total-linha" style="color:#ddd;">
               <span>Total</span>
               <span class="text-warning fs-5">R$ <span id="resumoTotal">0,00</span></span>
             </div>
           </div>
         </div>
 
+        <!-- Visual novo: pagamento direto no carrinho -->
+        <div class="vn-pdv-only" id="vnPgtoBox" style="flex-direction:column;gap:8px;">
+          <div class="vn-pg" role="group" aria-label="Forma de pagamento">
+            <button type="button" data-vnpg="pix" onclick="vnPgto('pix')">Pix</button>
+            <button type="button" data-vnpg="dinheiro" onclick="vnPgto('dinheiro')">Dinheiro</button>
+            <button type="button" data-vnpg="cartao_credito" onclick="vnPgto('cartao_credito')">Crédito</button>
+            <button type="button" data-vnpg="cartao_debito" onclick="vnPgto('cartao_debito')">Débito</button>
+          </div>
+          <div><button type="button" class="vn-mais" onclick="irParaPagamento()">Mais opções: troco, conta, combinar, desconto…</button></div>
+        </div>
         <!-- Botões inferiores -->
         <!-- Etapa 2, modo=entrega: endereço -->
         <button id="btnEndereco" class="btn btn-warning w-100 fw-bold py-3 fs-5" style="display:none;" onclick="irParaEndereco()">
@@ -1364,6 +1431,7 @@ function alterarPreco(idx, val) {
 function limparCarrinho() { carrinho = []; renderCarrinho(); calcTotais(); }
 
 function renderCarrinho() {
+  if (VISUAL_NOVO) return renderCarrinhoNovo();
   const tbody = document.getElementById('carrinhoItens');
   const vazio = document.getElementById('carrinhoVazio');
   const tabela = document.getElementById('carrinhoTabela');
@@ -1410,6 +1478,61 @@ function renderCarrinho() {
       </td>`;
     tbody.appendChild(tr);
   });
+}
+
+// Visual novo (imagem C): itens com botões − / + grandes
+function renderCarrinhoNovo() {
+  const tbody = document.getElementById('carrinhoItens');
+  const vazio = document.getElementById('carrinhoVazio');
+  const tabela = document.getElementById('carrinhoTabela');
+  tbody.innerHTML = '';
+  const n = carrinho.reduce((s, i) => s + (parseInt(i.quantity) || 0), 0);
+  document.getElementById('vnQtdItens').textContent = n === 1 ? '1 item' : n + ' itens';
+  vnSyncPgto();
+  if (!carrinho.length) { vazio.style.display = ''; tabela.style.display = 'none'; return; }
+  vazio.style.display = 'none'; tabela.style.display = '';
+  carrinho.forEach((item, idx) => {
+    const preco = origem === 'app'
+      ? `<input type="text" class="form-control form-control-sm text-center p-1" inputmode="decimal"
+               value="${fmtNum(item.unit_price)}" style="width:76px;" oninput="alterarPreco(${idx}, this.value)">`
+      : `R$ ${fmtNum(item.unit_price)} cada`;
+    const gelado = item.sale_price_cold > 0
+      ? `<button type="button" onclick="toggleGelado(${idx})" style="border:0;border-radius:6px;padding:1px 7px;font-size:.72rem;font-weight:700;
+           background:${item.gelado ? '#0ea5e9' : 'rgba(255,255,255,.08)'};color:${item.gelado ? '#fff' : '#9a9ca4'};">🧊 ${item.gelado ? 'Gelado' : 'Natural'}</button>`
+      : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="5" class="p-0"><div class="vn-item">
+        <div class="vn-item-info"><div class="vn-item-nome">${item.name}</div><div class="vn-item-unit">${preco}${gelado}</div></div>
+        <div class="vn-qtd">
+          <button type="button" aria-label="Diminuir" onclick="vnQtd(${idx}, -1)">−</button>
+          <span>${item.quantity}</span>
+          <button type="button" aria-label="Aumentar" onclick="vnQtd(${idx}, 1)">+</button>
+        </div>
+        <div class="vn-item-total">R$ ${fmtNum(item.total)}</div>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function vnQtd(idx, delta) {
+  const nova = (parseInt(carrinho[idx].quantity) || 0) + delta;
+  alterarQtd(idx, nova);
+  if (nova > 0) renderCarrinho();
+}
+function vnSyncPgto() {
+  document.querySelectorAll('#vnPgtoBox [data-vnpg]').forEach(b => b.classList.toggle('on', !modoCombinado && b.dataset.vnpg === pgto));
+  const box = document.getElementById('vnPgtoBox');
+  if (box) box.style.visibility = origem === 'app' ? 'hidden' : '';
+}
+function vnPgto(tipo) {
+  const card = document.querySelector(`#pgtoLoja .pgto-card[data-pgto="${tipo}"]`);
+  if (!card) return;
+  setPgto(card);
+  if (tipo === 'dinheiro') irParaPagamento();    // troco fica na tela de pagamento
+}
+function vnModo(m) {
+  if (m === 'app') { setOrigem('app'); irParaStep(2); }
+  else { setOrigem('loja'); setModo(m === 'entrega' ? 'entrega' : 'retirada'); irParaStep(2); }
+  renderCarrinho();
 }
 
 // ── Desconto ──────────────────────────────────────────
@@ -2100,6 +2223,24 @@ function irParaStep(n) {
   document.getElementById('btnEndereco').style.display  = (n === 2 && isEntrega) ? '' : 'none';
   document.getElementById('btnFormaPgto').style.display = (n === 2 && !isEntrega) || n === 3 ? '' : 'none';
   document.getElementById('btnFinalizar').style.display = n === 4 ? '' : 'none';
+  if (VISUAL_NOVO) {
+    // Tela cheia: finaliza direto do carrinho; entrega ainda passa pelo endereço
+    document.getElementById('btnFormaPgto').style.display = 'none';
+    document.getElementById('btnFinalizar').style.display = (n === 2 && !isEntrega) || n >= 3 ? '' : 'none';
+    const vm = origem === 'app' ? 'app' : (modo === 'entrega' ? 'entrega' : 'balcao');
+    document.querySelectorAll('[data-vnmodo]').forEach(b => b.classList.toggle('on', b.dataset.vnmodo === vm));
+  }
+}
+if (VISUAL_NOVO) {
+  // Sem telas de escolha: abre direto no balcão
+  const _irParaStep = irParaStep;
+  irParaStep = function(n) {
+    if (n < 2) { setOrigem('loja'); setModo('retirada'); n = 2; }
+    _irParaStep(n);
+  };
+  document.getElementById('vnBuscaSlot').appendChild(document.getElementById('buscaGrupo'));
+  irParaStep(0);
+  renderCarrinho();
 }
 
 function escolherOrigem(o) {
