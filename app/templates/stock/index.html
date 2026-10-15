@@ -55,7 +55,8 @@
           {% endif %}
           {# preservar filtros de movimentação #}
           <input type="hidden" name="mov_tipo" value="{{ filtro_tipo }}">
-          <input type="hidden" name="mov_data" value="{{ filtro_data }}">
+          <input type="hidden" name="mov_de" value="{{ filtro_de }}">
+          <input type="hidden" name="mov_ate" value="{{ filtro_ate }}">
         </form>
       </div>
 
@@ -68,7 +69,7 @@
               <th>Tipo</th>
               <th class="text-center">
                 {% set prox = 'estoque_asc' if ordem != 'estoque_asc' else 'estoque_desc' %}
-                <a href="{{ url_for('stock.index', q=q, tipo=tipo_id, marca=marca_id, mov_tipo=filtro_tipo, mov_data=filtro_data, ordem=prox) }}"
+                <a href="{{ url_for('stock.index', q=q, tipo=tipo_id, marca=marca_id, mov_tipo=filtro_tipo, mov_de=filtro_de, mov_ate=filtro_ate, ordem=prox) }}"
                    class="text-decoration-none text-dark">
                   Estoque
                   {% if ordem == 'estoque_asc' %}<i class="bi bi-sort-numeric-up ms-1"></i>
@@ -132,43 +133,74 @@
           <thead class="table-light">
             <tr>
               <td colspan="6" class="py-2 px-3 border-bottom">
-                <div class="d-flex gap-2 align-items-center flex-wrap">
+                {# Um formulário só para todos os filtros: trocar um não perde os outros #}
+                <form method="get" id="movFiltros" class="d-flex gap-2 align-items-center flex-wrap m-0">
+                  <input type="hidden" name="q" value="{{ q }}">
+                  <input type="hidden" name="tipo" value="{{ tipo_id or '' }}">
+                  <input type="hidden" name="mov_tipo" id="movTipo" value="{{ filtro_tipo }}">
                   <div class="btn-group btn-group-sm" role="group">
-                    <a href="?mov_tipo=&mov_data={{ filtro_data }}&mov_operador={{ filtro_operador }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-                       class="btn {{ 'btn-dark' if not filtro_tipo else 'btn-outline-secondary' }}">Todas</a>
-                    <a href="?mov_tipo=entrada&mov_data={{ filtro_data }}&mov_operador={{ filtro_operador }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-                       class="btn {{ 'btn-success' if filtro_tipo == 'entrada' else 'btn-outline-success' }}">Entradas</a>
-                    <a href="?mov_tipo=saida&mov_data={{ filtro_data }}&mov_operador={{ filtro_operador }}&q={{ q }}&tipo={{ tipo_id or '' }}"
-                       class="btn {{ 'btn-danger' if filtro_tipo == 'saida' else 'btn-outline-danger' }}">Saídas</a>
+                    <button type="button" onclick="filtrarTipo('')"
+                       class="btn {{ 'btn-dark' if not filtro_tipo else 'btn-outline-secondary' }}">Todas</button>
+                    <button type="button" onclick="filtrarTipo('entrada')"
+                       class="btn {{ 'btn-success' if filtro_tipo == 'entrada' else 'btn-outline-success' }}">Entradas</button>
+                    <button type="button" onclick="filtrarTipo('saida')"
+                       class="btn {{ 'btn-danger' if filtro_tipo == 'saida' else 'btn-outline-danger' }}">Saídas</button>
                   </div>
-                  <input type="date" name="mov_data" value="{{ filtro_data }}"
-                         class="form-control form-control-sm" style="width:auto;"
-                         onchange="window.location='?mov_tipo={{ filtro_tipo }}&mov_operador={{ filtro_operador }}&mov_produto={{ filtro_produto }}&mov_data='+this.value+'&q={{ q }}&tipo={{ tipo_id or '' }}'">
+                  <div class="d-flex align-items-center gap-1">
+                    <span class="small text-muted">De</span>
+                    <input type="date" name="mov_de" value="{{ filtro_de }}" class="form-control form-control-sm"
+                           style="width:auto;" onchange="this.form.submit()">
+                    <span class="small text-muted">até</span>
+                    <input type="date" name="mov_ate" value="{{ filtro_ate }}" class="form-control form-control-sm"
+                           style="width:auto;" onchange="this.form.submit()">
+                  </div>
                   {% if operadores_mov %}
-                  <select class="form-select form-select-sm" style="width:auto;"
-                          onchange="window.location='?mov_tipo={{ filtro_tipo }}&mov_data={{ filtro_data }}&mov_produto={{ filtro_produto }}&mov_operador='+this.value+'&q={{ q }}&tipo={{ tipo_id or '' }}'">
+                  <select name="mov_operador" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
                     <option value="">Todos operadores</option>
                     {% for op in operadores_mov %}
                     <option value="{{ op }}" {% if op == filtro_operador %}selected{% endif %}>{{ op }}</option>
                     {% endfor %}
                   </select>
                   {% endif %}
-                  <form method="get" class="d-flex align-items-center gap-1 m-0">
-                    <input type="hidden" name="mov_tipo" value="{{ filtro_tipo }}">
-                    <input type="hidden" name="mov_data" value="{{ filtro_data }}">
-                    <input type="hidden" name="mov_operador" value="{{ filtro_operador }}">
-                    <input type="hidden" name="q" value="{{ q }}">
-                    <input type="hidden" name="tipo" value="{{ tipo_id or '' }}">
+                  <div class="d-flex align-items-center gap-1">
                     <input type="text" name="mov_produto" value="{{ filtro_produto }}"
-                           class="form-control form-control-sm" style="width:180px;"
-                           placeholder="Buscar produto…">
+                           class="form-control form-control-sm" style="width:180px;" placeholder="Buscar produto…">
                     <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
-                  </form>
-                  {% if filtro_data or filtro_operador or filtro_produto %}
+                  </div>
+                  {% if filtro_de or filtro_ate or filtro_operador or filtro_produto %}
                   <a href="?mov_tipo={{ filtro_tipo }}&q={{ q }}&tipo={{ tipo_id or '' }}"
                      class="btn btn-outline-secondary btn-sm" title="Limpar filtros"><i class="bi bi-x"></i></a>
                   {% endif %}
+                </form>
+
+                {% if resumo_mov %}
+                {# Totais do período para o produto buscado — sem precisar contar linha por linha #}
+                <div class="mt-2 border rounded p-2" style="background:rgba(201,168,76,.06);">
+                  <div class="small text-muted mb-1">
+                    <i class="bi bi-calculator me-1"></i>Total no período
+                    {%- if filtro_de or filtro_ate %}
+                      ({{ (filtro_de[8:10] ~ '/' ~ filtro_de[5:7] ~ '/' ~ filtro_de[0:4]) if filtro_de else 'início' }} → {{ (filtro_ate[8:10] ~ '/' ~ filtro_ate[5:7] ~ '/' ~ filtro_ate[0:4]) if filtro_ate else 'hoje' }})
+                    {%- else %} (todo o histórico){% endif %}
+                    {%- if filtro_operador %} · operador {{ filtro_operador }}{% endif %}
+                  </div>
+                  <table class="table table-sm mb-0 w-100" style="font-size:.85rem;--bs-table-bg:transparent;">
+                    <thead><tr>
+                      <th class="ps-0">Produto</th><th class="text-end text-success">Entradas</th>
+                      <th class="text-end text-danger">Saídas</th><th class="text-end">Saldo</th>
+                    </tr></thead>
+                    <tbody>
+                      {% for r in resumo_mov %}
+                      <tr>
+                        <td class="ps-0 fw-semibold">{{ r.produto }}</td>
+                        <td class="text-end text-success fw-bold">+{{ r.entradas }}</td>
+                        <td class="text-end text-danger fw-bold">−{{ r.saidas }}</td>
+                        <td class="text-end fw-bold">{{ '%+d'|format(r.saldo) }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
                 </div>
+                {% endif %}
               </td>
             </tr>
             <tr>
@@ -344,6 +376,12 @@
 
 {% block scripts %}
 <script>
+// Botões Todas / Entradas / Saídas: mantêm período, operador e produto
+function filtrarTipo(tipo) {
+  document.getElementById('movTipo').value = tipo;
+  document.getElementById('movFiltros').submit();
+}
+
 function selecionarProdutoAjuste(sel) {
   const id = sel.value;
   document.getElementById('formAjuste').action = id ? `/estoque/${id}/ajustar` : '#';

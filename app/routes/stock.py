@@ -76,24 +76,53 @@ def index():
 
     # Movimentações com filtros
     filtro_tipo      = request.args.get('mov_tipo', '')
-    filtro_data      = request.args.get('mov_data', '')
     filtro_operador  = request.args.get('mov_operador', '')
     filtro_produto   = request.args.get('mov_produto', '').strip()
+    # Período (de / até). Aceita o antigo mov_data (um dia só) por compatibilidade.
+    filtro_de  = request.args.get('mov_de', '') or request.args.get('mov_data', '')
+    filtro_ate = request.args.get('mov_ate', '') or request.args.get('mov_data', '')
 
-    mov_query = StockMovement.query.filter_by(tenant_id=tid())
-    if filtro_tipo:
-        mov_query = mov_query.filter_by(type=filtro_tipo)
-    if filtro_data:
+    def _dia(v):
         try:
-            d = date.fromisoformat(filtro_data)
-            mov_query = mov_query.filter(db.func.date(StockMovement.created_at) == d)
+            return date.fromisoformat(v) if v else None
         except ValueError:
-            pass
+            return None
+    dia_de, dia_ate = _dia(filtro_de), _dia(filtro_ate)
+    if dia_de and dia_ate and dia_de > dia_ate:          # datas invertidas: corrige
+        dia_de, dia_ate = dia_ate, dia_de
+        filtro_de, filtro_ate = filtro_ate, filtro_de
+
+    base = StockMovement.query.filter_by(tenant_id=tid())
+    if dia_de:
+        base = base.filter(db.func.date(StockMovement.created_at) >= dia_de)
+    if dia_ate:
+        base = base.filter(db.func.date(StockMovement.created_at) <= dia_ate)
     if filtro_operador:
-        mov_query = mov_query.filter(StockMovement.user_name == filtro_operador)
+        base = base.filter(StockMovement.user_name == filtro_operador)
     if filtro_produto:
-        mov_query = mov_query.filter(StockMovement.product_name.ilike(f'%{filtro_produto}%'))
+        # Busca por palavras em qualquer ordem: "buchanan 1lt" acha "Buchanan's 1Lt"
+        for palavra in filtro_produto.split():
+            base = base.filter(StockMovement.product_name.ilike(f'%{palavra}%'))
+
+    mov_query = base.filter_by(type=filtro_tipo) if filtro_tipo else base
     movimentos = mov_query.order_by(StockMovement.created_at.desc()).limit(200).all()
+
+    # Resumo do período por produto (só quando um produto é buscado): soma TODAS as
+    # movimentações no banco, não só as 200 da lista. Ignora o botão Entradas/Saídas
+    # para mostrar sempre os dois lados.
+    resumo_mov = []
+    if filtro_produto:
+        linhas = (base.with_entities(StockMovement.product_name, StockMovement.type,
+                                     db.func.sum(StockMovement.quantity), db.func.count(StockMovement.id))
+                  .group_by(StockMovement.product_name, StockMovement.type).all())
+        por_prod = {}
+        for nome, tipo, qtd, n in linhas:
+            r = por_prod.setdefault(nome, {'produto': nome, 'entradas': 0, 'saidas': 0, 'registros': 0})
+            r['entradas' if tipo == 'entrada' else 'saidas'] += int(qtd or 0)
+            r['registros'] += n
+        resumo_mov = sorted(por_prod.values(), key=lambda r: r['produto'])
+        for r in resumo_mov:
+            r['saldo'] = r['entradas'] - r['saidas']
 
     # Operadores com movimentações (para dropdown)
     operadores_mov = [r[0] for r in db.session.query(StockMovement.user_name)
@@ -105,7 +134,8 @@ def index():
     return render_template('stock/index.html',
         produtos=produtos, tipos=tipos, tipo_id=tipo_id, q=q, ordem=ordem,
         marcas=marcas, marca_id=marca_id, todos_produtos=todos_produtos,
-        movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_data=filtro_data,
+        movimentos=movimentos, filtro_tipo=filtro_tipo, filtro_de=filtro_de, filtro_ate=filtro_ate,
+        resumo_mov=resumo_mov,
         filtro_operador=filtro_operador, filtro_produto=filtro_produto,
         operadores_mov=operadores_mov,
         eff_stock=eff_stock, eff_min=eff_min,
