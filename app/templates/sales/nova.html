@@ -3,6 +3,62 @@
 
 {% block head %}
 <style>
+  /* ═══ VISUAL NOVO (PDV "Balcão Rápido") — só para lojas com a chave ligada ═══ */
+  .pdv-chips { display: none; }
+  body[data-visual="novo"] #stepPDV { font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif; }
+  body[data-visual="novo"] .pdv-area,
+  body[data-visual="novo"] .cart-area { background: #16171c; border: 1px solid #24262d; border-radius: 18px; padding: 20px; }
+  body[data-visual="novo"] .pdv-search { background: #191b21; border-color: #2b2e36; border-radius: 14px; }
+  body[data-visual="novo"] #produtoSearch { height: 52px; font-size: 1.05rem; }
+  body[data-visual="novo"] .pdv-search:focus { border-color: #ff9f43; }
+  body[data-visual="novo"] #filtroCategoria { display: none; }
+  body[data-visual="novo"] .pdv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  body[data-visual="novo"] .pdv-chip {
+    min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #2b2e36;
+    background: transparent; color: #d6d5cf; font-weight: 700; font-size: .92rem; cursor: pointer;
+  }
+  body[data-visual="novo"] .pdv-chip:hover { border-color: #ff9f43; }
+  body[data-visual="novo"] .pdv-chip.active { background: #f2f1ed; border-color: #f2f1ed; color: #101114; }
+  body[data-visual="novo"] .pdv-grid {
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; max-height: calc(100vh - 300px);
+  }
+  body[data-visual="novo"] .pdv-card {
+    background: #1b1d23; border: 1px solid #2b2e36; border-radius: 16px; text-align: left;
+    display: flex; flex-direction: column; padding-bottom: 14px;
+  }
+  body[data-visual="novo"] .pdv-card:hover { background: #20222a; border-color: #ff9f43; transform: none; }
+  body[data-visual="novo"] .pdv-card-img-wrap { height: 96px; }
+  body[data-visual="novo"] .pdv-card-placeholder { height: 56px; background: #20222a; color: #4a4d57; font-size: 1.5rem; }
+  body[data-visual="novo"] .pdv-card-name { padding: 10px 14px 4px; font-size: .95rem; font-weight: 700; color: #f2f1ed; }
+  body[data-visual="novo"] .pdv-card-combo {
+    margin: 6px 12px 2px; padding: 8px 10px; border-radius: 10px;
+    background: #13261d; color: #9be3bd; font-size: .78rem; font-weight: 600; line-height: 1.35;
+  }
+  body[data-visual="novo"] .pdv-card-price { padding: 8px 14px 0; font-size: 1.12rem; font-weight: 800; color: #f2f1ed; }
+  body[data-visual="novo"] .pdv-card-estoque { padding: 2px 14px 0; font-size: .76rem; font-weight: 700; }
+  body[data-visual="novo"] .pdv-card-estoque.ok    { color: #8fd6ae; }
+  body[data-visual="novo"] .pdv-card-estoque.baixo { color: #ffc078; }
+  body[data-visual="novo"] .pdv-card-estoque.zero  { color: #ff8f8f; }
+  body[data-visual="novo"] .pdv-card-esgotado { left: 12px; transform: none; }
+  body[data-visual="novo"] .cart-section { background: #1d1f25; border-radius: 14px; }
+  body[data-visual="novo"] .cart-section-header { background: #22242b; color: #f2f1ed; }
+  body[data-visual="novo"] .cart-section-footer { background: #22242b; }
+  body[data-visual="novo"] .pgto-card { min-height: 60px; border-radius: 12px; background: transparent; border-color: #2f323b; color: #d6d5cf; }
+  body[data-visual="novo"] .pgto-card:hover { border-color: #ff9f43; }
+  body[data-visual="novo"] .pgto-card.active { border: 2px solid #ff9f43; background: rgba(255,159,67,.12); color: #ffd3a3; }
+  body[data-visual="novo"] .pgto-card.active i,
+  body[data-visual="novo"] .pgto-card.active .pgto-sub { color: #ff9f43; }
+  body[data-visual="novo"] #btnFinalizar {
+    background: #ff9f43; border-color: #ff9f43; color: #17130d;
+    border-radius: 16px; min-height: 60px; font-size: 1.15rem; font-weight: 800;
+  }
+  body[data-visual="novo"] #btnFinalizar:hover { background: #ffb066; border-color: #ffb066; }
+  body[data-visual="novo"] .cart-area .btn-warning {
+    background: #ff9f43; border-color: #ff9f43; color: #17130d; border-radius: 14px; font-weight: 800; min-height: 52px;
+  }
+  body[data-visual="novo"] .cart-area .btn-warning:hover { background: #ffb066; border-color: #ffb066; }
+</style>
+<style>
   /* ── Área de produtos: tema escuro ── */
   .pdv-area {
     background: #1e1e1e;
@@ -340,6 +396,9 @@
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
+
+      <!-- Categorias em botões (visual novo) -->
+      <div class="pdv-chips" id="catChips" role="group" aria-label="Categorias"></div>
 
       <!-- Grid de produtos -->
       <div class="pdv-grid" id="pdvGrid"></div>
@@ -752,6 +811,7 @@ let origem = 'loja';
 
 const EVENT_MODE = {{ 'true' if (event_mode and evento_visivel and not current_user.tenant.is_lanchonete) else 'false' }};
 const IS_LANCHONETE = {{ 'true' if current_user.tenant.is_lanchonete else 'false' }};
+const VISUAL_NOVO = {{ 'true' if current_user.tenant.visual_novo else 'false' }};
 const ACRESCIMO_CARTAO = {{ '%.2f'|format(acrescimo_cartao) }};  // acréscimo fixo no total ao pagar no cartão
 let todosProds = [];
 let produtosCache = {};
@@ -789,6 +849,32 @@ function construirAbas(lista) {
   }).forEach(([id, nome]) => {
     const o = document.createElement('option'); o.value = id; o.textContent = nome; sel.appendChild(o);
   });
+  if (VISUAL_NOVO) construirChips(sel);
+}
+
+// Visual novo: as categorias viram botões (usam as mesmas opções do select)
+function construirChips(sel) {
+  const box = document.getElementById('catChips');
+  box.innerHTML = '';
+  [...sel.options].forEach(o => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'pdv-chip'; b.dataset.cat = o.value;
+    b.textContent = o.value === 'todas' ? 'Todos' : o.textContent;
+    b.onclick = () => { sel.value = o.value; filtrarCategoria(o.value); };
+    box.appendChild(b);
+  });
+  marcarChip(sel.value);
+}
+function marcarChip(val) {
+  document.querySelectorAll('#catChips .pdv-chip')
+    .forEach(b => b.classList.toggle('active', b.dataset.cat === String(val)));
+}
+// Visual novo: quanto tem em estoque, direto no card
+function estoqueCard(p) {
+  if (!VISUAL_NOVO || p.disponivel === null || p.disponivel === undefined) return '';
+  const d = p.disponivel;
+  if (d <= 0) return '<div class="pdv-card-estoque zero">Sem estoque</div>';
+  return `<div class="pdv-card-estoque ${d <= 3 ? 'baixo' : 'ok'}">${d} em estoque</div>`;
 }
 
 function construirMarcas(lista) {
@@ -809,6 +895,7 @@ function construirMarcas(lista) {
 
 function filtrarCategoria(val) {
   catAtual = val;
+  if (VISUAL_NOVO) marcarChip(val);
   // filtra a lista de produtos pela categoria selecionada para mostrar só marcas relevantes
   const listaCat = val === 'todas' ? todosProds : todosProds.filter(p => p.type_id == val);
   construirMarcas(listaCat);
@@ -820,6 +907,7 @@ function limparFiltros() {
   catAtual = 'todas'; marcaAtual = 'todas';
   document.getElementById('filtroCategoria').value = 'todas';
   document.getElementById('filtroMarca').value = 'todas';
+  if (VISUAL_NOVO) marcarChip('todas');
   document.getElementById('produtoSearch').value = '';
   aplicarFiltros();
 }
@@ -890,6 +978,7 @@ function renderCards(lista) {
         ${imgHtml}
         ${esgotado(p) ? '<div class="pdv-card-esgotado">ESGOTADO</div>' : ''}<div class="pdv-card-name" title="${p.name}">${p.name}</div>
         ${comboResumo(p)}
+${estoqueCard(p)}
         <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
       `;
       grid.appendChild(card);
@@ -907,6 +996,7 @@ function renderCards(lista) {
       ${imgHtml}
       ${esgotado(p) ? '<div class="pdv-card-esgotado">ESGOTADO</div>' : ''}<div class="pdv-card-name" title="${p.name}">${p.name}</div>
       ${comboResumo(p)}
+${estoqueCard(p)}
       <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
     `;
     grid.appendChild(card);
