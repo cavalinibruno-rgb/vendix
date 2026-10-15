@@ -12,7 +12,8 @@
   body[data-visual="novo"] #produtoSearch { height: 52px; font-size: 1.05rem; }
   body[data-visual="novo"] .pdv-search:focus { border-color: #ff9f43; }
   body[data-visual="novo"] #filtroCategoria { display: none; }
-  body[data-visual="novo"] .pdv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  body[data-visual="novo"] .pdv-chips { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 12px; overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; }
+  body[data-visual="novo"] .pdv-chip { flex: 0 0 auto; white-space: nowrap; min-height: 40px !important; padding: 0 16px !important; }
   body[data-visual="novo"] .pdv-chip {
     min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #2b2e36;
     background: transparent; color: #d6d5cf; font-weight: 700; font-size: .92rem; cursor: pointer;
@@ -75,7 +76,7 @@
   body[data-visual="novo"] .vn-modo { display: flex; background: #191b21; border: 1px solid #2b2e36; border-radius: 14px; padding: 4px; gap: 4px; }
   body[data-visual="novo"] .vn-modo button { border: 0; background: transparent; color: #9a9ca4; font-weight: 700; border-radius: 10px; padding: 0 16px; height: 44px; }
   body[data-visual="novo"] .vn-modo button.on { background: #f2f1ed; color: #101114; }
-  body[data-visual="novo"] .pdv-grid { max-height: calc(100vh - 210px); }
+  body[data-visual="novo"] .pdv-grid { max-height: calc(100vh - 190px); }
   body[data-visual="novo"] .pdv-area { min-height: calc(100vh - 32px); }
   body[data-visual="novo"] .cart-panel { position: sticky; top: 16px; }
   body[data-visual="novo"] .cart-area { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 32px); overflow-y: auto; }
@@ -923,6 +924,8 @@ function construirAbas(lista) {
 function construirChips(sel) {
   const box = document.getElementById('catChips');
   box.innerHTML = '';
+  // uma linha só: a roda do mouse rola as categorias para o lado
+  box.onwheel = e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { box.scrollLeft += e.deltaY; e.preventDefault(); } };
   [...sel.options].forEach(o => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'pdv-chip'; b.dataset.cat = o.value;
