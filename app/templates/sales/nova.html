@@ -165,11 +165,13 @@
     width: 100%; height: 100%; object-fit: contain; display: block; padding: 6px;
   }
   .pdv-card { position: relative; }
-  .pdv-card.esgotado { opacity: .45; filter: grayscale(.85); cursor: not-allowed; }
+  .pdv-card.esgotado { cursor: not-allowed; }
+  .pdv-card.esgotado > :not(.pdv-card-esgotado) { opacity: .45; filter: grayscale(.85); }
   .pdv-card-esgotado {
     position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 2;
-    background: #e03131; color: #fff; font-size: .62rem; font-weight: 800;
-    letter-spacing: .06em; padding: 2px 8px; border-radius: 6px;
+    background: #ff2d2d; color: #fff; font-size: .72rem; font-weight: 800;
+    letter-spacing: .06em; padding: 3px 10px; border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.5);
   }
   .pdv-card-placeholder {
     width: 100%; height: 90px; background: #3a3a3a;
