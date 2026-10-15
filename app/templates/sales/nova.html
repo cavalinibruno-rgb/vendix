@@ -1085,8 +1085,10 @@ function esgotado(p) { return p.disponivel !== null && p.disponivel !== undefine
 function cabeNoEstoque(pid, nome, qtdTotal) {
   const d = dispDe(pid);
   if (origem === 'app' || d === null || qtdTotal <= d) return true;
+  const noCarrinho = carrinho.filter(i => String(i.product_id) === String(pid)).reduce((t, i) => t + i.quantity, 0);
   aviso(d <= 0 ? `"${nome}" está sem estoque.`
-               : `Estoque insuficiente: "${nome}" tem só ${d} disponível(is).`);
+       : noCarrinho >= d ? `"${nome}": as ${d} unidade(s) em estoque já estão no carrinho.`
+       : `Estoque insuficiente: "${nome}" tem só ${d} disponível(is).`);
   return false;
 }
 function clicarProduto(p) {
