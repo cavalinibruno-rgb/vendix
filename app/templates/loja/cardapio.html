@@ -235,6 +235,8 @@ body.lanchonete .pc-price{font-size:.98rem;font-weight:800;color:#1a1a1a;margin-
 body.lanchonete .sec-cat{font-size:1.05rem;font-weight:800;color:#1a1a1a;padding:18px 14px 6px;background:#fff;}
 /* Selo de promoção laranja */
 body.lanchonete .pc-promo{position:static;background:#ff7a00;margin-bottom:4px;display:inline-block;}
+  .pc.esgotado { opacity: .5; filter: grayscale(.9); }
+  .pc.esgotado .pc-btn { background: #999 !important; color: #fff !important; cursor: not-allowed; }
 </style>
 </head>
 <body{% if tenant.is_lanchonete %} class="lanchonete"{% endif %}>
@@ -628,7 +630,7 @@ function renderGrid(lista) {
   }
   if (IS_LANCHONETE) { renderLista(lista); return; }
   grid.innerHTML = lista.map(p => `
-    <div class="pc">
+    <div class="pc${p.esgotado ? ' esgotado' : ''}">
       ${p.is_promo ? '<span class="pc-promo">🔥 PROMOÇÃO</span>' : ''}
       ${p.thumb
         ? `<img class="pc-img" src="${p.thumb}" alt="${p.name}" loading="lazy">`
@@ -638,7 +640,9 @@ function renderGrid(lista) {
         <div class="pc-name">${p.name}</div>
         ${_compsHtml(p)}
         <div class="pc-price">R$ ${fmt(p.price)}</div>
-        <button class="pc-btn" onclick="addItem(${p.id})">+ Adicionar</button>
+        ${p.esgotado
+          ? '<button class="pc-btn" disabled>Esgotado</button>'
+          : `<button class="pc-btn" onclick="addItem(${p.id})">+ Adicionar</button>`}
       </div>
     </div>`).join('');
 }
@@ -774,6 +778,7 @@ function addItem(id) {
   if (!LOJA_ABERTA) { alert('A loja está fechada no momento. Os pedidos abrem quando ela reabrir.'); return; }
   const prod = todos.find(p => p.id === id);
   if (!prod) return;
+  if (prod.esgotado) { alert('Este produto está esgotado no momento.'); return; }
 
   _prodSheet = prod;
   _prodSheetGelado = false;
@@ -843,13 +848,28 @@ function _atualizarSheetQty() {
   document.getElementById('prodAddTotal').textContent = 'R$ ' + fmt(preco * _prodSheetQty);
 }
 
+// Estoque (depósito): quanto ainda cabe deste produto, descontando o que já está no carrinho
+function _limiteProd(prod, excetoSig) {
+  if (!prod || prod.max === null || prod.max === undefined) return Infinity;
+  const noCarrinho = carrinho.filter(i => i.id === prod.id && i.sig !== excetoSig)
+                             .reduce((s, i) => s + i.qty, 0);
+  return Math.max(0, prod.max - noCarrinho);
+}
+function _avisoLimite(prod, lim) {
+  alert(lim <= 0 ? `Não há mais "${prod.name}" disponível.`
+                 : `Só temos ${lim} de "${prod.name}" disponível(is) no momento.`);
+}
+
 function prodQty(delta) {
+  const lim = _limiteProd(_prodSheet);
+  if (delta > 0 && _prodSheetQty + delta > lim) { _avisoLimite(_prodSheet, lim); return; }
   _prodSheetQty = Math.max(1, _prodSheetQty + delta);
   _atualizarSheetQty();
 }
 
 function prodQtyInput(el) {
-  _prodSheetQty = Math.max(1, parseInt(el.value) || 1);
+  const lim = _limiteProd(_prodSheet);
+  _prodSheetQty = Math.max(1, Math.min(parseInt(el.value) || 1, lim === Infinity ? 999 : Math.max(1, lim)));
   _atualizarSheetQty();
 }
 
@@ -867,6 +887,8 @@ function confirmarAddItem() {
   const sig = [_prodSheet.id, _prodSheetGelado,
                selAddons.map(a => a.name + 'x' + a.qty).join(','), obs].join('|');
   const idx = carrinho.findIndex(i => i.sig === sig);
+  const lim = _limiteProd(_prodSheet, idx >= 0 ? sig : null);
+  if (_prodSheetQty > lim) { _avisoLimite(_prodSheet, lim); return; }
   if (idx >= 0) {
     carrinho[idx].qty = _prodSheetQty;
   } else {
@@ -890,6 +912,11 @@ function fecharProdSheet(e) {
 
 function changeQty(idx, delta) {
   if (idx < 0 || idx >= carrinho.length) return;
+  if (delta > 0) {
+    const prod = todos.find(p => p.id === carrinho[idx].id);
+    const lim = _limiteProd(prod, carrinho[idx].sig);
+    if (carrinho[idx].qty + delta > lim) { _avisoLimite(prod, lim); return; }
+  }
   carrinho[idx].qty += delta;
   if (carrinho[idx].qty <= 0) carrinho.splice(idx, 1);
   atualizarCartUI();
@@ -1171,6 +1198,7 @@ function fazerPedido() {
       window.location.href = `/loja/${SLUG}/pedido/${d.token || d.pedido_id}/acompanhar`;
     } else {
       erroEl.textContent = d.error || 'Erro ao enviar pedido.';
+      erroEl.style.whiteSpace = 'pre-line';
       btn.disabled = false;
       btn.textContent = 'Confirmar Pedido';
     }

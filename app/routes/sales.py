@@ -9,6 +9,7 @@ from app.models.cash import CashRegister
 from app.models.stock import StockMovement
 from app.models.combo import ComboItem
 from app.auth_utils import autenticar_operador
+from app.estoque import alvo_estoque
 import json as _json
 
 sales_bp = Blueprint('sales', __name__, url_prefix='/vendas')
@@ -172,6 +173,14 @@ def confirmar():
     discount_type  = data.get('discount_type') or None   # 'value' | 'percent' | None
     discount_input = float(data.get('discount', 0) or 0)
 
+    # Sem estoque, não vende (depósito). Vendas de apps já aconteceram no app → registra mesmo assim.
+    if source != 'app':
+        from app.estoque import faltas_estoque
+        faltas = faltas_estoque(current_user.tenant,
+                                [(i.get('product_id'), i.get('quantity', 0), i.get('name', '')) for i in items])
+        if faltas:
+            return jsonify({'error': 'Estoque insuficiente:\n• ' + '\n• '.join(faltas)}), 409
+
     # Pagamento combinado
     payment_entries_raw  = data.get('payment_entries') or []
     payment_entries_json = None
@@ -292,7 +301,9 @@ def confirmar():
                     for ci in combo_items:
                         comp = Product.query.filter_by(id=ci.component_id, tenant_id=tid()).first()
                         if comp:
-                            total_deduct = int(ci.quantity * qty)
+                            # componente pack → baixa do produto unitário pai
+                            comp, mult = alvo_estoque(comp, tid())
+                            total_deduct = int(ci.quantity * qty) * mult
                             comp.stock_quantity = max(0, comp.stock_quantity - total_deduct)
                             db.session.add(StockMovement(
                                 tenant_id    = tid(),
@@ -824,7 +835,8 @@ def cancelar(sale_id):
                 for ci in combo_items:
                     comp = Product.query.filter_by(id=ci.component_id, tenant_id=tid()).first()
                     if comp:
-                        total = int(ci.quantity * item.quantity)
+                        comp, mult = alvo_estoque(comp, tid())   # componente pack → devolve ao pai
+                        total = int(ci.quantity * item.quantity) * mult
                         comp.stock_quantity += total
                         db.session.add(StockMovement(
                             tenant_id    = tid(),

@@ -100,6 +100,11 @@ def api_produtos(slug):
                 'name': nome,
             })
 
+    # Depósito: quanto dá para vender de cada item (lanchonete não controla estoque).
+    # Não expõe o estoque real — só 'esgotado' e um teto para a quantidade.
+    from app.estoque import disponibilidade_lote
+    disp = None if tenant.is_lanchonete else disponibilidade_lote(produtos, tenant.id)
+
     out = []
     for p in produtos:
         if p.image_url:
@@ -128,6 +133,8 @@ def api_produtos(slug):
             'description': p.description or '',
             'addons':     addons,
             'components': comp_map.get(p.id, []),
+            'esgotado':   disp is not None and disp.get(p.id, 0) <= 0,
+            'max':        None if disp is None else min(disp.get(p.id, 0), 99),
         })
     return jsonify(out)
 
@@ -366,6 +373,13 @@ def fazer_pedido(slug):
 
     if not items_ok:
         return jsonify({'error': 'Nenhum produto válido.'}), 400
+
+    # Sem estoque suficiente, não aceita o pedido (depósito)
+    from app.estoque import faltas_estoque
+    faltas = faltas_estoque(tenant, [(i['product_id'], i['quantity'], i['name']) for i in items_ok])
+    if faltas:
+        return jsonify({'error': 'Desculpe, sem estoque suficiente de:\n• ' + '\n• '.join(faltas)
+                        + '\n\nAjuste as quantidades e tente de novo.'}), 409
 
     # Aplica cupom de desconto
     desconto = 0.0

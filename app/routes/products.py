@@ -770,6 +770,10 @@ def api_todos():
             combo_map.setdefault(combo_id, []).append({'name': cname, 'qty': qty})
 
     psm = _build_parent_stock_map(rows)
+    # Quantas unidades dá para vender (None = lanchonete, sem controle de estoque)
+    from app.estoque import disponibilidade_lote
+    disp = (None if current_user.tenant and current_user.tenant.is_lanchonete
+            else disponibilidade_lote(rows, tenant_id()))
     return jsonify([{
         'id': r.id, 'name': r.name,
         'sale_price': r.sale_price,
@@ -785,6 +789,7 @@ def api_todos():
         'brand_id': r.brand_id,
         'brand_name': marcas.get(r.brand_id),
         'combo_items': combo_map.get(r.id),
+        'disponivel': disp.get(r.id) if disp is not None else None,
     } for r in rows])
 
 @products_bp.route('/<int:product_id>/imagem')

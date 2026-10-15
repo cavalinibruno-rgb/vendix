@@ -7,6 +7,8 @@ from app.models.product import Product
 from app.models.cash import CashRegister
 from app.models.stock import StockMovement
 from app.models.combo import ComboItem
+from app.estoque import alvo_estoque, faltas_estoque
+from app.routes.sales import _custo_efetivo
 from datetime import datetime
 import json
 
@@ -63,6 +65,13 @@ def aceitar(pedido_id):
                     else (current_user.display_name or current_user.username))
         items    = pedido.items
 
+        # O estoque pode ter acabado entre o pedido e o aceite: não aceita sem estoque
+        faltas = faltas_estoque(current_user.tenant,
+                                [(i.get('product_id'), i.get('quantity', 0), i.get('name', '')) for i in items])
+        if faltas:
+            return jsonify({'error': 'Estoque insuficiente para aceitar:\n• ' + '\n• '.join(faltas)
+                            + '\n\nDê entrada no estoque ou recuse o pedido.'}), 409
+
         # Cria venda
         sale = Sale(
             tenant_id      = tid(),
@@ -108,7 +117,7 @@ def aceitar(pedido_id):
                 product_id   = pid,
                 product_name = nome_item,
                 unit_price   = float(i['unit_price']),
-                cost_price   = (prod.cost_price or 0) if prod else 0,
+                cost_price   = _custo_efetivo(prod) if prod else 0,
                 quantity     = qty,
                 total        = float(i['total']),
             ))
@@ -118,7 +127,8 @@ def aceitar(pedido_id):
                     for ci in combo_items:
                         comp = Product.query.filter_by(id=ci.component_id, tenant_id=tid()).first()
                         if comp:
-                            deduct = int(ci.quantity * qty)
+                            comp, mult = alvo_estoque(comp, tid())   # componente pack → pai
+                            deduct = int(ci.quantity * qty) * mult
                             comp.stock_quantity = max(0, (comp.stock_quantity or 0) - deduct)
                             db.session.add(StockMovement(
                                 tenant_id=tid(), product_id=comp.id, product_name=comp.name,
@@ -128,11 +138,15 @@ def aceitar(pedido_id):
                                 user_name=current_user.display_name or current_user.username,
                             ))
                 else:
-                    prod.stock_quantity = max(0, (prod.stock_quantity or 0) - int(qty))
+                    # pack/caixa → baixa as unidades do produto pai
+                    alvo, mult = alvo_estoque(prod, tid())
+                    deduct = int(qty * mult)
+                    alvo.stock_quantity = max(0, (alvo.stock_quantity or 0) - deduct)
                     db.session.add(StockMovement(
-                        tenant_id=tid(), product_id=prod.id, product_name=prod.name,
-                        type='saida', quantity=int(qty),
-                        motive=f'Pedido Online #{pedido.id}',
+                        tenant_id=tid(), product_id=alvo.id, product_name=alvo.name,
+                        type='saida', quantity=deduct,
+                        motive=(f'Pedido Online #{pedido.id}' if alvo is prod
+                                else f'Pack "{prod.name}" ({prod.pack_qty}un) — Pedido Online #{pedido.id}'),
                         user_id=_user_id(),
                         user_name=current_user.display_name or current_user.username,
                     ))

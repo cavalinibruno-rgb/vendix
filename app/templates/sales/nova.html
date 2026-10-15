@@ -53,6 +53,13 @@
   .pdv-card-img {
     width: 100%; height: 100%; object-fit: contain; display: block; padding: 6px;
   }
+  .pdv-card { position: relative; }
+  .pdv-card.esgotado { opacity: .45; filter: grayscale(.85); cursor: not-allowed; }
+  .pdv-card-esgotado {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 2;
+    background: #e03131; color: #fff; font-size: .62rem; font-weight: 800;
+    letter-spacing: .06em; padding: 2px 8px; border-radius: 6px;
+  }
   .pdv-card-placeholder {
     width: 100%; height: 90px; background: #3a3a3a;
     display: flex; align-items: center; justify-content: center;
@@ -874,14 +881,14 @@ function renderCards(lista) {
         grid.appendChild(hdr);
       }
       const card = document.createElement('div');
-      card.className = 'pdv-card';
-      card.onclick = () => abrirModalProd(p);
+      card.className = 'pdv-card' + (esgotado(p) ? ' esgotado' : '');
+      card.onclick = () => clicarProduto(p);
       const imgHtml = p.thumbnail
         ? `<div class="pdv-card-img-wrap"><img src="${p.thumbnail}" class="pdv-card-img" alt="${p.name}"></div>`
         : `<div class="pdv-card-placeholder"><i class="bi bi-box-seam"></i></div>`;
       card.innerHTML = `
         ${imgHtml}
-        <div class="pdv-card-name" title="${p.name}">${p.name}</div>
+        ${esgotado(p) ? '<div class="pdv-card-esgotado">ESGOTADO</div>' : ''}<div class="pdv-card-name" title="${p.name}">${p.name}</div>
         ${comboResumo(p)}
         <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
       `;
@@ -891,19 +898,44 @@ function renderCards(lista) {
   }
   lista.forEach(p => {
     const card = document.createElement('div');
-    card.className = 'pdv-card';
-    card.onclick = () => abrirModalProd(p);
+    card.className = 'pdv-card' + (esgotado(p) ? ' esgotado' : '');
+    card.onclick = () => clicarProduto(p);
     const imgHtml = p.thumbnail
       ? `<div class="pdv-card-img-wrap"><img src="${p.thumbnail}" class="pdv-card-img" alt="${p.name}"></div>`
       : `<div class="pdv-card-placeholder"><i class="bi bi-box-seam"></i></div>`;
     card.innerHTML = `
       ${imgHtml}
-      <div class="pdv-card-name" title="${p.name}">${p.name}</div>
+      ${esgotado(p) ? '<div class="pdv-card-esgotado">ESGOTADO</div>' : ''}<div class="pdv-card-name" title="${p.name}">${p.name}</div>
       ${comboResumo(p)}
       <div class="pdv-card-price">R$ ${fmtNum(EVENT_MODE && p.sale_price_event > 0 && origem === 'loja' && modo !== 'entrega' ? p.sale_price_event : p.sale_price)}</div>
     `;
     grid.appendChild(card);
   });
+}
+
+// ── Estoque: depósito não vende sem estoque (vendas de app ficam liberadas) ──
+function dispDe(pid) {                         // null = sem controle (lanchonete)
+  const p = produtosCache[String(pid)];
+  return (p && p.disponivel !== undefined) ? p.disponivel : null;
+}
+function esgotado(p) { return p.disponivel !== null && p.disponivel !== undefined && p.disponivel <= 0; }
+function cabeNoEstoque(pid, nome, qtdTotal) {
+  const d = dispDe(pid);
+  if (origem === 'app' || d === null || qtdTotal <= d) return true;
+  aviso(d <= 0 ? `"${nome}" está sem estoque.`
+               : `Estoque insuficiente: "${nome}" tem só ${d} disponível(is).`);
+  return false;
+}
+function clicarProduto(p) {
+  if (esgotado(p) && origem !== 'app') { aviso(`"${p.name}" está sem estoque.`); return; }
+  abrirModalProd(p);
+}
+function recarregarProdutos() {               // atualiza o estoque mostrado após cada venda
+  fetch('/produtos/api/todos').then(r => r.json()).then(lista => {
+    todosProds = lista; produtosCache = {};
+    lista.forEach(p => { produtosCache[String(p.id)] = p; });
+    aplicarFiltros();
+  }).catch(() => {});
 }
 
 // ── Modal adicionar produto ─────────────────────────────
@@ -937,6 +969,7 @@ function confirmarAddProd() {
   if (!prodModalAtual) return;
   const qtd = parseInt(document.getElementById('modalQtd').value) || 1;
   const existente = carrinho.find(i => i.product_id === prodModalAtual.id);
+  if (!cabeNoEstoque(prodModalAtual.id, prodModalAtual.name, (existente ? existente.quantity : 0) + qtd)) return;
   if (existente) {
     existente.quantity += qtd;
     existente.total = existente.unit_price * existente.quantity;
@@ -1223,6 +1256,9 @@ function toggleGelado(idx) {
 function alterarQtd(idx, val) {
   const qtd = parseInt(val);
   if (qtd <= 0 || isNaN(qtd)) { removerItem(idx); return; }
+  if (!cabeNoEstoque(carrinho[idx].product_id, carrinho[idx].name_original || carrinho[idx].name, qtd)) {
+    renderCarrinho(); return;                  // volta a quantidade anterior na tela
+  }
   carrinho[idx].quantity = qtd;
   carrinho[idx].total = carrinho[idx].unit_price * qtd;
   calcTotais(); renderResumo();
@@ -1645,7 +1681,9 @@ function calcCombinado() {
 
 // ── Aviso ─────────────────────────────────────────────
 function aviso(msg) {
-  document.getElementById('avisoTexto').textContent = msg;
+  const el = document.getElementById('avisoTexto');
+  el.textContent = msg;
+  el.style.whiteSpace = 'pre-line';   // mantém as quebras de linha (lista de itens sem estoque)
   bootstrap.Toast.getOrCreateInstance(document.getElementById('avisoToast')).show();
 }
 
@@ -1766,6 +1804,7 @@ function finalizarVenda() {
 // ── Reset PDV após venda (Electron) ───────────────────
 function limparVenda() {
   try {
+    recarregarProdutos();   // reflete a baixa de estoque da venda que acabou de sair
     carrinho = [];
     pgto = '';
     clienteAtual = null;
