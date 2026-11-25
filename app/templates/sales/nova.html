@@ -322,6 +322,18 @@
   .step-btn i { font-size: 2.8rem; color: #888; transition: color .2s; }
   .step-btn:hover { border-color: #c9a84c; background: rgba(201,168,76,.1); color: #e8c97a; }
   .step-btn:hover i { color: #c9a84c; }
+  /* Cores sólidas por tipo */
+  .step-btn.cor { border: 0; text-transform: none; letter-spacing: 0; font-size: 1.25rem; font-weight: 800; }
+  .step-btn.cor i { color: inherit; font-size: 3rem; }
+  .step-btn.cor:hover { filter: brightness(1.08); transform: translateY(-2px); }
+  .step-btn.cor:hover i { color: inherit; }
+  .step-btn.cor-laranja { background: #ff9f43; color: #2a1704; }
+  .step-btn.cor-azul    { background: #3a7bd5; color: #fff; }
+  .step-btn.cor-roxo    { background: #7a5bd1; color: #fff; }
+  .step-btn.cor-laranja:hover { background: #ff9f43; color: #2a1704; }
+  .step-btn.cor-azul:hover    { background: #3a7bd5; color: #fff; }
+  .step-btn.cor-roxo:hover    { background: #7a5bd1; color: #fff; }
+  .step-btn.cor .step-sub { font-size: .8rem; font-weight: 600; opacity: .8; }
   .step-back {
     background: none; border: none; color: #666; font-size: .85rem; cursor: pointer;
     display: flex; align-items: center; gap: 6px; transition: color .15s;
@@ -399,11 +411,14 @@
 <div id="step0" class="step-screen">
   <div class="step-title">Nova Venda</div>
   <div class="step-btn-wrap">
-    <button class="step-btn" onclick="escolherOrigem('loja')">
-      <i class="bi bi-shop"></i>LOJA
+    <button class="step-btn cor cor-laranja" onclick="setOrigem('loja'); escolherModo('retirada')">
+      <i class="bi bi-shop"></i>Loja/Balcão<span class="step-sub">Retirada no balcão</span>
     </button>
-    <button class="step-btn" onclick="escolherOrigem('app')">
-      <i class="bi bi-phone"></i>APP
+    <button class="step-btn cor cor-azul" onclick="setOrigem('loja'); escolherModo('entrega')">
+      <i class="bi bi-bicycle"></i>Entrega<span class="step-sub">Pedido para entregar</span>
+    </button>
+    <button class="step-btn cor cor-roxo" onclick="escolherOrigem('app')">
+      <i class="bi bi-phone"></i>App<span class="step-sub">iFood, 99Food…</span>
     </button>
   </div>
 </div>
@@ -412,11 +427,11 @@
 <div id="step1" style="display:none;" class="step-screen">
   <div class="step-title">Tipo de Atendimento</div>
   <div class="step-btn-wrap">
-    <button class="step-btn" onclick="escolherModo('retirada')">
-      <i class="bi bi-shop-window"></i>BALCÃO<span style="font-size:.72rem;font-weight:500;color:#888;text-transform:none;">Retirada</span>
+    <button class="step-btn cor cor-laranja" onclick="escolherModo('retirada')">
+      <i class="bi bi-shop-window"></i>Balcão<span class="step-sub">Retirada</span>
     </button>
-    <button class="step-btn" onclick="escolherModo('entrega')">
-      <i class="bi bi-bicycle"></i>ENTREGA
+    <button class="step-btn cor cor-azul" onclick="escolherModo('entrega')">
+      <i class="bi bi-bicycle"></i>Entrega<span class="step-sub">Pedido para entregar</span>
     </button>
   </div>
   <button class="step-back" onclick="irParaStep(0)">
