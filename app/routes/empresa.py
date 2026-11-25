@@ -121,3 +121,62 @@ def copiar_catalogo(origem_id, destino_id):
                                          component_id=mapa_prod[c.component_id].id,
                                          quantity=c.quantity))
     return len(origem)
+
+
+def _periodo(chave, de_txt=None, ate_txt=None):
+    hoje = datetime.combine(datetime.now().date(), datetime.min.time())
+    agora = datetime.now()
+    if chave == '7d':
+        return hoje - timedelta(days=6), agora, 'Últimos 7 dias'
+    if chave == 'mes':
+        return hoje.replace(day=1), agora, 'Este mês'
+    if chave == 'mes_passado':
+        fim = hoje.replace(day=1) - timedelta(seconds=1)
+        return fim.replace(day=1, hour=0, minute=0, second=0), fim, 'Mês passado'
+    if chave == 'periodo':
+        try:
+            ini = datetime.strptime(de_txt, '%Y-%m-%d')
+            fim = datetime.strptime(ate_txt, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+            return ini, fim, f'{ini:%d/%m/%Y} a {fim:%d/%m/%Y}'
+        except (TypeError, ValueError):
+            pass
+    return hoje, agora, 'Hoje'
+
+
+def _numeros_loja(loja_id, ini, fim):
+    from sqlalchemy import func
+    from app.models.sale import Sale, SaleItem
+    q = Sale.query.filter(Sale.tenant_id == loja_id, Sale.status == 'confirmed',
+                          Sale.created_at >= ini, Sale.created_at <= fim)
+    fat, pedidos = q.with_entities(func.coalesce(func.sum(Sale.total), 0.0), func.count(Sale.id)).first()
+    receita = q.with_entities(func.coalesce(func.sum(Sale.subtotal - func.coalesce(Sale.discount, 0)), 0.0)).scalar()
+    custo = (db.session.query(func.coalesce(func.sum(SaleItem.cost_price * SaleItem.quantity), 0.0))
+             .join(Sale, SaleItem.sale_id == Sale.id)
+             .filter(Sale.tenant_id == loja_id, Sale.status == 'confirmed',
+                     Sale.created_at >= ini, Sale.created_at <= fim).scalar())
+    fat, pedidos, receita, custo = float(fat or 0), int(pedidos or 0), float(receita or 0), float(custo or 0)
+    return {'faturamento': fat, 'pedidos': pedidos, 'ticket': fat / pedidos if pedidos else 0.0,
+            'lucro': receita - custo, 'receita': receita}
+
+
+@empresa_bp.route('/visao')
+@login_required
+def visao():
+    """Faturamento de cada loja da empresa e o total juntando todas."""
+    from flask import render_template
+    matriz = _matriz_do_dono()
+    if matriz is None:
+        return redirect(url_for('dashboard.index'))
+    chave = request.args.get('periodo', 'hoje')
+    ini, fim, rotulo = _periodo(chave, request.args.get('de'), request.args.get('ate'))
+    linhas = []
+    for loja in matriz.lojas_da_empresa():
+        n = _numeros_loja(loja.id, ini, fim)
+        n['loja'] = loja
+        linhas.append(n)
+    tot = {k: sum(l[k] for l in linhas) for k in ('faturamento', 'pedidos', 'lucro', 'receita')}
+    tot['ticket'] = tot['faturamento'] / tot['pedidos'] if tot['pedidos'] else 0.0
+    for l in linhas:
+        l['part'] = (l['faturamento'] / tot['faturamento'] * 100) if tot['faturamento'] else 0.0
+    return render_template('empresa/visao.html', linhas=linhas, tot=tot, chave=chave, rotulo=rotulo,
+                           de=request.args.get('de', ''), ate=request.args.get('ate', ''))

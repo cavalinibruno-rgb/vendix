@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Visão da empresa — Vendix{% endblock %}
+{% macro brl(v) %}R$ {{ '{:,.2f}'.format(v).replace(',', 'X').replace('.', ',').replace('X', '.') }}{% endmacro %}
+
+{% block content %}
+<div class="page-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+  <div>
+    <h1><i class="bi bi-diagram-3 me-2 text-warning"></i>Visão da empresa</h1>
+    <p class="mb-0">Faturamento de todas as lojas · <strong>{{ rotulo }}</strong></p>
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    {% for k, nome in [('hoje','Hoje'),('7d','7 dias'),('mes','Este mês'),('mes_passado','Mês passado')] %}
+    <a href="?periodo={{ k }}" class="btn btn-sm {{ 'btn-warning' if chave == k else 'btn-outline-secondary' }}">{{ nome }}</a>
+    {% endfor %}
+    <form class="d-flex gap-1 align-items-center" method="get">
+      <input type="hidden" name="periodo" value="periodo">
+      <input type="date" name="de" value="{{ de }}" class="form-control form-control-sm" required aria-label="De">
+      <input type="date" name="ate" value="{{ ate }}" class="form-control form-control-sm" required aria-label="Até">
+      <button class="btn btn-sm {{ 'btn-warning' if chave == 'periodo' else 'btn-outline-secondary' }}">Filtrar</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Faturamento total</div>
+    <div class="fs-3 fw-bold text-warning">{{ brl(tot.faturamento) }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Pedidos</div>
+    <div class="fs-3 fw-bold">{{ tot.pedidos }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Ticket médio</div>
+    <div class="fs-3 fw-bold">{{ brl(tot.ticket) }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Lucro estimado</div>
+    <div class="fs-3 fw-bold">{{ brl(tot.lucro) }}</div>
+    <div class="small text-muted">Margem {% if tot.receita %}{{ '%.1f'|format(tot.lucro / tot.receita * 100) }}%{% else %}—{% endif %}</div></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-shop me-2 text-warning"></i>Por loja</div>
+  <div class="table-responsive">
+    <table class="table mb-0 align-middle">
+      <thead><tr>
+        <th>Loja</th><th class="text-end">Faturamento</th><th style="width:22%">Participação</th>
+        <th class="text-end">Pedidos</th><th class="text-end">Ticket médio</th><th class="text-end">Lucro estimado</th>
+      </tr></thead>
+      <tbody>
+        {% for l in linhas %}
+        <tr>
+          <td><span class="fw-semibold">{{ l.loja.store_name }}</span>
+            <span class="badge {{ 'bg-secondary' if l.loja.matriz_id else 'bg-warning text-dark' }} ms-1">{{ 'Filial' if l.loja.matriz_id else 'Principal' }}</span>
+            {% if not l.loja.is_active %}<span class="badge bg-danger ms-1">Vencida</span>{% endif %}</td>
+          <td class="text-end fw-semibold">{{ brl(l.faturamento) }}</td>
+          <td><div class="d-flex align-items-center gap-2">
+            <div class="progress flex-grow-1" style="height:8px;" role="progressbar" aria-valuenow="{{ l.part|round|int }}" aria-valuemin="0" aria-valuemax="100" aria-label="Participação de {{ l.loja.store_name }}">
+              <div class="progress-bar bg-warning" style="width: {{ l.part }}%"></div></div>
+            <span class="small text-muted" style="min-width:42px;">{{ '%.0f'|format(l.part) }}%</span></div></td>
+          <td class="text-end">{{ l.pedidos }}</td>
+          <td class="text-end">{{ brl(l.ticket) }}</td>
+          <td class="text-end">{{ brl(l.lucro) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot><tr class="fw-bold">
+        <td>Total da empresa</td><td class="text-end text-warning">{{ brl(tot.faturamento) }}</td><td></td>
+        <td class="text-end">{{ tot.pedidos }}</td><td class="text-end">{{ brl(tot.ticket) }}</td><td class="text-end">{{ brl(tot.lucro) }}</td>
+      </tr></tfoot>
+    </table>
+  </div>
+</div>
+<p class="small text-muted mt-3 mb-0">Considera só vendas confirmadas (sem as canceladas). Lucro estimado = vendas com desconto aplicado − custo dos produtos vendidos.</p>
+{% endblock %}

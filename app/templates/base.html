@@ -353,6 +353,7 @@
     <div class="collapse navbar-collapse" id="vnMenu">
       <ul class="navbar-nav vn-links">
         <li class="nav-item"><a class="vn-link {% if ep == 'dashboard.index' %}active{% endif %}" href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+        {% if lojas_empresa %}<li class="nav-item"><a class="vn-link {% if ep == 'empresa.visao' %}active{% endif %}" href="{{ url_for('empresa.visao') }}">Empresa</a></li>{% endif %}
         <li class="nav-item dropdown">
           <a class="vn-link dropdown-toggle {% if ep in ('sales.nova','sales.index') or 'cash' in ep or 'account' in ep or 'apps' in ep %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Vendas</a>
           <ul class="dropdown-menu vn-drop">
@@ -463,6 +464,11 @@
       <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if ep == 'dashboard.index' %}active{% endif %}">
         <i class="bi bi-speedometer2"></i><span class="nav-label"> Dashboard</span>
       </a>
+      {% if lojas_empresa %}
+      <a href="{{ url_for('empresa.visao') }}" class="nav-link {% if ep == 'empresa.visao' %}active{% endif %}">
+        <i class="bi bi-diagram-3"></i><span class="nav-label"> Visão da empresa</span>
+      </a>
+      {% endif %}
       <a href="{{ url_for('cash.index') }}" class="nav-link {% if 'cash' in ep %}active{% endif %}">
         <i class="bi bi-cash-stack"></i><span class="nav-label"> Caixa</span>
       </a>
