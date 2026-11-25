@@ -687,3 +687,71 @@ def diag_estoque():
             'unidades_em_vendas_canceladas': un_canceladas,
         })
     return jsonify(out)
+
+
+# ── DIAGNÓSTICO TEMPORÁRIO (somente leitura): dinheiro do caixa x tela de Vendas ──
+# Uso: /master/diag-caixa?loja=<parte do nome da loja>&caixa=<id do caixa>
+@master_bp.route('/diag-caixa')
+@login_required
+@master_required
+def diag_caixa():
+    from app.models.cash import CashRegister
+    from app.routes.cash import _entra_no_caixa, _METODO_CAT
+    loja = request.args.get('loja', '').strip()
+    lojas = Tenant.query.filter(Tenant.store_name.ilike(f'%{loja}%')).all()
+    if len(lojas) != 1:
+        return jsonify({'erro': 'loja não encontrada ou ambígua',
+                        'encontradas': [t.store_name for t in lojas]}), 400
+    t = lojas[0]
+    cx = CashRegister.query.filter_by(id=int(request.args.get('caixa', 0)), tenant_id=t.id).first()
+    if not cx:
+        return jsonify({'erro': 'caixa não encontrado nessa loja'}), 404
+    corte = cx.closed_at or datetime.now()
+
+    def parte_dinheiro(s):
+        if s.payment_method == 'combinado':
+            return sum(float(e.get('amount', 0) or 0) for e in s.payment_entries_list
+                       if _METODO_CAT.get(e.get('method')) == 'dinheiro')
+        return s.total if _METODO_CAT.get(s.payment_method) == 'dinheiro' else 0.0
+
+    vendas = (Sale.query.filter(Sale.tenant_id == t.id, Sale.status == 'confirmed',
+                                Sale.created_at >= cx.opened_at, Sale.created_at <= corte)
+              .order_by(Sale.created_at).all())
+    linhas, grupos = [], {}
+    for s in vendas:
+        din = parte_dinheiro(s)
+        if din <= 0:
+            continue
+        no_caixa = s.cash_register_id == cx.id and _entra_no_caixa(s, corte)
+        if no_caixa:
+            motivo = 'contada no caixa'
+        elif s.cash_register_id != cx.id:
+            motivo = f'vinculada ao caixa {s.cash_register_id}' if s.cash_register_id else 'sem caixa vinculado'
+        elif s.delivery_mode == 'entrega':
+            motivo = 'entrega não concluída até o fechamento'
+        else:
+            motivo = 'app retirada (pago no app)'
+        g = grupos.setdefault(motivo, {'qtd': 0, 'dinheiro': 0.0, 'total_na_tela_vendas': 0.0})
+        g['qtd'] += 1
+        g['dinheiro'] += din
+        g['total_na_tela_vendas'] += s.total
+        linhas.append({'venda': s.sale_number or s.id, 'quando': str(s.created_at)[:19], 'total': s.total,
+                       'parte_dinheiro': round(din, 2), 'forma': s.payment_method,
+                       'operador': s.cashier_name, 'caixa_vinculado': s.cash_register_id,
+                       'modo': s.delivery_mode, 'entregue_em': str(s.delivered_at)[:19] if s.delivered_at else None,
+                       'origem': s.source, 'situacao': motivo})
+    for g in grupos.values():
+        g['dinheiro'] = round(g['dinheiro'], 2)
+        g['total_na_tela_vendas'] = round(g['total_na_tela_vendas'], 2)
+    abertos_juntos = CashRegister.query.filter(
+        CashRegister.tenant_id == t.id, CashRegister.id != cx.id,
+        CashRegister.opened_at <= corte,
+        db.or_(CashRegister.closed_at == None, CashRegister.closed_at >= cx.opened_at)).all()
+    return jsonify({
+        'loja': t.store_name, 'caixa': cx.id, 'operador': cx.operator_name,
+        'aberto': str(cx.opened_at)[:19], 'fechado': str(cx.closed_at)[:19] if cx.closed_at else None,
+        'resumo_por_situacao': grupos,
+        'outros_caixas_no_periodo': [{'id': c.id, 'operador': c.operator_name, 'aberto': str(c.opened_at)[:19],
+                                      'fechado': str(c.closed_at)[:19] if c.closed_at else None} for c in abertos_juntos],
+        'vendas': linhas,
+    })
