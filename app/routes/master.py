@@ -15,8 +15,8 @@ import unicodedata
 master_bp = Blueprint('master', __name__, url_prefix='/master')
 
 # Preços dos planos (edite aqui conforme necessário)
-PRECO_MENSAL = 129.90
-PRECO_ANUAL  = 1198.80
+PRECO_MENSAL = 199.90
+PRECO_ANUAL  = 2000.00
 
 def master_required(f):
     @wraps(f)

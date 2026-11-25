@@ -88,7 +88,7 @@ def upgrade_anual():
         'items': [{
             'title': 'Vendix Anual — Upgrade',
             'quantity': 1,
-            'unit_price': 1198.80,
+            'unit_price': 2000.00,
             'currency_id': 'BRL',
         }],
         'payer': {'email': tenant.email},

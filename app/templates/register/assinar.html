@@ -88,7 +88,7 @@
       <div class="plan-label">Mensal</div>
       <div class="plan-price-wrap">
         <span class="plan-currency">R$</span>
-        <span class="plan-amount">129</span>
+        <span class="plan-amount">199</span>
         <span class="plan-cents">,90</span>
       </div>
       <div class="plan-price-sub">por mês</div>
@@ -98,10 +98,10 @@
       <div class="plan-label">Anual</div>
       <div class="plan-price-wrap">
         <span class="plan-currency">R$</span>
-        <span class="plan-amount">99</span>
-        <span class="plan-cents">,90</span>
+        <span class="plan-amount">166</span>
+        <span class="plan-cents">,66</span>
       </div>
-      <div class="plan-price-sub">12x · R$ 1.198,80/ano</div>
+      <div class="plan-price-sub">12x · R$ 2.000,00/ano</div>
     </div>
   </div>
 
@@ -194,7 +194,7 @@ async function irParaPagamento() {
     return;
   }
 
-  const valor = plano === 'anual' ? 1198.80 : 129.90;
+  const valor = plano === 'anual' ? 2000.00 : 199.90;
   if (typeof fbq !== 'undefined') fbq('track', 'InitiateCheckout', { value: valor, currency: 'BRL', content_name: plano });
 
   btn.disabled = true;

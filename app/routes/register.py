@@ -42,19 +42,19 @@ def _send_meta_event(event_name, email=None, value=None, currency='BRL', content
     except Exception as e:
         current_app.logger.warning(f'[meta_capi] {e}')
 
-# Mensal: R$129,90/mês sem fidelidade
-# Anual:  R$99,90/mês com fidelidade de 12 meses
+# Mensal: R$199,90/mês sem fidelidade
+# Anual:  R$2.000 (12x de R$166,66) com fidelidade de 12 meses
 PLANOS = {
     'mensal': {
         'nome': 'Vendix Mensal',
-        'valor_mensal': 129.90,
+        'valor_mensal': 199.90,
         'frequencia': 1,
         'dias': 30,
         'tipo': 'assinatura',   # cobrança recorrente via preapproval
     },
     'anual': {
         'nome': 'Vendix Anual',
-        'valor_total': 1198.80,
+        'valor_total': 2000.00,
         'dias': 365,
         'tipo': 'avista',       # pagamento único via Checkout Pro
     },
