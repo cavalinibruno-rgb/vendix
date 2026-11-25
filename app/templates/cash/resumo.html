@@ -136,12 +136,12 @@
   <div class="card-body p-0">
     <table class="table table-sm mb-0">
       <thead class="table-light">
-        <tr><th>Horário</th><th>Motivo</th><th>Operador</th><th class="text-end">Valor</th></tr>
+        <tr><th>Data/Hora</th><th>Motivo</th><th>Operador</th><th class="text-end">Valor</th></tr>
       </thead>
       <tbody>
         {% for r in retiradas %}
         <tr>
-          <td class="text-muted small">{{ r.created_at.strftime('%H:%M') }}</td>
+          <td class="text-muted small">{{ r.created_at.strftime('%d/%m %H:%M') }}</td>
           <td>{{ r.motivo }}</td>
           <td class="text-muted small">{{ r.operator_name }}</td>
           <td class="text-end text-danger fw-semibold">- R$ {{ '%.2f'|format(r.amount) }}</td>

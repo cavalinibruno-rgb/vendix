@@ -565,7 +565,7 @@ def escpos(caixa_id):
     if ctx['retiradas']:
         d += lft('RETIRADAS')
         for r in ctx['retiradas']:
-            d += cols(f'{r.created_at.strftime("%H:%M")} {r.motivo}'[:W-12], f'-{brl(r.amount)}')
+            d += cols(f'{r.created_at.strftime("%d/%m %H:%M")} {r.motivo}'[:W-12], f'-{brl(r.amount)}')
         d += cols('Total retiradas', f'-{brl(ctx["total_retiradas"])}')
         d += sep()
 
