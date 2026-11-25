@@ -493,7 +493,18 @@ def index():
             q_periodo = q_periodo.filter(_cond_pagamento())
         sales = q_periodo.order_by(Sale.created_at.desc()).limit(limite).all()
 
-    total_periodo = sum(s.total for s in sales)
+    # Com filtro de pagamento, venda combinada entra só com a parte paga nessa forma
+    # (mesma regra do fechamento de caixa).
+    if filtro_pagamento:
+        from app.routes.cash import _METODO_CAT
+        def _parte(v):
+            if v.payment_method == 'combinado':
+                return sum(float(e.get('amount', 0) or 0) for e in v.payment_entries_list
+                           if _METODO_CAT.get(e.get('method')) == filtro_pagamento)
+            return v.total
+        total_periodo = sum(_parte(s) for s in sales)
+    else:
+        total_periodo = sum(s.total for s in sales)
     periodo_um_dia = (de_fil == ate_fil)
 
     return render_template('sales/index.html',
