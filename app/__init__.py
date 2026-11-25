@@ -333,6 +333,8 @@ def _run_migrations(db):
         "ALTER TABLE products ADD COLUMN IF NOT EXISTS disponivel BOOLEAN DEFAULT TRUE",
         # Estoque do produto logo após cada movimentação (extrato)
         "ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS estoque_apos INTEGER",
+        # Filiais: loja ligada a uma loja principal (mesmo login do dono)
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS matriz_id INTEGER REFERENCES tenants(id)",
         """CREATE TABLE IF NOT EXISTS ingredients (
             id SERIAL PRIMARY KEY,
             tenant_id INTEGER REFERENCES tenants(id) NOT NULL,
@@ -416,6 +418,7 @@ def create_app():
     from app.routes.completar_cadastro import completar_cadastro_bp
     from app.routes.download import download_bp
     from app.routes.insumos import insumos_bp
+    from app.routes.empresa import empresa_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -439,6 +442,7 @@ def create_app():
     app.register_blueprint(completar_cadastro_bp)
     app.register_blueprint(download_bp)
     app.register_blueprint(insumos_bp)
+    app.register_blueprint(empresa_bp)
 
     # Blueprints que o master (admin do sistema) pode acessar.
     # O master não tem loja própria, então é bloqueado das telas internas de loja.
@@ -468,6 +472,12 @@ def create_app():
         if not current_user.is_authenticated or current_user.is_master:
             return
         tenant = current_user.tenant
+        if tenant and not tenant.is_active and getattr(current_user, 'matriz_id', None):
+            # Filial vencida: o dono volta para a loja principal em vez de sair do sistema
+            from flask import session, flash
+            session.pop('loja_ativa', None)
+            flash(f'A assinatura da filial "{tenant.store_name}" venceu. Renove para continuar usando essa loja.', 'warning')
+            return redirect(url_for('dashboard.index'))
         if tenant and not tenant.is_active:
             logout_user()
             from flask import flash
@@ -522,6 +532,22 @@ def create_app():
     @app.context_processor
     def inject_app_version():
         return {'app_version': APP_VERSION}
+
+    @app.context_processor
+    def inject_lojas_empresa():
+        """Seletor de loja do dono (só aparece quando a empresa tem filial)."""
+        from flask_login import current_user
+        try:
+            if (current_user.is_authenticated and not current_user.is_master
+                    and not current_user.is_employee and current_user.role == 'admin'):
+                from app.models.tenant import Tenant
+                matriz = Tenant.query.get(getattr(current_user, 'matriz_id', None) or current_user.tenant_id)
+                lojas = matriz.lojas_da_empresa() if matriz else []
+                if len(lojas) > 1:
+                    return {'lojas_empresa': lojas, 'loja_ativa_id': current_user.tenant_id}
+        except Exception:
+            pass
+        return {'lojas_empresa': [], 'loja_ativa_id': None}
 
     @app.context_processor
     def inject_nav_badges():

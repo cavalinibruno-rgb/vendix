@@ -41,7 +41,57 @@ def load_user(user_id):
         if emp:
             return EmployeeLoginProxy(emp)
         return None
-    return User.query.get(int(user_id))
+    user = User.query.get(int(user_id))
+    if user is None or user.role != 'admin':
+        return user
+    try:
+        from flask import session
+        lid = session.get('loja_ativa')
+    except Exception:
+        lid = None
+    if lid and lid != user.tenant_id:
+        from app.models.tenant import Tenant
+        filial = Tenant.query.get(lid)
+        if filial and filial.matriz_id == user.tenant_id:
+            return AdminLojaProxy(user, filial)
+    return user
+
+
+class AdminLojaProxy(UserMixin):
+    """Dono da empresa trabalhando numa filial: mesmo usuário, outra loja.
+    Tudo que filtra por current_user.tenant_id passa a enxergar só a filial."""
+    def __init__(self, user, filial):
+        self._user     = user
+        self.tenant_id = filial.id
+        self.tenant    = filial
+        self.matriz_id = user.tenant_id
+
+    def __getattr__(self, nome):
+        return getattr(self._user, nome)
+
+    _PROPRIOS = {'_user', 'tenant_id', 'tenant', 'matriz_id'}
+
+    def __setattr__(self, nome, valor):
+        # Alterações (ex.: troca de senha) vão para o usuário real, não para o proxy
+        if nome in self._PROPRIOS:
+            object.__setattr__(self, nome, valor)
+        else:
+            setattr(self._user, nome, valor)
+
+    def get_id(self):
+        return str(self._user.id)
+
+    @property
+    def id(self):
+        return self._user.id
+
+    @property
+    def is_master(self):
+        return False
+
+    @property
+    def is_employee(self):
+        return False
 
 
 class EmployeeLoginProxy(UserMixin):

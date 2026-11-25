@@ -29,6 +29,17 @@ class Tenant(db.Model):
     event_mode       = db.Column(db.Boolean, default=False, nullable=False)
     business_type    = db.Column(db.String(16), default='varejo', nullable=False)  # varejo | lanchonete
     created_at    = db.Column(db.DateTime, default=datetime.now)
+    matriz_id     = db.Column(db.Integer, db.ForeignKey('tenants.id'), nullable=True)  # filial -> loja principal
+
+    @property
+    def is_filial(self):
+        return self.matriz_id is not None
+
+    def lojas_da_empresa(self):
+        """Matriz + filiais (na ordem: matriz primeiro, filiais por criação)."""
+        matriz = Tenant.query.get(self.matriz_id) if self.matriz_id else self
+        filiais = Tenant.query.filter_by(matriz_id=matriz.id).order_by(Tenant.created_at).all()
+        return [matriz] + filiais
 
     users = db.relationship('User', backref='tenant', lazy=True)
 

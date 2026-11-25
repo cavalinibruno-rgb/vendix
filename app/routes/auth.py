@@ -113,6 +113,7 @@ def login():
             if not tenant or not tenant.is_active:
                 flash('Sua assinatura está suspensa. Entre em contato com o suporte.', 'danger')
                 return render_template('auth/login.html')
+            session.pop("loja_ativa", None)  # entra sempre na loja principal
             login_user(user, remember=remember)
             return redirect(_safe_next(next_url) or url_for('dashboard.index'))
 

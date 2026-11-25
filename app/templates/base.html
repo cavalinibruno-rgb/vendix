@@ -1,3 +1,25 @@
+{% macro seletor_loja() %}
+{% if lojas_empresa %}
+<div class="dropdown seletor-loja">
+  <button class="btn btn-sm btn-outline-warning dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Trocar de loja">
+    <i class="bi bi-shop me-1"></i>{% for l in lojas_empresa %}{% if l.id == loja_ativa_id %}{{ l.store_name }}{% endif %}{% endfor %}
+  </button>
+  <ul class="dropdown-menu">
+    {% for l in lojas_empresa %}
+    <li>
+      <form method="post" action="{{ url_for('empresa.trocar', loja_id=l.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="dropdown-item d-flex justify-content-between gap-3 {{ 'active' if l.id == loja_ativa_id }}" type="submit">
+          <span>{{ l.store_name }}</span>
+          <span class="small {{ 'text-danger' if not l.is_active else 'opacity-75' }}">{{ 'Filial' if l.matriz_id else 'Principal' }}{{ ' · vencida' if not l.is_active }}</span>
+        </button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endmacro %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -377,6 +399,7 @@
         {% endif %}
       </ul>
       <div class="vn-right">
+        {{ seletor_loja() }}
         {% if caixa_aberto_nav %}
         <a class="vn-pill vn-pill-ok" href="{{ url_for('cash.index') }}"><span class="vn-dot" aria-hidden="true"></span>Caixa aberto</a>
         {% else %}
@@ -550,6 +573,7 @@
         <img src="{{ url_for('config.servir_logo') }}" class="topbar-logo" alt="{{ tenant.store_name }}">
         {% endif %}
         <span class="topbar-store-name">{{ tenant.store_name }}</span>
+        <span class="ms-2">{{ seletor_loja() }}</span>
       {% endif %}
     {% endif %}
   </div>

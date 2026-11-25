@@ -210,6 +210,43 @@ def tenant_visual_novo(tenant_id):
     return redirect(url_for('master.dashboard'))
 
 
+@master_bp.route('/tenant/<int:tenant_id>/filial/nova', methods=['GET', 'POST'])
+@login_required
+@master_required
+def filial_nova(tenant_id):
+    """Cria uma filial para a loja (cliente que paga por fora, ex.: em dinheiro)."""
+    from app.routes.empresa import criar_filial
+    from app.models.pagamento import Pagamento
+    matriz = Tenant.query.get_or_404(tenant_id)
+    if matriz.matriz_id:
+        flash('Essa loja já é uma filial. Crie a filial a partir da loja principal.', 'warning')
+        return redirect(url_for('master.dashboard'))
+    if request.method == 'POST':
+        nome = request.form.get('store_name', '').strip()
+        if not nome:
+            flash('Informe o nome da filial.', 'danger')
+            return render_template('master/filial_form.html', matriz=matriz)
+        plano = request.form.get('plan', 'mensal')
+        plano = plano if plano in ('mensal', 'anual') else 'mensal'
+        dias = int(request.form.get('dias') or (365 if plano == 'anual' else 30))
+        copiar = request.form.get('produtos') == 'copiar'
+        valor = (request.form.get('valor') or '').strip().replace(',', '.')
+        try:
+            filial = criar_filial(matriz, nome, copiar, plano=plano, dias=dias)
+            if valor:
+                db.session.add(Pagamento(tenant_id=filial.id, valor=float(valor), plano=plano,
+                                         paid_at=datetime.now(),
+                                         observacao=(request.form.get('observacao') or '').strip() or 'Filial criada pelo master'))
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao criar filial: {e}', 'danger')
+            return render_template('master/filial_form.html', matriz=matriz)
+        flash(f'Filial "{nome}" criada para "{matriz.store_name}". Vence em {filial.expires_at.strftime("%d/%m/%Y")}.', 'success')
+        return redirect(url_for('master.dashboard'))
+    return render_template('master/filial_form.html', matriz=matriz)
+
+
 @master_bp.route('/tenant/<int:tenant_id>/adicionar-dias', methods=['POST'])
 @login_required
 @master_required

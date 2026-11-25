@@ -95,7 +95,8 @@
         <tr>
           <td class="text-muted small">{{ t.id }}</td>
           <td class="fw-semibold">{{ t.store_name }}
-            {% if t.visual_novo %}<span class="badge ms-1" style="background:#c9a84c;color:#1a1a2e;">Visual novo</span>{% endif %}</td>
+            {% if t.visual_novo %}<span class="badge ms-1" style="background:#c9a84c;color:#1a1a2e;">Visual novo</span>{% endif %}
+            {% if t.matriz_id %}<div class="small text-info fw-normal"><i class="bi bi-diagram-3 me-1"></i>Filial de {{ (tenants|selectattr('id','equalto',t.matriz_id)|first).store_name if (tenants|selectattr('id','equalto',t.matriz_id)|list) else ('#' ~ t.matriz_id) }}</div>{% endif %}</td>
           <td class="text-muted small">{{ t.email }}</td>
           <td class="text-muted small">{{ t.phone or '—' }}</td>
           <td>
@@ -136,6 +137,11 @@
                   <i class="bi bi-palette"></i>
                 </button>
               </form>
+              {% if not t.matriz_id %}
+              <a href="{{ url_for('master.filial_nova', tenant_id=t.id) }}" class="btn btn-sm btn-outline-primary" title="Criar filial para esta loja">
+                <i class="bi bi-diagram-3"></i>
+              </a>
+              {% endif %}
               <button class="btn btn-sm btn-outline-danger"
                 onclick="abrirExcluir({{ t.id }}, '{{ t.store_name }}')">
                 <i class="bi bi-trash"></i>
